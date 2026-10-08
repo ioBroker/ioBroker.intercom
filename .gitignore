@@ -1,0 +1,11 @@
+# No dot-directories except github/vscode
+.*/
+!.vscode/
+!.github/
+
+node_modules
+tmp/
+iobroker.*.tgz
+Thumbs.db
+.commitinfo
+/ioBroker-asterisk-adapter-ANLEITUNG.md

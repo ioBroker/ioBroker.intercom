@@ -1,0 +1,374 @@
+{
+    "i18n": true,
+    "type": "tabs",
+    "items": {
+        "_subscribers": {
+            "type": "panel",
+            "label": "Subscribers",
+            "items": {
+                "subscribers": {
+                    "type": "table",
+                    "xs": 12,
+                    "uniqueColumns": ["extension"],
+                    "encryptedAttributes": ["password"],
+                    "showSecondAddAt": 5,
+                    "export": true,
+                    "items": [
+                        {
+                            "type": "checkbox",
+                            "attr": "enabled",
+                            "title": "Active",
+                            "width": 60,
+                            "default": true
+                        },
+                        {
+                            "type": "text",
+                            "attr": "extension",
+                            "title": "Number",
+                            "width": 120,
+                            "filter": true,
+                            "sort": true,
+                            "default": "",
+                            "validator": "/^[0-9]{2,6}$/.test(data.extension) && !(globalData.echoTest && data.extension === '600')",
+                            "validatorErrorText": "2 to 6 digits, 600 is reserved for the echo test",
+                            "validatorNoSaveOnError": true
+                        },
+                        {
+                            "type": "text",
+                            "attr": "name",
+                            "title": "Name",
+                            "filter": true,
+                            "sort": true,
+                            "default": "",
+                            "maxLength": 64
+                        },
+                        {
+                            "type": "select",
+                            "attr": "kind",
+                            "title": "Type",
+                            "width": 160,
+                            "default": "webrtc",
+                            "options": [
+                                { "label": "WebRTC (browser, app)", "value": "webrtc" },
+                                { "label": "SIP (phone, intercom)", "value": "sip" }
+                            ]
+                        },
+                        {
+                            "type": "password",
+                            "attr": "password",
+                            "title": "Password",
+                            "width": 200,
+                            "visible": true,
+                            "default": "",
+                            "validator": "!data.password || data.password.length >= 8",
+                            "validatorErrorText": "At least 8 characters. Leave empty to generate one",
+                            "validatorNoSaveOnError": true
+                        }
+                    ]
+                },
+                "_hintPassword": {
+                    "type": "staticText",
+                    "newLine": true,
+                    "xs": 12,
+                    "text": "hint_password"
+                },
+                "_wssUrl": {
+                    "type": "pattern",
+                    "newLine": true,
+                    "xs": 12,
+                    "md": 6,
+                    "label": "WebSocket URL for WebRTC clients",
+                    "copyToClipboard": true,
+                    "pattern": "wss://${(data.certHosts || [])[0] || location.hostname}:${data.wssPort}/ws"
+                },
+                "_sipServer": {
+                    "type": "pattern",
+                    "xs": 12,
+                    "md": 6,
+                    "label": "SIP server for phones (UDP)",
+                    "copyToClipboard": true,
+                    "hidden": "!(data.subscribers || []).some(s => s.enabled && s.kind === 'sip')",
+                    "pattern": "${(data.certHosts || [])[0] || location.hostname}:5060"
+                },
+                "_testPage": {
+                    "type": "staticLink",
+                    "newLine": true,
+                    "xs": 12,
+                    "hidden": "!data.testPage",
+                    "label": "Open the WebRTC test page",
+                    "href": "https://${(data.certHosts || [])[0] || location.hostname}:${data.wssPort}/static/test.html",
+                    "target": "_blank",
+                    "button": true,
+                    "variant": "outlined",
+                    "icon": "web"
+                }
+            }
+        },
+        "_certificate": {
+            "type": "panel",
+            "label": "Certificate",
+            "items": {
+                "certSource": {
+                    "type": "select",
+                    "xs": 12,
+                    "md": 6,
+                    "label": "Certificate source",
+                    "options": [
+                        { "label": "Self-signed certificate of the adapter", "value": "self" },
+                        { "label": "Certificate of ioBroker (e.g. from ACME)", "value": "iobroker" }
+                    ]
+                },
+                "_hintPinning": {
+                    "type": "staticText",
+                    "newLine": true,
+                    "xs": 12,
+                    "text": "hint_pinning"
+                },
+                "certHosts": {
+                    "type": "chips",
+                    "newLine": true,
+                    "xs": 12,
+                    "md": 8,
+                    "hidden": "data.certSource === 'iobroker'",
+                    "label": "Host names and IP addresses in the certificate",
+                    "help": "help_cert_hosts"
+                },
+                "_getHosts": {
+                    "type": "sendTo",
+                    "xs": 12,
+                    "md": 4,
+                    "hidden": "data.certSource === 'iobroker'",
+                    "command": "getHostAddresses",
+                    "label": "Detect addresses",
+                    "variant": "outlined",
+                    "icon": "search",
+                    "useNative": true
+                },
+                "_generateCert": {
+                    "type": "sendTo",
+                    "newLine": true,
+                    "xs": 12,
+                    "md": 4,
+                    "hidden": "data.certSource === 'iobroker'",
+                    "command": "generateCert",
+                    "jsonData": "{\"certHosts\": \"${data.certHosts}\"}",
+                    "label": "Regenerate certificate",
+                    "variant": "contained",
+                    "icon": "auth",
+                    "useNative": true,
+                    "showProcess": true,
+                    "timeout": 30000,
+                    "confirm": {
+                        "title": "Regenerate certificate",
+                        "text": "confirm_regenerate",
+                        "ok": "Regenerate",
+                        "cancel": "Cancel",
+                        "type": "warning"
+                    }
+                },
+                "certFingerprint": {
+                    "type": "text",
+                    "newLine": true,
+                    "xs": 12,
+                    "md": 8,
+                    "hidden": "data.certSource === 'iobroker'",
+                    "label": "SHA-256 fingerprint",
+                    "readOnly": true,
+                    "copyToClipboard": true
+                },
+                "_fingerprintQr": {
+                    "type": "qrCode",
+                    "newLine": true,
+                    "xs": 12,
+                    "sm": 6,
+                    "md": 3,
+                    "hidden": "data.certSource === 'iobroker' || !data.certFingerprint",
+                    "data": "${data.certFingerprint}",
+                    "size": 180,
+                    "level": "M"
+                },
+                "certIobPublic": {
+                    "type": "certificate",
+                    "certType": "public",
+                    "newLine": true,
+                    "xs": 12,
+                    "md": 4,
+                    "hidden": "data.certSource !== 'iobroker'",
+                    "label": "Public certificate"
+                },
+                "certIobPrivate": {
+                    "type": "certificate",
+                    "certType": "private",
+                    "xs": 12,
+                    "md": 4,
+                    "hidden": "data.certSource !== 'iobroker'",
+                    "label": "Private key"
+                },
+                "certIobChained": {
+                    "type": "certificate",
+                    "certType": "chained",
+                    "xs": 12,
+                    "md": 4,
+                    "hidden": "data.certSource !== 'iobroker'",
+                    "label": "Chained certificate"
+                },
+                "_iobFingerprint": {
+                    "type": "textSendTo",
+                    "newLine": true,
+                    "xs": 12,
+                    "hidden": "data.certSource !== 'iobroker' || !data.certIobPublic",
+                    "label": "SHA-256 fingerprint",
+                    "container": "text",
+                    "copyToClipboard": true,
+                    "command": "getIobFingerprint",
+                    "jsonData": "{\"certIobPublic\": \"${data.certIobPublic}\"}",
+                    "alsoDependsOn": ["certIobPublic"]
+                }
+            }
+        },
+        "_asterisk": {
+            "type": "panel",
+            "label": "Asterisk",
+            "items": {
+                "dockerEnabled": {
+                    "type": "checkDocker",
+                    "xs": 12,
+                    "label": "Run Asterisk in Docker (managed by this adapter)",
+                    "help": "help_docker"
+                },
+                "dockerStopOnUnload": {
+                    "type": "checkbox",
+                    "newLine": true,
+                    "xs": 12,
+                    "md": 6,
+                    "hidden": "!data.dockerEnabled",
+                    "label": "Stop the container when the instance stops"
+                },
+                "_hintDocker": {
+                    "type": "staticText",
+                    "newLine": true,
+                    "xs": 12,
+                    "hidden": "!!data.dockerEnabled",
+                    "text": "hint_external"
+                },
+                "configDir": {
+                    "type": "text",
+                    "newLine": true,
+                    "xs": 12,
+                    "md": 8,
+                    "label": "Configuration directory",
+                    "help": "help_config_dir"
+                },
+                "amiHost": {
+                    "type": "text",
+                    "newLine": true,
+                    "xs": 12,
+                    "sm": 6,
+                    "md": 3,
+                    "label": "AMI host"
+                },
+                "amiPort": {
+                    "type": "number",
+                    "xs": 12,
+                    "sm": 6,
+                    "md": 2,
+                    "min": 1,
+                    "max": 65535,
+                    "label": "AMI port"
+                },
+                "wssPort": {
+                    "type": "port",
+                    "xs": 12,
+                    "sm": 6,
+                    "md": 2,
+                    "min": 1,
+                    "label": "WSS port"
+                },
+                "rtpStart": {
+                    "type": "number",
+                    "newLine": true,
+                    "xs": 12,
+                    "sm": 6,
+                    "md": 2,
+                    "min": 1024,
+                    "max": 65535,
+                    "label": "RTP port from"
+                },
+                "rtpEnd": {
+                    "type": "number",
+                    "xs": 12,
+                    "sm": 6,
+                    "md": 2,
+                    "min": 1024,
+                    "max": 65535,
+                    "label": "RTP port to",
+                    "validator": "Number(data.rtpEnd) > Number(data.rtpStart)",
+                    "validatorErrorText": "Must be greater than the start port"
+                },
+                "codecs": {
+                    "type": "select",
+                    "multiple": true,
+                    "xs": 12,
+                    "md": 4,
+                    "label": "Codecs",
+                    "help": "help_codecs",
+                    "options": [
+                        { "label": "Opus", "value": "opus" },
+                        { "label": "G.722 (HD)", "value": "g722" },
+                        { "label": "G.711 µ-law (ulaw)", "value": "ulaw" },
+                        { "label": "G.711 A-law (alaw)", "value": "alaw" }
+                    ]
+                },
+                "stunServer": {
+                    "type": "text",
+                    "newLine": true,
+                    "xs": 12,
+                    "md": 4,
+                    "label": "STUN server",
+                    "placeholder": "stun.l.google.com:19302",
+                    "help": "help_stun"
+                },
+                "externalAddress": {
+                    "type": "text",
+                    "xs": 12,
+                    "md": 4,
+                    "label": "External address",
+                    "help": "help_external_address"
+                },
+                "iceDenylist": {
+                    "type": "text",
+                    "xs": 12,
+                    "md": 4,
+                    "label": "Networks excluded from ICE",
+                    "help": "help_ice_denylist"
+                },
+                "echoTest": {
+                    "type": "checkbox",
+                    "newLine": true,
+                    "xs": 12,
+                    "md": 6,
+                    "label": "Echo test on extension 600"
+                },
+                "testPage": {
+                    "type": "checkbox",
+                    "xs": 12,
+                    "md": 6,
+                    "label": "Provide the WebRTC test page"
+                },
+                "_reload": {
+                    "type": "sendTo",
+                    "newLine": true,
+                    "xs": 12,
+                    "md": 4,
+                    "command": "reload",
+                    "label": "Write configuration and reload Asterisk",
+                    "variant": "outlined",
+                    "icon": "send",
+                    "showProcess": true,
+                    "timeout": 30000,
+                    "result": { "ok": "Asterisk reloaded" }
+                }
+            }
+        }
+    }
+}

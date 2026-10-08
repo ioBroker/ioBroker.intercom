@@ -1,0 +1,221 @@
+{
+    "common": {
+        "name": "asterisk-docker",
+        "version": "0.0.1",
+        "news": {
+            "0.0.1": {
+                "en": "Initial release",
+                "de": "Erstveröffentlichung",
+                "ru": "Первый выпуск",
+                "pt": "Lançamento inicial",
+                "nl": "Eerste uitgave",
+                "fr": "Version initiale",
+                "it": "Prima versione",
+                "es": "Versión inicial",
+                "pl": "Pierwsze wydanie",
+                "uk": "Перший випуск",
+                "zh-cn": "首次发布"
+            }
+        },
+        "titleLang": {
+            "en": "Asterisk PBX with WebRTC (Docker)",
+            "de": "Asterisk-Telefonanlage mit WebRTC (Docker)",
+            "ru": "АТС Asterisk с WebRTC (Docker)",
+            "pt": "PBX Asterisk com WebRTC (Docker)",
+            "nl": "Asterisk-telefooncentrale met WebRTC (Docker)",
+            "fr": "PBX Asterisk avec WebRTC (Docker)",
+            "it": "Centralino Asterisk con WebRTC (Docker)",
+            "es": "Centralita Asterisk con WebRTC (Docker)",
+            "pl": "Centrala Asterisk z WebRTC (Docker)",
+            "uk": "АТС Asterisk з WebRTC (Docker)",
+            "zh-cn": "带 WebRTC 的 Asterisk 电话交换机 (Docker)"
+        },
+        "desc": {
+            "en": "Runs Asterisk in Docker and configures it completely from ioBroker: subscribers, certificate, WebRTC over WSS",
+            "de": "Startet Asterisk in Docker und konfiguriert es vollständig aus ioBroker: Teilnehmer, Zertifikat, WebRTC über WSS",
+            "ru": "Запускает Asterisk в Docker и полностью настраивает его из ioBroker: абоненты, сертификат, WebRTC через WSS",
+            "pt": "Executa o Asterisk no Docker e o configura totalmente a partir do ioBroker: assinantes, certificado, WebRTC via WSS",
+            "nl": "Draait Asterisk in Docker en configureert het volledig vanuit ioBroker: deelnemers, certificaat, WebRTC via WSS",
+            "fr": "Exécute Asterisk dans Docker et le configure entièrement depuis ioBroker : abonnés, certificat, WebRTC via WSS",
+            "it": "Esegue Asterisk in Docker e lo configura completamente da ioBroker: utenti, certificato, WebRTC tramite WSS",
+            "es": "Ejecuta Asterisk en Docker y lo configura completamente desde ioBroker: abonados, certificado, WebRTC por WSS",
+            "pl": "Uruchamia Asteriska w Dockerze i konfiguruje go w całości z ioBrokera: abonenci, certyfikat, WebRTC przez WSS",
+            "uk": "Запускає Asterisk у Docker і повністю налаштовує його з ioBroker: абоненти, сертифікат, WebRTC через WSS",
+            "zh-cn": "在 Docker 中运行 Asterisk，并完全通过 ioBroker 进行配置：用户、证书、基于 WSS 的 WebRTC"
+        },
+        "authors": [
+            "bluefox <dogafox@gmail.com>"
+        ],
+        "keywords": [
+            "asterisk",
+            "webrtc",
+            "sip",
+            "pbx",
+            "voip",
+            "docker",
+            "intercom"
+        ],
+        "licenseInformation": {
+            "type": "free",
+            "license": "MIT"
+        },
+        "platform": "Javascript/Node.js",
+        "mode": "daemon",
+        "loglevel": "info",
+        "icon": "asterisk-docker.svg",
+        "extIcon": "https://raw.githubusercontent.com/ioBroker/ioBroker.asterisk-docker/main/admin/asterisk-docker.svg",
+        "readme": "https://github.com/ioBroker/ioBroker.asterisk-docker/blob/main/README.md",
+        "enabled": true,
+        "compact": true,
+        "messagebox": true,
+        "stopBeforeUpdate": true,
+        "type": "communication",
+        "connectionType": "local",
+        "dataSource": "push",
+        "tier": 2,
+        "adminUI": {
+            "config": "json"
+        },
+        "eraseOnUpload": true,
+        "stopTimeout": 10000,
+        "plugins": {
+            "docker": {
+                "iobDockerComposeFiles": [
+                    "docker-compose.yaml"
+                ]
+            }
+        },
+        "dependencies": [
+            {
+                "js-controller": ">=7.0.0"
+            }
+        ],
+        "globalDependencies": [
+            {
+                "admin": ">=8.0.0"
+            }
+        ]
+    },
+    "encryptedNative": [
+        "amiSecret",
+        "certPrivate"
+    ],
+    "protectedNative": [
+        "amiSecret",
+        "certPrivate"
+    ],
+    "native": {
+        "configDir": "",
+        "dockerEnabled": true,
+        "dockerStopOnUnload": false,
+        "amiHost": "127.0.0.1",
+        "amiPort": 5038,
+        "amiSecret": "",
+        "wssPort": 8089,
+        "rtpStart": 10000,
+        "rtpEnd": 20000,
+        "stunServer": "",
+        "externalAddress": "",
+        "iceDenylist": "172.16.0.0/12",
+        "codecs": [
+            "ulaw",
+            "alaw"
+        ],
+        "echoTest": true,
+        "testPage": true,
+        "certSource": "self",
+        "certHosts": [],
+        "certPublic": "",
+        "certPrivate": "",
+        "certFingerprint": "",
+        "certIobPublic": "",
+        "certIobPrivate": "",
+        "certIobChained": "",
+        "subscribers": []
+    },
+    "objects": [],
+    "instanceObjects": [
+        {
+            "_id": "info",
+            "type": "channel",
+            "common": {
+                "name": "Information"
+            },
+            "native": {}
+        },
+        {
+            "_id": "info.connection",
+            "type": "state",
+            "common": {
+                "name": "Connected to Asterisk (AMI)",
+                "type": "boolean",
+                "role": "indicator.connected",
+                "read": true,
+                "write": false,
+                "def": false
+            },
+            "native": {}
+        },
+        {
+            "_id": "info.asteriskVersion",
+            "type": "state",
+            "common": {
+                "name": "Asterisk version",
+                "type": "string",
+                "role": "text",
+                "read": true,
+                "write": false,
+                "def": ""
+            },
+            "native": {}
+        },
+        {
+            "_id": "info.certFingerprint",
+            "type": "state",
+            "common": {
+                "name": "SHA-256 fingerprint of the certificate",
+                "type": "string",
+                "role": "text",
+                "read": true,
+                "write": false,
+                "def": ""
+            },
+            "native": {}
+        },
+        {
+            "_id": "info.wssUrl",
+            "type": "state",
+            "common": {
+                "name": "WebSocket URL for clients",
+                "type": "string",
+                "role": "url",
+                "read": true,
+                "write": false,
+                "def": ""
+            },
+            "native": {}
+        },
+        {
+            "_id": "info.configHash",
+            "type": "state",
+            "common": {
+                "name": "Hash of the configuration applied to Asterisk",
+                "type": "string",
+                "role": "text",
+                "read": true,
+                "write": false,
+                "def": "",
+                "expert": true
+            },
+            "native": {}
+        },
+        {
+            "_id": "subscribers",
+            "type": "folder",
+            "common": {
+                "name": "Subscribers"
+            },
+            "native": {}
+        }
+    ]
+}
