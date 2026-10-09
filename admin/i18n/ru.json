@@ -4,10 +4,9 @@
     "Number": "Номер",
     "Name": "Имя",
     "Type": "Тип",
-    "Password": "Пароль",
     "2 to 6 digits, 600 is reserved for the echo test": "От 2 до 6 цифр, 600 зарезервирован для эхо-теста",
-    "At least 8 characters. Leave empty to generate one": "Не менее 8 символов. Оставьте пустым, чтобы сгенерировать",
-    "hint_password": "Пароли хранятся в зашифрованном виде. Asterisk получает только их MD5-хеш. Пустой пароль генерируется случайно при запуске экземпляра.",
+    "At least 4 characters. Leave empty to generate one": "Не менее 4 символов. Оставьте пустым, чтобы сгенерировать",
+    "hint_password": "Пароль должен содержать не менее 4 символов - более короткий выделяется красным и блокирует сохранение. Пароли хранятся в зашифрованном виде. Asterisk получает только их MD5-хеш. Пустой пароль генерируется случайно при запуске экземпляра.",
     "WebSocket URL for WebRTC clients": "URL WebSocket для клиентов WebRTC",
     "SIP server for phones (UDP)": "SIP-сервер для телефонов (UDP)",
     "Open the WebRTC test page": "Открыть тестовую страницу WebRTC",
@@ -53,5 +52,6 @@
     "Echo test on extension 600": "Эхо-тест на номере 600",
     "Provide the WebRTC test page": "Предоставлять тестовую страницу WebRTC",
     "Write configuration and reload Asterisk": "Записать конфигурацию и перезагрузить Asterisk",
-    "Asterisk reloaded": "Asterisk перезагружен"
+    "Asterisk reloaded": "Asterisk перезагружен",
+    "Password (min. 4 characters)": "Пароль (мин. 4 символов)"
 }

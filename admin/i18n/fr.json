@@ -4,10 +4,9 @@
     "Number": "Numéro",
     "Name": "Nom",
     "Type": "Type",
-    "Password": "Mot de passe",
     "2 to 6 digits, 600 is reserved for the echo test": "2 à 6 chiffres, 600 est réservé au test d'écho",
-    "At least 8 characters. Leave empty to generate one": "Au moins 8 caractères. Laisser vide pour en générer un",
-    "hint_password": "Les mots de passe sont stockés chiffrés. Asterisk n'en reçoit qu'un hachage MD5. Un mot de passe vide est généré aléatoirement au démarrage de l'instance.",
+    "At least 4 characters. Leave empty to generate one": "Au moins 4 caractères. Laisser vide pour en générer un",
+    "hint_password": "Les mots de passe doivent comporter au moins 4 caractères - un mot de passe plus court est marqué en rouge et empêche l'enregistrement. Les mots de passe sont stockés chiffrés. Asterisk n'en reçoit qu'un hachage MD5. Un mot de passe vide est généré aléatoirement au démarrage de l'instance.",
     "WebSocket URL for WebRTC clients": "URL WebSocket pour les clients WebRTC",
     "SIP server for phones (UDP)": "Serveur SIP pour les téléphones (UDP)",
     "Open the WebRTC test page": "Ouvrir la page de test WebRTC",
@@ -53,5 +52,6 @@
     "Echo test on extension 600": "Test d'écho sur le poste 600",
     "Provide the WebRTC test page": "Fournir la page de test WebRTC",
     "Write configuration and reload Asterisk": "Écrire la configuration et recharger Asterisk",
-    "Asterisk reloaded": "Asterisk rechargé"
+    "Asterisk reloaded": "Asterisk rechargé",
+    "Password (min. 4 characters)": "Mot de passe (min. 4 caractères)"
 }

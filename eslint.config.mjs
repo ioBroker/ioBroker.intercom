@@ -1,5 +1,5 @@
 // ioBroker eslint template configuration file for js and ts files
-import config from '@iobroker/eslint-config';
+import config, { reactConfig } from '@iobroker/eslint-config';
 
 export default [
     ...config,
@@ -13,4 +13,6 @@ export default [
             'jsdoc/require-param': 'off',
         },
     },
+    // the phone of the test page (React + MUI), runs in the browser
+    ...reactConfig.map(c => ({ ...c, files: ['src-www/**/*.{ts,tsx}'] })),
 ];

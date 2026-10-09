@@ -4,10 +4,9 @@
     "Number": "Nummer",
     "Name": "Naam",
     "Type": "Type",
-    "Password": "Wachtwoord",
     "2 to 6 digits, 600 is reserved for the echo test": "2 tot 6 cijfers, 600 is gereserveerd voor de echotest",
-    "At least 8 characters. Leave empty to generate one": "Minstens 8 tekens. Leeg laten om er een te genereren",
-    "hint_password": "Wachtwoorden worden versleuteld opgeslagen. Asterisk krijgt alleen een MD5-hash ervan. Een leeg wachtwoord wordt bij het starten van de instantie willekeurig gegenereerd.",
+    "At least 4 characters. Leave empty to generate one": "Minstens 4 tekens. Leeg laten om er een te genereren",
+    "hint_password": "Wachtwoorden hebben minstens 4 tekens nodig - een korter wachtwoord wordt rood gemarkeerd en blokkeert het opslaan. Wachtwoorden worden versleuteld opgeslagen. Asterisk krijgt alleen een MD5-hash ervan. Een leeg wachtwoord wordt bij het starten van de instantie willekeurig gegenereerd.",
     "WebSocket URL for WebRTC clients": "WebSocket-URL voor WebRTC-clients",
     "SIP server for phones (UDP)": "SIP-server voor telefoons (UDP)",
     "Open the WebRTC test page": "WebRTC-testpagina openen",
@@ -53,5 +52,6 @@
     "Echo test on extension 600": "Echotest op toestel 600",
     "Provide the WebRTC test page": "WebRTC-testpagina aanbieden",
     "Write configuration and reload Asterisk": "Configuratie schrijven en Asterisk herladen",
-    "Asterisk reloaded": "Asterisk herladen"
+    "Asterisk reloaded": "Asterisk herladen",
+    "Password (min. 4 characters)": "Wachtwoord (min. 4 tekens)"
 }

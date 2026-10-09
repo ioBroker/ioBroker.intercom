@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.ALL_CODECS = exports.RESTART_FILES = exports.SECRET_FILES = exports.CONTAINER_DIR = exports.ECHO_EXTENSION = exports.AMI_USER = exports.CONTEXT = exports.REALM = exports.HEADER = void 0;
+exports.ALL_CODECS = exports.RESTART_FILES = exports.SECRET_FILES = exports.CONTAINER_DIR = exports.MIN_PASSWORD_LENGTH = exports.ECHO_EXTENSION = exports.AMI_USER = exports.CONTEXT = exports.REALM = exports.HEADER = void 0;
 exports.sanitizeName = sanitizeName;
 exports.sanitizeHost = sanitizeHost;
 exports.isValidExtension = isValidExtension;
@@ -22,6 +22,8 @@ exports.REALM = 'iobroker';
 exports.CONTEXT = 'iobroker';
 exports.AMI_USER = 'iobroker';
 exports.ECHO_EXTENSION = '600';
+/** Minimal length of a subscriber password */
+exports.MIN_PASSWORD_LENGTH = 4;
 /** Directory of the generated files inside the container */
 exports.CONTAINER_DIR = '/etc/asterisk/iobroker';
 /** Files with secrets in clear text - written with mode 0600 */
@@ -79,8 +81,8 @@ function validateSubscribers(config, secrets) {
             continue;
         }
         const password = secrets.passwords[extension] || '';
-        if (password.length < 8) {
-            warnings.push(`Subscriber ${extension} skipped: password must have at least 8 characters`);
+        if (password.length < exports.MIN_PASSWORD_LENGTH) {
+            warnings.push(`Subscriber ${extension} skipped: password must have at least ${exports.MIN_PASSWORD_LENGTH} characters`);
             continue;
         }
         used.add(extension);
@@ -269,8 +271,10 @@ exec asterisk -f -vvv
  *
  * @param config the not secret part of the configuration
  * @param secrets decrypted secrets
+ * @param assets static files shipped with the adapter
+ * @param assets.phone content of the phone bundle (React + MUI + JsSIP) for the test page
  */
-function generateConfig(config, secrets) {
+function generateConfig(config, secrets, assets = {}) {
     const { subscribers, warnings } = validateSubscribers(config, secrets);
     const files = {
         'http.conf': genHttp(config),
@@ -285,6 +289,9 @@ function generateConfig(config, secrets) {
     };
     if (config.testPage) {
         files['static-http/test.html'] = (0, testPage_1.generateTestPage)(config.echoTest ? exports.ECHO_EXTENSION : '');
+        if (assets.phone) {
+            files[`static-http/${testPage_1.PHONE_FILE}`] = assets.phone;
+        }
     }
     return { files, warnings, subscribers };
 }

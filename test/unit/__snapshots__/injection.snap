@@ -214,129 +214,16 @@ exec asterisk -f -vvv
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>ioBroker PBX test</title>
+<meta name="color-scheme" content="light dark">
+<title>ioBroker Phone</title>
 <style>
-    :root { color-scheme: light dark; }
-    body { font-family: system-ui, sans-serif; max-width: 520px; margin: 24px auto; padding: 0 16px; }
-    fieldset { border: 1px solid #8884; border-radius: 8px; margin-bottom: 16px; }
-    label { display: block; margin: 8px 0 2px; font-size: 0.9em; }
-    input { width: 100%; box-sizing: border-box; padding: 8px; font-size: 1em; }
-    button { padding: 8px 16px; margin: 12px 8px 0 0; font-size: 1em; cursor: pointer; }
-    #status { font-weight: bold; }
-    #log { font-family: monospace; font-size: 0.8em; white-space: pre-wrap; max-height: 240px; overflow: auto; background: #8881; padding: 8px; border-radius: 6px; }
+    html, body { margin: 0; background: Canvas; }
+    noscript { display: block; padding: 24px; font-family: system-ui, sans-serif; }
 </style>
 </head>
 <body>
-<h2>ioBroker PBX - WebRTC test</h2>
-<fieldset>
-    <legend>Login</legend>
-    <label for="ext">Extension</label><input id="ext" autocomplete="username">
-    <label for="pw">Password</label><input id="pw" type="password" autocomplete="current-password">
-    <button id="login">Register</button><button id="logout" disabled>Unregister</button>
-</fieldset>
-<fieldset>
-    <legend>Call</legend>
-    <label for="target">Number</label><input id="target" value="600">
-    <button id="call" disabled>Call</button><button id="answer" disabled>Answer</button><button id="hangup" disabled>Hang up</button>
-</fieldset>
-<p>Status: <span id="status">not registered</span></p>
-<audio id="remote" autoplay></audio>
-<div id="log"></div>
-<script type="module">
-import JsSIP from 'https://cdn.jsdelivr.net/npm/jssip@3.13.8/+esm';
-
-const $ = id => document.getElementById(id);
-const host = location.hostname;
-const wssUrl = 'wss://' + location.host + '/ws';
-let ua = null;
-let session = null;
-
-function log(text) {
-    $('log').textContent = new Date().toLocaleTimeString() + ' ' + text + '\n' + $('log').textContent;
-}
-function status(text) {
-    $('status').textContent = text;
-    log(text);
-}
-function buttons() {
-    const registered = !!ua && ua.isRegistered();
-    $('login').disabled = !!ua;
-    $('logout').disabled = !ua;
-    $('call').disabled = !registered || !!session;
-    $('hangup').disabled = !session;
-    $('answer').disabled = !session || session.direction !== 'incoming' || session.isEstablished();
-}
-
-function attachSession(s) {
-    session = s;
-    s.on('peerconnection', e => {
-        e.peerconnection.addEventListener('track', ev => { $('remote').srcObject = ev.streams[0]; });
-    });
-    s.on('progress', () => status('ringing'));
-    s.on('confirmed', () => { status('in call'); buttons(); });
-    s.on('ended', () => { session = null; status('call ended'); buttons(); });
-    s.on('failed', e => { session = null; status('call failed: ' + e.cause); buttons(); });
-    if (s.connection) {
-        s.connection.addEventListener('track', ev => { $('remote').srcObject = ev.streams[0]; });
-    }
-    buttons();
-}
-
-$('login').onclick = () => {
-    const ext = $('ext').value.trim();
-    const socket = new JsSIP.WebSocketInterface(wssUrl);
-    ua = new JsSIP.UA({
-        sockets: [socket],
-        uri: 'sip:' + ext + '@' + host,
-        authorization_user: ext,
-        password: $('pw').value,
-        realm: 'iobroker',
-        register: true,
-        session_timers: false,
-    });
-    ua.on('connected', () => log('WebSocket connected to ' + wssUrl));
-    ua.on('disconnected', () => log('WebSocket disconnected'));
-    ua.on('registered', () => { status('registered as ' + ext); buttons(); });
-    ua.on('unregistered', () => { status('not registered'); buttons(); });
-    ua.on('registrationFailed', e => { status('registration failed: ' + e.cause); buttons(); });
-    ua.on('newRTCSession', e => {
-        if (session) {
-            e.session.terminate({ status_code: 486 });
-            return;
-        }
-        attachSession(e.session);
-        if (e.originator === 'remote') {
-            status('incoming call from ' + e.request.from.uri.user);
-        }
-    });
-    ua.start();
-    buttons();
-};
-
-$('logout').onclick = () => {
-    ua && ua.stop();
-    ua = null;
-    session = null;
-    status('not registered');
-    buttons();
-};
-
-const callOptions = {
-    mediaConstraints: { audio: true, video: false },
-    pcConfig: { iceServers: [] },
-    rtcOfferConstraints: { offerToReceiveAudio: true, offerToReceiveVideo: false },
-};
-
-$('call').onclick = () => {
-    const target = $('target').value.trim();
-    if (target) {
-        ua.call('sip:' + target + '@' + host, callOptions);
-        status('calling ' + target);
-    }
-};
-$('answer').onclick = () => session && session.answer(callOptions);
-$('hangup').onclick = () => session && session.terminate();
-buttons();
-</script>
+<div id="root" data-echo="600"></div>
+<noscript>This page requires JavaScript.</noscript>
+<script src="phone.min.js"></script>
 </body>
 </html>

@@ -4,10 +4,9 @@
     "Number": "号码",
     "Name": "名称",
     "Type": "类型",
-    "Password": "密码",
     "2 to 6 digits, 600 is reserved for the echo test": "2 到 6 位数字，600 保留给回声测试",
-    "At least 8 characters. Leave empty to generate one": "至少 8 个字符。留空则自动生成",
-    "hint_password": "密码以加密方式存储。Asterisk 只获得其 MD5 哈希。空密码会在实例启动时随机生成。",
+    "At least 4 characters. Leave empty to generate one": "至少 4 个字符。留空则自动生成",
+    "hint_password": "密码至少需要 4 个字符，较短的密码会标红并阻止保存。密码以加密方式存储。Asterisk 只获得其 MD5 哈希。空密码会在实例启动时随机生成。",
     "WebSocket URL for WebRTC clients": "WebRTC 客户端的 WebSocket 地址",
     "SIP server for phones (UDP)": "电话的 SIP 服务器 (UDP)",
     "Open the WebRTC test page": "打开 WebRTC 测试页面",
@@ -53,5 +52,6 @@
     "Echo test on extension 600": "分机 600 回声测试",
     "Provide the WebRTC test page": "提供 WebRTC 测试页面",
     "Write configuration and reload Asterisk": "写入配置并重新加载 Asterisk",
-    "Asterisk reloaded": "Asterisk 已重新加载"
+    "Asterisk reloaded": "Asterisk 已重新加载",
+    "Password (min. 4 characters)": "密码（至少 4 个字符）"
 }

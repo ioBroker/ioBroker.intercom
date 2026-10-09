@@ -56,12 +56,12 @@
                         {
                             "type": "password",
                             "attr": "password",
-                            "title": "Password",
+                            "title": "Password (min. 4 characters)",
                             "width": 200,
                             "visible": true,
                             "default": "",
-                            "validator": "!data.password || data.password.length >= 8",
-                            "validatorErrorText": "At least 8 characters. Leave empty to generate one",
+                            "validator": "!data.password || data.password.length >= 4",
+                            "validatorErrorText": "At least 4 characters. Leave empty to generate one",
                             "validatorNoSaveOnError": true
                         }
                     ]

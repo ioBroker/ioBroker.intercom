@@ -145,6 +145,43 @@ describe('generateConfig', () => {
         assert.equal(r.warnings.length, 6);
     });
 
+    it('serves the phone bundle next to the test page, without any CDN', () => {
+        const r = generateConfig(config(), secrets, { phone: 'console.log(1);' });
+        assert.equal(r.files['static-http/phone.min.js'], 'console.log(1);');
+        const page = r.files['static-http/test.html'];
+        assert.ok(page.includes('<script src="phone.min.js"></script>'));
+        assert.ok(page.includes('data-echo="600"'));
+        assert.doesNotMatch(page, /https?:\/\//);
+
+        const off = generateConfig(config([], { testPage: false }), secrets, { phone: 'x' });
+        assert.equal(off.files['static-http/phone.min.js'], undefined);
+        assert.equal(off.files['static-http/test.html'], undefined);
+    });
+
+    it('the built phone bundle contains React, MUI and JsSIP', () => {
+        const file = join(__dirname, '..', '..', 'build', 'static', 'phone.min.js');
+        assert.ok(existsSync(file), 'run npm run build first');
+        const code = readFileSync(file, 'utf8');
+        assert.ok(code.length > 200000);
+        assert.ok(code.includes(`"${require('jssip/package.json').version}"`), 'JsSIP version is bundled');
+        assert.ok(code.includes('iobroker-phone'), 'the phone UI is bundled');
+    });
+
+    it('accepts passwords with 4 characters, but not with 3', () => {
+        const r = generateConfig(
+            config([
+                { extension: '401', name: 'four', kind: 'webrtc', enabled: true },
+                { extension: '402', name: 'three', kind: 'sip', enabled: true },
+            ]),
+            { ...secrets, passwords: { 401: '1234', 402: '123' } },
+        );
+        assert.deepEqual(
+            r.subscribers.map(s => s.extension),
+            ['401'],
+        );
+        assert.deepEqual(r.warnings, ['Subscriber 402 skipped: password must have at least 4 characters']);
+    });
+
     describe('injection attempts', () => {
         const evil = [
             {

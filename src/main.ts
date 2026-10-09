@@ -1,4 +1,5 @@
 import { randomBytes } from 'node:crypto';
+import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import * as utils from '@iobroker/adapter-core';
 
@@ -22,6 +23,7 @@ import {
 } from './lib/configGenerator';
 import { writeConfigFiles } from './lib/configWriter';
 import { ContactTracker, extensionOfDevice, mapDeviceState } from './lib/subscriberStatus';
+import { PHONE_FILE } from './lib/testPage';
 import type { Codec } from './types';
 
 /** The part of the docker plugin this adapter uses */
@@ -246,6 +248,20 @@ export class AsteriskDockerAdapter extends utils.Adapter {
         return passwords;
     }
 
+    /** Phone bundle (React + MUI + JsSIP) for the test page, built into `build/static` by `npm run build:www` */
+    private async readPhoneBundle(): Promise<string | undefined> {
+        if (this.config.testPage === false) {
+            return undefined;
+        }
+        const file = join(__dirname, 'static', PHONE_FILE);
+        try {
+            return await readFile(file, 'utf8');
+        } catch (e) {
+            this.log.warn(`Cannot read ${file}: ${(e as Error).message}. The test page will not work`);
+            return undefined;
+        }
+    }
+
     /**
      * Generate and write all files, then hand the container over to the docker plugin.
      *
@@ -256,12 +272,16 @@ export class AsteriskDockerAdapter extends utils.Adapter {
     ): Promise<GeneratorResult | null> {
         let result: GeneratorResult;
         try {
-            result = generateConfig(this.getGeneratorConfig(), {
-                amiSecret: this.config.amiSecret,
-                passwords: this.getPasswords(),
-                certPublic: certificate?.cert || '',
-                certPrivate: certificate?.key || '',
-            });
+            result = generateConfig(
+                this.getGeneratorConfig(),
+                {
+                    amiSecret: this.config.amiSecret,
+                    passwords: this.getPasswords(),
+                    certPublic: certificate?.cert || '',
+                    certPrivate: certificate?.key || '',
+                },
+                { phone: await this.readPhoneBundle() },
+            );
         } catch (e) {
             this.log.error(`Cannot generate the Asterisk configuration: ${(e as Error).message}`);
             return null;

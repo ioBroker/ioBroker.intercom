@@ -4,7 +4,8 @@ import { dirname, join, relative, sep } from 'node:path';
 import { SECRET_FILES } from './configGenerator';
 
 /** Generated file names that may be removed when they are no longer generated */
-const MANAGED_PATTERN = /^(?:[a-z_]+\.conf|start\.sh|keys\/asterisk\.(?:crt|key)|static-http\/test\.html)$/;
+const MANAGED_PATTERN =
+    /^(?:[a-z_]+\.conf|start\.sh|keys\/asterisk\.(?:crt|key)|static-http\/(?:test\.html|phone\.min\.js|jssip\.min\.js))$/;
 const CUSTOM_PATTERN = /_custom\.conf$/;
 
 export interface WriteResult {

@@ -35,6 +35,7 @@ var __importStar = (this && this.__importStar) || (function () {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.AsteriskDockerAdapter = void 0;
 const node_crypto_1 = require("node:crypto");
+const promises_1 = require("node:fs/promises");
 const node_path_1 = require("node:path");
 const utils = __importStar(require("@iobroker/adapter-core"));
 const ami_1 = require("./lib/ami");
@@ -42,6 +43,7 @@ const certificate_1 = require("./lib/certificate");
 const configGenerator_1 = require("./lib/configGenerator");
 const configWriter_1 = require("./lib/configWriter");
 const subscriberStatus_1 = require("./lib/subscriberStatus");
+const testPage_1 = require("./lib/testPage");
 /** Commands that make Asterisk read all generated files again */
 const RELOAD_ALL = (0, configGenerator_1.getReloadCommands)(['pjsip.conf', 'extensions.conf', 'http.conf', 'rtp.conf']);
 const STATUS_REFRESH_INTERVAL = 5 * 60_000;
@@ -231,6 +233,20 @@ class AsteriskDockerAdapter extends utils.Adapter {
         }
         return passwords;
     }
+    /** Phone bundle (React + MUI + JsSIP) for the test page, built into `build/static` by `npm run build:www` */
+    async readPhoneBundle() {
+        if (this.config.testPage === false) {
+            return undefined;
+        }
+        const file = (0, node_path_1.join)(__dirname, 'static', testPage_1.PHONE_FILE);
+        try {
+            return await (0, promises_1.readFile)(file, 'utf8');
+        }
+        catch (e) {
+            this.log.warn(`Cannot read ${file}: ${e.message}. The test page will not work`);
+            return undefined;
+        }
+    }
     /**
      * Generate and write all files, then hand the container over to the docker plugin.
      *
@@ -244,7 +260,7 @@ class AsteriskDockerAdapter extends utils.Adapter {
                 passwords: this.getPasswords(),
                 certPublic: certificate?.cert || '',
                 certPrivate: certificate?.key || '',
-            });
+            }, { phone: await this.readPhoneBundle() });
         }
         catch (e) {
             this.log.error(`Cannot generate the Asterisk configuration: ${e.message}`);

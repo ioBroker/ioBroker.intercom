@@ -4,10 +4,9 @@
     "Number": "Numero",
     "Name": "Nome",
     "Type": "Tipo",
-    "Password": "Password",
     "2 to 6 digits, 600 is reserved for the echo test": "Da 2 a 6 cifre, 600 è riservato al test dell'eco",
-    "At least 8 characters. Leave empty to generate one": "Almeno 8 caratteri. Lasciare vuoto per generarne una",
-    "hint_password": "Le password sono memorizzate cifrate. Asterisk ne riceve solo un hash MD5. Una password vuota viene generata casualmente all'avvio dell'istanza.",
+    "At least 4 characters. Leave empty to generate one": "Almeno 4 caratteri. Lasciare vuoto per generarne una",
+    "hint_password": "Le password richiedono almeno 4 caratteri - una più corta viene evidenziata in rosso e impedisce il salvataggio. Le password sono memorizzate cifrate. Asterisk ne riceve solo un hash MD5. Una password vuota viene generata casualmente all'avvio dell'istanza.",
     "WebSocket URL for WebRTC clients": "URL WebSocket per i client WebRTC",
     "SIP server for phones (UDP)": "Server SIP per telefoni (UDP)",
     "Open the WebRTC test page": "Apri la pagina di test WebRTC",
@@ -53,5 +52,6 @@
     "Echo test on extension 600": "Test dell'eco sull'interno 600",
     "Provide the WebRTC test page": "Fornire la pagina di test WebRTC",
     "Write configuration and reload Asterisk": "Scrivi la configurazione e ricarica Asterisk",
-    "Asterisk reloaded": "Asterisk ricaricato"
+    "Asterisk reloaded": "Asterisk ricaricato",
+    "Password (min. 4 characters)": "Password (min. 4 caratteri)"
 }

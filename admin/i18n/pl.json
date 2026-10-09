@@ -4,10 +4,9 @@
     "Number": "Numer",
     "Name": "Nazwa",
     "Type": "Typ",
-    "Password": "Hasło",
     "2 to 6 digits, 600 is reserved for the echo test": "Od 2 do 6 cyfr, 600 jest zarezerwowany dla testu echa",
-    "At least 8 characters. Leave empty to generate one": "Co najmniej 8 znaków. Pozostaw puste, aby wygenerować",
-    "hint_password": "Hasła są przechowywane w postaci zaszyfrowanej. Asterisk otrzymuje tylko ich skrót MD5. Puste hasło jest losowo generowane przy starcie instancji.",
+    "At least 4 characters. Leave empty to generate one": "Co najmniej 4 znaków. Pozostaw puste, aby wygenerować",
+    "hint_password": "Hasła muszą mieć co najmniej 4 znaków - krótsze jest zaznaczone na czerwono i blokuje zapis. Hasła są przechowywane w postaci zaszyfrowanej. Asterisk otrzymuje tylko ich skrót MD5. Puste hasło jest losowo generowane przy starcie instancji.",
     "WebSocket URL for WebRTC clients": "Adres URL WebSocket dla klientów WebRTC",
     "SIP server for phones (UDP)": "Serwer SIP dla telefonów (UDP)",
     "Open the WebRTC test page": "Otwórz stronę testową WebRTC",
@@ -53,5 +52,6 @@
     "Echo test on extension 600": "Test echa na numerze 600",
     "Provide the WebRTC test page": "Udostępnij stronę testową WebRTC",
     "Write configuration and reload Asterisk": "Zapisz konfigurację i przeładuj Asteriska",
-    "Asterisk reloaded": "Asterisk przeładowany"
+    "Asterisk reloaded": "Asterisk przeładowany",
+    "Password (min. 4 characters)": "Hasło (min. 4 znaków)"
 }
