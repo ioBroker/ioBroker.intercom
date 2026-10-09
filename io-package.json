@@ -131,7 +131,23 @@
         "certIobPublic": "",
         "certIobPrivate": "",
         "certIobChained": "",
-        "subscribers": []
+        "subscribers": [
+            {
+                "enabled": true,
+                "extension": "100",
+                "name": "WebRTC",
+                "kind": "webrtc",
+                "password": "0100"
+            },
+            {
+                "enabled": true,
+                "extension": "101",
+                "name": "Android (SIP)",
+                "kind": "sip",
+                "password": "0101"
+            }
+        ],
+        "subscribersPlain": true
     },
     "objects": [],
     "instanceObjects": [

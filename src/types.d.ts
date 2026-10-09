@@ -51,6 +51,8 @@ export interface AsteriskAdapterConfig {
     certIobChained: string;
 
     subscribers: Subscriber[];
+    /** The passwords of `subscribers` are still clear text (default subscribers of io-package.json) */
+    subscribersPlain?: boolean;
 }
 
 declare global {

@@ -34,6 +34,30 @@ describe('docker-compose.yaml', () => {
 });
 
 describe('io-package.json', () => {
+    it('creates a WebRTC and a SIP subscriber that the generator accepts', () => {
+        const { generateConfig } = require('../../build/lib/configGenerator');
+        const subs = ioPackage.native.subscribers;
+        assert.deepEqual(
+            subs.map(s => [s.extension, s.kind, s.enabled]),
+            [
+                ['100', 'webrtc', true],
+                ['101', 'sip', true],
+            ],
+        );
+        // clear text until the first start encrypts them with the secret of the system
+        assert.equal(ioPackage.native.subscribersPlain, true);
+        const passwords = Object.fromEntries(subs.map(s => [s.extension, s.password]));
+        const r = generateConfig(
+            { ...ioPackage.native, codecs: ioPackage.native.codecs, subscribers: subs },
+            { amiSecret: 'x', passwords, certPublic: '', certPrivate: '' },
+        );
+        assert.deepEqual(r.warnings, []);
+        assert.deepEqual(
+            r.subscribers.map(s => s.extension),
+            ['100', '101'],
+        );
+    });
+
     it('encrypts and protects the secrets', () => {
         for (const key of ['amiSecret', 'certPrivate']) {
             assert.ok(ioPackage.encryptedNative.includes(key), `${key} not encrypted`);

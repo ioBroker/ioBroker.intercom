@@ -41,15 +41,17 @@ Classic SIP phones and door intercoms (UDP) are supported as well.
 
 1. Install the adapter and create an instance. On the first start it generates the AMI password, the
    certificate (for all IP addresses of the host) and the configuration directory, and restarts once.
-2. Tab **Subscribers**: add subscribers, e.g. `101` (WebRTC) and `102` (WebRTC). Leave the password empty to
-   get a random one. Save.
+2. A new instance already has two subscribers: `100` (WebRTC, password `0100`) for the browser and `101`
+   (SIP, password `0101`) for a SIP app on a phone, e.g. Linphone. **Change these passwords** in the tab
+   **Subscribers** - the adapter warns in the log as long as they are in use. Leave a password empty to get a
+   random one.
 3. The adapter writes the configuration and starts the container `iob_asterisk_docker_0_asterisk`
    (image `ubuntu:24.04`). On the first start Asterisk is installed with `apt` - **this takes a few minutes**.
    `info.connection` becomes `true` once the adapter is connected to Asterisk.
 4. Open the test page `https://<ip>:8089/static/test.html` (button in the subscribers tab) and accept the
    certificate warning. **Without this step the browser refuses the WSS connection.**
-5. Register as `101`, call `600` (echo test: you hear "hello world" and then yourself).
-6. Open the test page in a second browser, register as `102` and call each other.
+5. Sign in as `100`, call `600` (echo test: you hear "hello world" and then yourself).
+6. Register the phone app as `101` (server `<ip>`, UDP port 5060, realm `iobroker`) and call each other.
 
 Ports on the host: TCP `8089` (HTTPS/WSS), UDP `10000-20000` (RTP), UDP `5060` only if SIP phones are configured.
 AMI (`5038`) and plain HTTP (`8088`) only listen on `127.0.0.1`.
@@ -172,16 +174,18 @@ zwischen Client und Asterisk. Klassische SIP-Telefone und Türsprechanlagen (UDP
 
 1. Adapter installieren und Instanz anlegen. Beim ersten Start erzeugt sie das AMI-Passwort, das Zertifikat
    (für alle IP-Adressen des Hosts) und das Konfigurationsverzeichnis und startet einmal neu.
-2. Reiter **Teilnehmer**: Teilnehmer anlegen, z. B. `101` (WebRTC) und `102` (WebRTC). Bleibt das Passwort leer,
-   wird ein zufälliges erzeugt. Speichern.
+2. Eine neue Instanz hat schon zwei Teilnehmer: `100` (WebRTC, Passwort `0100`) für den Browser und `101`
+   (SIP, Passwort `0101`) für eine SIP-App auf dem Handy, z. B. Linphone. **Diese Passwörter ändern** im Reiter
+   **Teilnehmer** - solange sie aktiv sind, warnt der Adapter im Log. Bleibt ein Passwort leer, wird ein
+   zufälliges erzeugt.
 3. Der Adapter schreibt die Konfiguration und startet den Container `iob_asterisk_docker_0_asterisk`
    (Image `ubuntu:24.04`). Beim ersten Start wird Asterisk per `apt` installiert - **das dauert einige Minuten**.
    `info.connection` wird `true`, sobald der Adapter mit Asterisk verbunden ist.
 4. Testseite `https://<ip>:8089/static/test.html` öffnen (Button im Reiter Teilnehmer) und die
    Zertifikatswarnung bestätigen. **Ohne diesen Schritt lehnt der Browser die WSS-Verbindung ab.**
-5. Als `101` registrieren, `600` anrufen (Echo-Test: erst „hello world“, dann die eigene Stimme).
-6. Testseite in einem zweiten Browser öffnen, als `102` registrieren und sich gegenseitig anrufen. Die States
-   unter `subscribers.*` folgen dem Verlauf.
+5. Als `100` anmelden, `600` anrufen (Echo-Test: erst „hello world“, dann die eigene Stimme).
+6. Die Handy-App als `101` anmelden (Server `<ip>`, UDP-Port 5060, Realm `iobroker`) und sich gegenseitig
+   anrufen. Die States unter `subscribers.*` folgen dem Verlauf.
 
 Ports auf dem Host: TCP `8089` (HTTPS/WSS), UDP `10000-20000` (RTP), UDP `5060` nur, wenn SIP-Telefone
 konfiguriert sind. AMI (`5038`) und unverschlüsseltes HTTP (`8088`) lauschen nur auf `127.0.0.1`.

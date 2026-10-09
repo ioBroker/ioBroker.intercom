@@ -34,6 +34,8 @@ interface DockerPluginInstance {
 /** Commands that make Asterisk read all generated files again */
 const RELOAD_ALL = getReloadCommands(['pjsip.conf', 'extensions.conf', 'http.conf', 'rtp.conf']);
 const STATUS_REFRESH_INTERVAL = 5 * 60_000;
+/** Passwords of the subscribers that io-package.json creates on installation */
+const DEFAULT_PASSWORDS: Record<string, string> = { 100: '0100', 101: '0101' };
 
 function randomSecret(length: number): string {
     const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789';
@@ -110,6 +112,7 @@ export class AsteriskDockerAdapter extends utils.Adapter {
 
         const result = await this.writeConfiguration(certificate);
         await this.syncObjects(result?.subscribers || []);
+        this.warnDefaultPasswords();
 
         this.startAmi();
     }
@@ -141,18 +144,27 @@ export class AsteriskDockerAdapter extends utils.Adapter {
                 this.log.error(`Cannot generate certificate: ${(e as Error).message}`);
             }
         }
-        // Passwords left empty in the table are generated and stored the way the table encrypts them
+        // The subscribers of io-package.json come with clear text passwords (the secret of the system is
+        // unknown there). They and the passwords left empty in the table are stored the way the table
+        // encrypts them.
         const subscribers = this.config.subscribers || [];
-        if (subscribers.some(s => s && !s.password)) {
+        const plain = !!this.config.subscribersPlain;
+        if (plain || subscribers.some(s => s && !s.password)) {
             const systemConfig = await this.getForeignObjectAsync('system.config');
             const secret = (systemConfig?.native as { secret?: string } | undefined)?.secret || 'Zgfr56gFe87jJOM';
             native.subscribers = subscribers.map(s => {
-                if (s && !s.password) {
+                if (!s) {
+                    return s;
+                }
+                if (!s.password) {
                     this.log.info(`Generated a password for subscriber ${s.extension}`);
                     return { ...s, password: legacyEncrypt(secret, randomSecret(12)) };
                 }
-                return s;
+                return plain ? { ...s, password: legacyEncrypt(secret, s.password) } : s;
             });
+            if (plain) {
+                native.subscribersPlain = false;
+            }
         }
 
         if (!Object.keys(native).length) {
@@ -235,6 +247,18 @@ export class AsteriskDockerAdapter extends utils.Adapter {
                 enabled: !!s?.enabled,
             })),
         };
+    }
+
+    /** The subscribers of a new installation have well-known passwords */
+    private warnDefaultPasswords(): void {
+        const passwords = this.getPasswords();
+        const defaults = Object.entries(DEFAULT_PASSWORDS).filter(([ext, pw]) => passwords[ext] === pw);
+        if (defaults.length) {
+            this.log.warn(
+                `Subscriber(s) ${defaults.map(([ext]) => ext).join(', ')} still use the default password of the installation. ` +
+                    'Change it in the settings, at the latest before Asterisk is reachable from outside the LAN.',
+            );
+        }
     }
 
     private getPasswords(): Record<string, string> {
