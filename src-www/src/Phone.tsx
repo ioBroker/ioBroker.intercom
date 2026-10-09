@@ -1,9 +1,6 @@
 import React, { useEffect, useState, useSyncExternalStore } from 'react';
 import { keyframes } from '@emotion/react';
 import {
-    Accordion,
-    AccordionDetails,
-    AccordionSummary,
     Alert,
     Avatar,
     Box,
@@ -12,21 +9,20 @@ import {
     Card,
     Checkbox,
     Chip,
+    Collapse,
     Dialog,
     DialogContent,
     Divider,
     Fab,
-    FormControl,
     FormControlLabel,
     IconButton,
     InputAdornment,
-    InputLabel,
     MenuItem,
-    Select,
     Stack,
     TextField,
     Tooltip,
     Typography,
+    alpha,
 } from '@mui/material';
 import BackspaceOutlinedIcon from '@mui/icons-material/BackspaceOutlined';
 import CallIcon from '@mui/icons-material/Call';
@@ -38,10 +34,15 @@ import GraphicEqIcon from '@mui/icons-material/GraphicEq';
 import LogoutIcon from '@mui/icons-material/Logout';
 import MicIcon from '@mui/icons-material/Mic';
 import MicOffIcon from '@mui/icons-material/MicOff';
+import ReceiptLongIcon from '@mui/icons-material/ReceiptLong';
+import SettingsIcon from '@mui/icons-material/Settings';
+import VideocamIcon from '@mui/icons-material/Videocam';
+import VideocamOffIcon from '@mui/icons-material/VideocamOff';
 import VolumeUpIcon from '@mui/icons-material/VolumeUp';
 
 import { LevelMeter } from './LevelMeter';
 import { listAudioDevices, type AudioDevices, type SipPhone } from './SipPhone';
+import { StreamVideo } from './StreamVideo';
 import { texts as t } from './i18n';
 
 const STORE_KEY = 'iobroker-phone';
@@ -52,6 +53,7 @@ interface Stored {
     remember?: boolean;
     microphone?: string;
     speaker?: string;
+    camera?: string;
 }
 
 function loadStored(): Stored {
@@ -100,6 +102,71 @@ const KEYS: [string, string][] = [
     ['#', ''],
 ];
 
+/** Gradient of the app icon, the same as the primary buttons of admin 8 */
+const BRAND_GRADIENT = 'linear-gradient(135deg, #48A1FA 0%, #0B76F5 100%)';
+
+/** Framed area inside the card, like the panels in the mockup */
+function Panel({ children, sx }: { children: React.ReactNode; sx?: object }): React.JSX.Element {
+    return (
+        <Box
+            sx={{
+                border: 1,
+                borderColor: 'divider',
+                borderRadius: '16px',
+                bgcolor: theme => alpha(theme.palette.text.primary, theme.palette.mode === 'dark' ? 0.025 : 0.015),
+                ...sx,
+            }}
+        >
+            {children}
+        </Box>
+    );
+}
+
+/** Collapsible panel with an icon and a title */
+function CollapsePanel({
+    icon,
+    title,
+    children,
+    actions,
+}: {
+    icon: React.ReactNode;
+    title: string;
+    children: React.ReactNode;
+    actions?: React.ReactNode;
+}): React.JSX.Element {
+    const [open, setOpen] = useState(false);
+    return (
+        <Panel sx={{ mt: 1.5 }}>
+            <Stack
+                direction="row"
+                spacing={1.5}
+                sx={{ alignItems: 'center', px: 2, py: 1.25 }}
+            >
+                <ButtonBase
+                    onClick={() => setOpen(!open)}
+                    sx={{ flex: 1, justifyContent: 'flex-start', gap: 1.5, borderRadius: 2, py: 0.5 }}
+                >
+                    <Box sx={{ display: 'flex', color: 'text.secondary' }}>{icon}</Box>
+                    <Typography sx={{ fontWeight: 600, flex: 1, textAlign: 'left' }}>{title}</Typography>
+                </ButtonBase>
+                {open ? actions : null}
+                <IconButton
+                    size="small"
+                    onClick={() => setOpen(!open)}
+                    aria-expanded={open}
+                >
+                    <ExpandMoreIcon
+                        sx={{ transform: open ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }}
+                    />
+                </IconButton>
+            </Stack>
+            <Collapse in={open}>
+                <Box sx={{ px: 2, pb: 2 }}>{children}</Box>
+            </Collapse>
+        </Panel>
+    );
+}
+
 interface PhoneProps {
     phone: SipPhone;
     /** Number preset in the dial field */
@@ -116,6 +183,7 @@ export function Phone({ phone, defaultNumber }: PhoneProps): React.JSX.Element {
     const [devices, setDevices] = useState<AudioDevices | null>(null);
     const [microphone, setMicrophone] = useState(stored.microphone || '');
     const [speaker, setSpeaker] = useState(stored.speaker || '');
+    const [camera, setCamera] = useState(stored.camera || '');
     const [now, setNow] = useState(() => Date.now());
 
     const loggedIn = state.registration !== 'offline' && !(state.registration === 'error' && !state.extension);
@@ -130,6 +198,9 @@ export function Phone({ phone, defaultNumber }: PhoneProps): React.JSX.Element {
         if (s.speaker) {
             phone.setSpeaker(s.speaker);
         }
+        if (s.camera) {
+            phone.setCamera(s.camera);
+        }
         if (s.remember && s.extension && s.password) {
             phone.login(s.extension, s.password);
         }
@@ -138,10 +209,10 @@ export function Phone({ phone, defaultNumber }: PhoneProps): React.JSX.Element {
 
     // Device labels are only available after the microphone was opened once
     useEffect(() => {
-        if (state.micActive) {
+        if (state.micActive || state.cameraOn) {
             void listAudioDevices().then(setDevices);
         }
-    }, [phone, state.micActive]);
+    }, [phone, state.micActive, state.cameraOn]);
 
     // Call timer
     useEffect(() => {
@@ -240,41 +311,79 @@ export function Phone({ phone, defaultNumber }: PhoneProps): React.JSX.Element {
     }
 
     const stats = state.stats;
+    // the picture area is shown as soon as one side sends video
+    const showVideo = state.call === 'incall' && (state.remoteVideo || state.cameraOn);
 
     return (
         <Card
-            sx={{ width: '100%', maxWidth: 400, borderRadius: 4 }}
-            elevation={6}
+            variant="outlined"
+            sx={{
+                width: '100%',
+                maxWidth: 420,
+                borderRadius: '24px',
+                boxShadow: theme =>
+                    theme.palette.mode === 'dark'
+                        ? '0 24px 60px rgba(0, 0, 0, 0.45)'
+                        : '0 24px 60px rgba(15, 23, 42, 0.12)',
+            }}
         >
             {/* header */}
             <Stack
                 direction="row"
-                spacing={1}
-                sx={{ alignItems: 'center', px: 2, py: 1.5 }}
+                spacing={1.5}
+                sx={{ alignItems: 'center', px: 2.5, py: 2 }}
             >
+                <Box
+                    sx={{
+                        width: 40,
+                        height: 40,
+                        borderRadius: '11px',
+                        background: BRAND_GRADIENT,
+                        color: '#fff',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        boxShadow: '0 4px 14px rgba(19, 123, 248, 0.35)',
+                    }}
+                >
+                    <CallIcon />
+                </Box>
                 <Typography
-                    variant="subtitle1"
-                    sx={{ flex: 1, fontWeight: 600 }}
+                    variant="h6"
+                    sx={{ flex: 1, fontWeight: 700 }}
                 >
                     {t.title}
                 </Typography>
                 <Tooltip title={state.error || ''}>
                     <Chip
-                        size="small"
+                        variant="outlined"
                         color={chipColor}
                         label={t[state.registration]}
-                        variant="outlined"
+                        icon={
+                            <Box
+                                component="span"
+                                sx={{
+                                    width: 8,
+                                    height: 8,
+                                    borderRadius: '50%',
+                                    bgcolor: 'currentColor',
+                                    ml: '10px !important',
+                                }}
+                            />
+                        }
+                        sx={{ borderRadius: '16px', fontWeight: 500 }}
                     />
                 </Tooltip>
                 {loggedIn ? (
                     <Tooltip title={t.signOut}>
-                        <IconButton
-                            size="small"
-                            onClick={signOut}
-                            disabled={inCall}
-                        >
-                            <LogoutIcon fontSize="small" />
-                        </IconButton>
+                        <span>
+                            <IconButton
+                                onClick={signOut}
+                                disabled={inCall}
+                            >
+                                <LogoutIcon />
+                            </IconButton>
+                        </span>
                     </Tooltip>
                 ) : null}
             </Stack>
@@ -290,383 +399,550 @@ export function Phone({ phone, defaultNumber }: PhoneProps): React.JSX.Element {
                 </Alert>
             ) : null}
 
-            {!loggedIn ? (
-                /* login */
-                <Box
-                    component="form"
-                    sx={{ p: 2.5 }}
-                    onSubmit={e => {
-                        e.preventDefault();
-                        signIn();
-                    }}
-                >
-                    {state.error ? (
-                        <Alert
-                            severity="error"
-                            sx={{ mb: 2 }}
-                        >
-                            {state.error}
-                        </Alert>
-                    ) : null}
-                    <TextField
-                        label={t.extension}
-                        value={extension}
-                        onChange={e => setExtension(e.target.value)}
-                        fullWidth
-                        margin="dense"
-                        autoComplete="username"
-                        slotProps={{ htmlInput: { inputMode: 'numeric' } }}
-                    />
-                    <TextField
-                        label={t.password}
-                        type="password"
-                        value={password}
-                        onChange={e => setPassword(e.target.value)}
-                        fullWidth
-                        margin="dense"
-                        autoComplete="current-password"
-                    />
-                    <FormControlLabel
-                        control={
-                            <Checkbox
-                                checked={remember}
-                                onChange={e => setRemember(e.target.checked)}
-                            />
-                        }
-                        label={<Typography variant="body2">{t.remember}</Typography>}
-                    />
-                    <Button
-                        type="submit"
-                        variant="contained"
-                        fullWidth
-                        size="large"
-                        sx={{ mt: 1 }}
-                        disabled={!extension.trim() || !password}
+            <Box sx={{ p: 2.5 }}>
+                {!loggedIn ? (
+                    /* login */
+                    <Box
+                        component="form"
+                        onSubmit={e => {
+                            e.preventDefault();
+                            signIn();
+                        }}
                     >
-                        {t.signIn}
-                    </Button>
-                </Box>
-            ) : (
-                /* dialer */
-                <Box sx={{ p: 2.5, pb: 2 }}>
-                    <Typography
-                        variant="caption"
-                        color="text.secondary"
-                        component="div"
-                        align="center"
-                    >
-                        {t.signedInAs} {state.extension}
-                    </Typography>
-
-                    {inCall ? (
-                        <Box sx={{ textAlign: 'center', minHeight: 64, mt: 1 }}>
-                            <Typography
-                                variant="h5"
-                                sx={{ fontWeight: 600 }}
+                        {state.error ? (
+                            <Alert
+                                severity="error"
+                                sx={{ mb: 2 }}
                             >
-                                {state.peer}
-                            </Typography>
-                            <Typography
-                                variant="body2"
-                                color="text.secondary"
-                            >
-                                {callText}
-                            </Typography>
-                        </Box>
-                    ) : (
-                        <TextField
-                            variant="standard"
-                            value={number}
-                            onChange={e => setNumber(e.target.value)}
-                            onKeyDown={e => {
-                                if (e.key === 'Enter') {
-                                    void phone.call(number);
-                                }
-                            }}
-                            fullWidth
-                            placeholder={t.number}
-                            sx={{ mt: 1 }}
-                            slotProps={{
-                                htmlInput: {
-                                    inputMode: 'numeric',
-                                    style: { textAlign: 'center', fontSize: 30, letterSpacing: 1 },
-                                },
-                                input: {
-                                    disableUnderline: true,
-                                    endAdornment: number ? (
-                                        <InputAdornment position="end">
-                                            <IconButton
-                                                aria-label={t.backspace}
-                                                onClick={() => setNumber(n => n.slice(0, -1))}
-                                            >
-                                                <BackspaceOutlinedIcon />
-                                            </IconButton>
-                                        </InputAdornment>
-                                    ) : null,
-                                },
-                            }}
-                        />
-                    )}
-
-                    {state.call !== 'calling' ? (
-                        <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 1.25, my: 2 }}>
-                            {KEYS.map(([key, letters]) => (
-                                <ButtonBase
-                                    key={key}
-                                    onClick={() => pressKey(key)}
-                                    sx={{
-                                        height: 56,
-                                        borderRadius: 3.5,
-                                        bgcolor: 'action.hover',
-                                        flexDirection: 'column',
-                                        '&:hover': { bgcolor: 'action.selected' },
-                                    }}
-                                >
-                                    <Typography sx={{ fontSize: 22, lineHeight: 1 }}>{key}</Typography>
-                                    <Typography
-                                        sx={{ fontSize: 9, letterSpacing: 1.5, color: 'text.secondary', minHeight: 12 }}
-                                    >
-                                        {letters}
-                                    </Typography>
-                                </ButtonBase>
-                            ))}
-                        </Box>
-                    ) : (
-                        <Box sx={{ height: 24 }} />
-                    )}
-
-                    <Stack
-                        direction="row"
-                        spacing={3}
-                        sx={{ justifyContent: 'center', alignItems: 'center' }}
-                    >
-                        {state.call === 'incall' ? (
-                            <Tooltip title={state.muted ? t.unmute : t.mute}>
-                                <Fab
-                                    size="medium"
-                                    color={state.muted ? 'error' : 'default'}
-                                    onClick={() => phone.toggleMute()}
-                                >
-                                    {state.muted ? <MicOffIcon /> : <MicIcon />}
-                                </Fab>
-                            </Tooltip>
+                                {state.error}
+                            </Alert>
                         ) : null}
-                        {inCall ? (
-                            <Tooltip title={t.hangup}>
-                                <Fab
-                                    color="error"
-                                    onClick={() => phone.hangup()}
-                                >
-                                    <CallEndIcon />
-                                </Fab>
-                            </Tooltip>
-                        ) : (
-                            <>
-                                <Tooltip title={t.call}>
-                                    <span>
-                                        <Fab
-                                            color="success"
-                                            onClick={() => void phone.call(number)}
-                                            disabled={state.registration !== 'registered' || !number.trim()}
-                                        >
-                                            <CallIcon />
-                                        </Fab>
-                                    </span>
-                                </Tooltip>
-                                <Tooltip title={t.audioTest}>
-                                    <Fab
-                                        size="medium"
-                                        onClick={() => void phone.audioTest()}
-                                    >
-                                        <GraphicEqIcon />
-                                    </Fab>
-                                </Tooltip>
-                            </>
-                        )}
-                    </Stack>
-                </Box>
-            )}
-
-            {loggedIn ? (
-                /* level meters and statistics */
-                <>
-                    <Divider />
-                    <Box sx={{ px: 2.5, py: 1.5 }}>
-                        <LevelMeter
-                            icon={<MicIcon fontSize="small" />}
-                            label={t.microphone}
-                            getLevel={() => phone.getLevels().mic}
+                        <TextField
+                            label={t.extension}
+                            value={extension}
+                            onChange={e => setExtension(e.target.value)}
+                            fullWidth
+                            margin="dense"
+                            autoComplete="username"
+                            slotProps={{ htmlInput: { inputMode: 'numeric' } }}
                         />
-                        <LevelMeter
-                            icon={<VolumeUpIcon fontSize="small" />}
-                            label={t.speaker}
-                            getLevel={() => phone.getLevels().speaker}
+                        <TextField
+                            label={t.password}
+                            type="password"
+                            value={password}
+                            onChange={e => setPassword(e.target.value)}
+                            fullWidth
+                            margin="dense"
+                            autoComplete="current-password"
                         />
+                        <FormControlLabel
+                            control={
+                                <Checkbox
+                                    checked={remember}
+                                    onChange={e => setRemember(e.target.checked)}
+                                />
+                            }
+                            label={<Typography variant="body2">{t.remember}</Typography>}
+                        />
+                        <Button
+                            type="submit"
+                            variant="contained"
+                            fullWidth
+                            size="large"
+                            sx={{ mt: 1 }}
+                            disabled={!extension.trim() || !password}
+                        >
+                            {t.signIn}
+                        </Button>
+                    </Box>
+                ) : (
+                    /* dialer */
+                    <>
                         <Typography
-                            variant="caption"
+                            variant="body2"
                             color="text.secondary"
                             component="div"
-                            sx={{ mt: 1, minHeight: 20, fontVariantNumeric: 'tabular-nums' }}
+                            align="center"
+                            sx={{ mb: 1.5 }}
                         >
-                            {stats && state.call === 'incall' ? (
+                            {t.signedInAs} {state.extension}
+                        </Typography>
+
+                        <Panel sx={{ px: 2, minHeight: 76, display: 'flex', alignItems: 'center' }}>
+                            {inCall ? (
+                                <Box sx={{ textAlign: 'center', width: '100%', py: 1 }}>
+                                    <Typography
+                                        variant="h5"
+                                        sx={{ fontWeight: 600 }}
+                                    >
+                                        {state.peer}
+                                    </Typography>
+                                    <Typography
+                                        variant="body2"
+                                        color={state.call === 'incall' ? 'success.main' : 'text.secondary'}
+                                    >
+                                        {callText}
+                                    </Typography>
+                                </Box>
+                            ) : (
+                                <TextField
+                                    variant="standard"
+                                    value={number}
+                                    onChange={e => setNumber(e.target.value)}
+                                    onKeyDown={e => {
+                                        if (e.key === 'Enter') {
+                                            void phone.call(number);
+                                        }
+                                    }}
+                                    fullWidth
+                                    placeholder={t.number}
+                                    slotProps={{
+                                        htmlInput: {
+                                            inputMode: 'numeric',
+                                            'aria-label': t.number,
+                                            style: {
+                                                textAlign: 'center',
+                                                fontSize: 36,
+                                                fontWeight: 600,
+                                                letterSpacing: 1,
+                                                paddingLeft: 40,
+                                            },
+                                        },
+                                        input: {
+                                            disableUnderline: true,
+                                            endAdornment: (
+                                                <InputAdornment position="end">
+                                                    <IconButton
+                                                        aria-label={t.backspace}
+                                                        onClick={() => setNumber(n => n.slice(0, -1))}
+                                                        sx={{ visibility: number ? 'visible' : 'hidden' }}
+                                                    >
+                                                        <BackspaceOutlinedIcon />
+                                                    </IconButton>
+                                                </InputAdornment>
+                                            ),
+                                        },
+                                    }}
+                                />
+                            )}
+                        </Panel>
+
+                        {showVideo ? (
+                            <Box
+                                sx={{
+                                    position: 'relative',
+                                    mt: 1.5,
+                                    borderRadius: '16px',
+                                    overflow: 'hidden',
+                                    bgcolor: '#000',
+                                    aspectRatio: '4 / 3',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                }}
+                            >
+                                {state.remoteVideo ? (
+                                    <StreamVideo
+                                        stream={state.remoteStream}
+                                        version={state.remoteVideo}
+                                        style={{ objectFit: 'contain' }}
+                                    />
+                                ) : (
+                                    <Typography
+                                        variant="body2"
+                                        sx={{ color: 'rgba(255, 255, 255, 0.7)', px: 2, textAlign: 'center' }}
+                                    >
+                                        {t.noRemoteVideo}
+                                    </Typography>
+                                )}
+                                {state.cameraOn ? (
+                                    <Box
+                                        sx={{
+                                            position: 'absolute',
+                                            right: 10,
+                                            bottom: 10,
+                                            width: '30%',
+                                            aspectRatio: '4 / 3',
+                                            borderRadius: '10px',
+                                            overflow: 'hidden',
+                                            border: '2px solid rgba(255, 255, 255, 0.75)',
+                                            boxShadow: 4,
+                                            bgcolor: '#000',
+                                        }}
+                                    >
+                                        <StreamVideo
+                                            stream={state.localStream}
+                                            version={state.cameraLabel}
+                                            mirrored
+                                        />
+                                    </Box>
+                                ) : null}
+                            </Box>
+                        ) : null}
+
+                        {/* during a video call the keyboard still sends DTMF */}
+                        {state.call !== 'calling' && !showVideo ? (
+                            <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 1.25, my: 2 }}>
+                                {KEYS.map(([key, letters]) => (
+                                    <ButtonBase
+                                        key={key}
+                                        onClick={() => pressKey(key)}
+                                        sx={theme => ({
+                                            height: 64,
+                                            borderRadius: '16px',
+                                            border: 1,
+                                            borderColor: 'divider',
+                                            flexDirection: 'column',
+                                            background:
+                                                theme.palette.mode === 'dark'
+                                                    ? 'linear-gradient(180deg, rgba(255,255,255,0.07) 0%, rgba(255,255,255,0.02) 100%)'
+                                                    : 'linear-gradient(180deg, #FFFFFF 0%, #F1F4F9 100%)',
+                                            boxShadow:
+                                                theme.palette.mode === 'dark'
+                                                    ? 'inset 0 1px 0 rgba(255,255,255,0.06), 0 2px 6px rgba(0,0,0,0.25)'
+                                                    : '0 1px 3px rgba(15,23,42,0.08)',
+                                            transition: 'border-color 0.15s, transform 0.05s',
+                                            '&:hover': { borderColor: 'primary.main' },
+                                            '&:active': { transform: 'scale(0.97)' },
+                                        })}
+                                    >
+                                        <Typography sx={{ fontSize: 26, fontWeight: 500, lineHeight: 1 }}>
+                                            {key}
+                                        </Typography>
+                                        <Typography
+                                            sx={{
+                                                fontSize: 11,
+                                                letterSpacing: 2,
+                                                color: 'text.secondary',
+                                                minHeight: 14,
+                                                mt: 0.25,
+                                            }}
+                                        >
+                                            {letters}
+                                        </Typography>
+                                    </ButtonBase>
+                                ))}
+                            </Box>
+                        ) : (
+                            <Box sx={{ height: showVideo ? 20 : 32 }} />
+                        )}
+
+                        <Stack
+                            direction="row"
+                            spacing={3}
+                            sx={{ justifyContent: 'center', alignItems: 'center', mb: 2.5 }}
+                        >
+                            {state.call === 'incall' ? (
+                                <Tooltip title={state.muted ? t.unmute : t.mute}>
+                                    <Fab
+                                        color={state.muted ? 'error' : 'default'}
+                                        onClick={() => phone.toggleMute()}
+                                    >
+                                        {state.muted ? <MicOffIcon /> : <MicIcon />}
+                                    </Fab>
+                                </Tooltip>
+                            ) : null}
+                            {state.call === 'incall' ? (
+                                <Tooltip title={state.cameraOn ? t.cameraOff : t.cameraOn}>
+                                    <Fab
+                                        color={state.cameraOn ? 'primary' : 'default'}
+                                        onClick={() => void phone.toggleCamera()}
+                                    >
+                                        {state.cameraOn ? <VideocamIcon /> : <VideocamOffIcon />}
+                                    </Fab>
+                                </Tooltip>
+                            ) : null}
+                            {inCall ? (
+                                <Tooltip title={t.hangup}>
+                                    <Fab
+                                        color="error"
+                                        onClick={() => phone.hangup()}
+                                        sx={{
+                                            width: 72,
+                                            height: 72,
+                                            boxShadow: theme => `0 0 28px ${alpha(theme.palette.error.main, 0.55)}`,
+                                        }}
+                                    >
+                                        <CallEndIcon sx={{ fontSize: 32 }} />
+                                    </Fab>
+                                </Tooltip>
+                            ) : (
                                 <>
-                                    ↑ {stats.sent} · ↓ {stats.received}
-                                    {stats.lost ? ` (−${stats.lost})` : ''}
-                                    {stats.codec ? ` · ${stats.codec}` : ''}
-                                    {stats.rtt !== null ? ` · RTT ${stats.rtt} ms` : ''}
-                                    {stats.warning ? (
+                                    <Tooltip title={t.call}>
+                                        <span>
+                                            <Fab
+                                                color="success"
+                                                onClick={() => void phone.call(number)}
+                                                disabled={state.registration !== 'registered' || !number.trim()}
+                                                sx={{
+                                                    width: 72,
+                                                    height: 72,
+                                                    boxShadow: theme =>
+                                                        `0 0 28px ${alpha(theme.palette.success.main, 0.55)}`,
+                                                }}
+                                            >
+                                                <CallIcon sx={{ fontSize: 32 }} />
+                                            </Fab>
+                                        </span>
+                                    </Tooltip>
+                                    <Tooltip title={t.videoCall}>
+                                        <span>
+                                            <Fab
+                                                color="primary"
+                                                onClick={() => void phone.call(number, true)}
+                                                disabled={state.registration !== 'registered' || !number.trim()}
+                                                sx={{ width: 64, height: 64 }}
+                                            >
+                                                <VideocamIcon />
+                                            </Fab>
+                                        </span>
+                                    </Tooltip>
+                                    <Tooltip title={t.audioTest}>
+                                        <Fab
+                                            onClick={() => void phone.audioTest()}
+                                            sx={{ width: 64, height: 64 }}
+                                        >
+                                            <GraphicEqIcon />
+                                        </Fab>
+                                    </Tooltip>
+                                </>
+                            )}
+                        </Stack>
+
+                        {/* level meters and statistics */}
+                        <Panel sx={{ px: 2.5, py: 1.5 }}>
+                            <LevelMeter
+                                icon={<MicIcon />}
+                                label={t.microphone}
+                                getLevel={() => phone.getLevels().mic}
+                            />
+                            <LevelMeter
+                                icon={<VolumeUpIcon />}
+                                label={t.speaker}
+                                getLevel={() => phone.getLevels().speaker}
+                            />
+                            {(stats && state.call === 'incall') || state.lastCallEnd || state.micActive ? (
+                                <Divider sx={{ my: 1.25 }} />
+                            ) : null}
+                            <Box sx={{ fontVariantNumeric: 'tabular-nums' }}>
+                                {stats && state.call === 'incall' ? (
+                                    <Typography variant="body2">
+                                        ↑ {stats.sent} · ↓ {stats.received}
+                                        {stats.lost ? ` (−${stats.lost})` : ''}
+                                        {stats.codec ? ` · ${stats.codec}` : ''}
+                                        {stats.rtt !== null ? ` · RTT ${stats.rtt} ms` : ''}
+                                        {stats.videoCodec
+                                            ? ` · ${stats.videoCodec}${stats.videoSize ? ` ${stats.videoSize}` : ''}`
+                                            : ''}
+                                        {stats.warning ? (
+                                            <Box
+                                                component="span"
+                                                sx={{ color: 'error.main', fontWeight: 600, display: 'block' }}
+                                            >
+                                                {t[stats.warning]}
+                                            </Box>
+                                        ) : null}
+                                    </Typography>
+                                ) : state.lastCallEnd ? (
+                                    <Typography variant="body2">
                                         <Box
                                             component="span"
-                                            sx={{ color: 'error.main', fontWeight: 600 }}
+                                            sx={{ fontWeight: 600 }}
                                         >
-                                            {' · '}
-                                            {t[stats.warning]}
+                                            {t.callEnded}:
+                                        </Box>{' '}
+                                        <Box
+                                            component="span"
+                                            sx={{ color: 'text.secondary' }}
+                                        >
+                                            {state.lastCallEnd}
                                         </Box>
-                                    ) : null}
-                                </>
-                            ) : state.lastCallEnd ? (
-                                `${t.callEnded}: ${state.lastCallEnd}`
-                            ) : null}
-                        </Typography>
-                    </Box>
-                </>
-            ) : null}
+                                    </Typography>
+                                ) : null}
+                                {state.micActive ? (
+                                    <Typography
+                                        variant="caption"
+                                        color="text.secondary"
+                                        component="div"
+                                        noWrap
+                                        title={state.micLabel}
+                                        sx={{ mt: 0.5 }}
+                                    >
+                                        {t.micInUse}: {state.micLabel}
+                                    </Typography>
+                                ) : null}
+                                {state.cameraOn ? (
+                                    <Typography
+                                        variant="caption"
+                                        color="text.secondary"
+                                        component="div"
+                                        noWrap
+                                        title={state.cameraLabel}
+                                    >
+                                        {t.cameraInUse}: {state.cameraLabel}
+                                    </Typography>
+                                ) : null}
+                            </Box>
+                        </Panel>
+                    </>
+                )}
 
-            {/* devices */}
-            <Accordion
-                disableGutters
-                elevation={0}
-                square
-                sx={{ borderTop: 1, borderColor: 'divider', '&::before': { display: 'none' } }}
-            >
-                <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                    <Typography
-                        variant="body2"
-                        color="text.secondary"
-                    >
-                        {t.devices}
-                    </Typography>
-                </AccordionSummary>
-                <AccordionDetails>
-                    <FormControl
+                {/* devices */}
+                <CollapsePanel
+                    icon={<SettingsIcon />}
+                    title={t.devices}
+                >
+                    <TextField
+                        select
                         fullWidth
-                        size="small"
                         margin="dense"
+                        label={t.microphone}
+                        value={microphone}
+                        onChange={e => {
+                            setMicrophone(e.target.value);
+                            saveStored({ microphone: e.target.value });
+                            phone.setMicrophone(e.target.value);
+                        }}
+                        slotProps={{
+                            select: { displayEmpty: true },
+                            inputLabel: { shrink: true },
+                            input: {
+                                startAdornment: (
+                                    <InputAdornment position="start">
+                                        <MicIcon />
+                                    </InputAdornment>
+                                ),
+                            },
+                        }}
                     >
-                        <InputLabel>{t.microphone}</InputLabel>
-                        <Select
-                            label={t.microphone}
-                            value={microphone}
+                        <MenuItem value="">{t.defaultDevice}</MenuItem>
+                        {devices?.microphones.map((d, i) => (
+                            <MenuItem
+                                key={d.deviceId}
+                                value={d.deviceId}
+                            >
+                                {d.label || `${t.microphone} ${i + 1}`}
+                            </MenuItem>
+                        ))}
+                    </TextField>
+                    {devices?.canSelectSpeaker ? (
+                        <TextField
+                            select
+                            fullWidth
+                            margin="dense"
+                            label={t.speaker}
+                            value={speaker}
                             onChange={e => {
-                                setMicrophone(e.target.value);
-                                saveStored({ microphone: e.target.value });
-                                phone.setMicrophone(e.target.value);
+                                setSpeaker(e.target.value);
+                                saveStored({ speaker: e.target.value });
+                                phone.setSpeaker(e.target.value);
+                            }}
+                            slotProps={{
+                                select: { displayEmpty: true },
+                                inputLabel: { shrink: true },
+                                input: {
+                                    startAdornment: (
+                                        <InputAdornment position="start">
+                                            <VolumeUpIcon />
+                                        </InputAdornment>
+                                    ),
+                                },
                             }}
                         >
                             <MenuItem value="">{t.defaultDevice}</MenuItem>
-                            {devices?.microphones.map((d, i) => (
+                            {devices.speakers.map((d, i) => (
                                 <MenuItem
                                     key={d.deviceId}
                                     value={d.deviceId}
                                 >
-                                    {d.label || `${t.microphone} ${i + 1}`}
+                                    {d.label || `${t.speaker} ${i + 1}`}
                                 </MenuItem>
                             ))}
-                        </Select>
-                    </FormControl>
-                    {devices?.canSelectSpeaker ? (
-                        <FormControl
-                            fullWidth
-                            size="small"
-                            margin="dense"
-                        >
-                            <InputLabel>{t.speaker}</InputLabel>
-                            <Select
-                                label={t.speaker}
-                                value={speaker}
-                                onChange={e => {
-                                    setSpeaker(e.target.value);
-                                    saveStored({ speaker: e.target.value });
-                                    phone.setSpeaker(e.target.value);
-                                }}
-                            >
-                                <MenuItem value="">{t.defaultDevice}</MenuItem>
-                                {devices.speakers.map((d, i) => (
-                                    <MenuItem
-                                        key={d.deviceId}
-                                        value={d.deviceId}
-                                    >
-                                        {d.label || `${t.speaker} ${i + 1}`}
-                                    </MenuItem>
-                                ))}
-                            </Select>
-                        </FormControl>
+                        </TextField>
                     ) : null}
-                </AccordionDetails>
-            </Accordion>
+                    <TextField
+                        select
+                        fullWidth
+                        margin="dense"
+                        label={t.camera}
+                        value={camera}
+                        onChange={e => {
+                            setCamera(e.target.value);
+                            saveStored({ camera: e.target.value });
+                            phone.setCamera(e.target.value);
+                        }}
+                        slotProps={{
+                            select: { displayEmpty: true },
+                            inputLabel: { shrink: true },
+                            input: {
+                                startAdornment: (
+                                    <InputAdornment position="start">
+                                        <VideocamIcon />
+                                    </InputAdornment>
+                                ),
+                            },
+                        }}
+                    >
+                        <MenuItem value="">{t.defaultDevice}</MenuItem>
+                        {devices?.cameras.map((d, i) => (
+                            <MenuItem
+                                key={d.deviceId}
+                                value={d.deviceId}
+                            >
+                                {d.label || `${t.camera} ${i + 1}`}
+                            </MenuItem>
+                        ))}
+                    </TextField>
+                </CollapsePanel>
 
-            {/* log */}
-            <Accordion
-                disableGutters
-                elevation={0}
-                square
-                sx={{ borderTop: 1, borderColor: 'divider', '&::before': { display: 'none' } }}
-            >
-                <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                    <Typography
-                        variant="body2"
-                        color="text.secondary"
-                    >
-                        {t.log} ({state.log.length})
-                    </Typography>
-                </AccordionSummary>
-                <AccordionDetails sx={{ pt: 0 }}>
-                    <Stack
-                        direction="row"
-                        spacing={0.5}
-                        sx={{ justifyContent: 'flex-end' }}
-                    >
-                        <Tooltip title={t.copyLog}>
-                            <span>
-                                <IconButton
-                                    size="small"
-                                    disabled={!state.log.length}
-                                    onClick={() =>
-                                        void navigator.clipboard?.writeText(
-                                            state.log
-                                                .map(l => `${new Date(l.ts).toLocaleTimeString()} ${l.text}`)
-                                                .reverse()
-                                                .join('\n'),
-                                        )
-                                    }
-                                >
-                                    <ContentCopyIcon fontSize="small" />
-                                </IconButton>
-                            </span>
-                        </Tooltip>
-                        <Tooltip title={t.clearLog}>
-                            <span>
-                                <IconButton
-                                    size="small"
-                                    disabled={!state.log.length}
-                                    onClick={() => phone.clearLog()}
-                                >
-                                    <DeleteSweepIcon fontSize="small" />
-                                </IconButton>
-                            </span>
-                        </Tooltip>
-                    </Stack>
+                {/* log */}
+                <CollapsePanel
+                    icon={<ReceiptLongIcon />}
+                    title={`${t.log} (${state.log.length})`}
+                    actions={
+                        <>
+                            <Tooltip title={t.copyLog}>
+                                <span>
+                                    <IconButton
+                                        size="small"
+                                        disabled={!state.log.length}
+                                        onClick={() =>
+                                            void navigator.clipboard?.writeText(
+                                                state.log
+                                                    .map(l => `${new Date(l.ts).toLocaleTimeString()} ${l.text}`)
+                                                    .reverse()
+                                                    .join('\n'),
+                                            )
+                                        }
+                                    >
+                                        <ContentCopyIcon fontSize="small" />
+                                    </IconButton>
+                                </span>
+                            </Tooltip>
+                            <Tooltip title={t.clearLog}>
+                                <span>
+                                    <IconButton
+                                        size="small"
+                                        disabled={!state.log.length}
+                                        onClick={() => phone.clearLog()}
+                                    >
+                                        <DeleteSweepIcon fontSize="small" />
+                                    </IconButton>
+                                </span>
+                            </Tooltip>
+                        </>
+                    }
+                >
                     <Box
                         sx={{
                             fontFamily: 'ui-monospace, Consolas, monospace',
                             fontSize: 12,
                             lineHeight: 1.5,
-                            maxHeight: 240,
+                            maxHeight: 260,
                             overflow: 'auto',
                             bgcolor: 'action.hover',
-                            borderRadius: 2,
+                            borderRadius: '10px',
                             p: 1.25,
-                            mt: 0.5,
                         }}
                     >
                         {state.log.length ? (
@@ -685,13 +961,13 @@ export function Phone({ phone, defaultNumber }: PhoneProps): React.JSX.Element {
                             <Box sx={{ color: 'text.secondary' }}>{t.emptyLog}</Box>
                         )}
                     </Box>
-                </AccordionDetails>
-            </Accordion>
+                </CollapsePanel>
+            </Box>
 
             {/* incoming call */}
             <Dialog
                 open={state.call === 'incoming'}
-                slotProps={{ paper: { sx: { borderRadius: 5, width: 340 } } }}
+                slotProps={{ paper: { sx: { borderRadius: '24px', width: 340 } } }}
             >
                 <DialogContent sx={{ textAlign: 'center', pt: 5, pb: 4 }}>
                     <Box sx={{ position: 'relative', width: 96, height: 96, mx: 'auto', mb: 3 }}>
@@ -709,7 +985,7 @@ export function Phone({ phone, defaultNumber }: PhoneProps): React.JSX.Element {
                             />
                         ))}
                         <Avatar sx={{ width: 96, height: 96, bgcolor: 'success.main' }}>
-                            <CallIcon sx={{ fontSize: 44, animation: `${shake} 1.2s infinite` }} />
+                            <CallIcon sx={{ fontSize: 44, animation: `${shake} 1.2s infinite`, color: '#fff' }} />
                         </Avatar>
                     </Box>
                     <Typography
@@ -718,16 +994,17 @@ export function Phone({ phone, defaultNumber }: PhoneProps): React.JSX.Element {
                     >
                         {state.peer}
                     </Typography>
-                    <Typography color="text.secondary">{t.incoming}</Typography>
+                    <Typography color="text.secondary">{state.incomingVideo ? t.incomingVideo : t.incoming}</Typography>
                     <Stack
                         direction="row"
-                        spacing={6}
+                        spacing={state.incomingVideo ? 3 : 6}
                         sx={{ justifyContent: 'center', mt: 4 }}
                     >
                         <Tooltip title={t.decline}>
                             <Fab
                                 color="error"
                                 onClick={() => phone.decline()}
+                                sx={{ width: 64, height: 64 }}
                             >
                                 <CallEndIcon />
                             </Fab>
@@ -736,10 +1013,30 @@ export function Phone({ phone, defaultNumber }: PhoneProps): React.JSX.Element {
                             <Fab
                                 color="success"
                                 onClick={() => void phone.answer()}
+                                sx={{
+                                    width: 64,
+                                    height: 64,
+                                    boxShadow: theme => `0 0 24px ${alpha(theme.palette.success.main, 0.55)}`,
+                                }}
                             >
                                 <CallIcon />
                             </Fab>
                         </Tooltip>
+                        {state.incomingVideo ? (
+                            <Tooltip title={t.answerVideo}>
+                                <Fab
+                                    color="primary"
+                                    onClick={() => void phone.answer(true)}
+                                    sx={{
+                                        width: 64,
+                                        height: 64,
+                                        boxShadow: theme => `0 0 24px ${alpha(theme.palette.primary.main, 0.55)}`,
+                                    }}
+                                >
+                                    <VideocamIcon />
+                                </Fab>
+                            </Tooltip>
+                        ) : null}
                     </Stack>
                 </DialogContent>
             </Dialog>

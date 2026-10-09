@@ -43,6 +43,8 @@
     "Must be greater than the start port": "Deve ser maior que a porta inicial",
     "Codecs": "Codecs",
     "help_codecs": "Os navegadores suportam Opus, G.722 e G.711. Dispositivos SIP nunca recebem Opus. Opus só é usado se o módulo estiver disponível",
+    "Video codecs": "Codecs de vídeo",
+    "help_video_codecs": "O vídeo é repassado sem transcodificação: ambas as partes precisam de um codec comum. Os navegadores suportam VP8 e H.264. Vazio = apenas áudio",
     "STUN server": "Servidor STUN",
     "help_stun": "Necessário apenas se clientes se conectarem de fora da LAN",
     "External address": "Endereço externo",
@@ -53,5 +55,14 @@
     "Provide the WebRTC test page": "Disponibilizar a página de teste WebRTC",
     "Write configuration and reload Asterisk": "Gravar configuração e recarregar o Asterisk",
     "Asterisk reloaded": "Asterisk recarregado",
-    "Password (min. 4 characters)": "Senha (mín. 4 caracteres)"
+    "Password (min. 4 characters)": "Senha (mín. 4 caracteres)",
+    "Asterisk log in ioBroker": "Log do Asterisk no ioBroker",
+    "help_asterisk_log": "Erros viram error, avisos warn, notificações info e todo o resto debug no log do ioBroker. Só aparece o que o nível de log da instância permitir",
+    "Off": "Desligado",
+    "Errors and warnings": "Erros e avisos",
+    "Plus notices": "Mais notificações",
+    "Plus call flow (verbose)": "Mais fluxo das chamadas (verbose)",
+    "Everything (debug)": "Tudo (debug)",
+    "Log SIP messages": "Registrar mensagens SIP",
+    "help_sip_trace": "Só para diagnosticar registro e chamadas: cada mensagem SIP aparece como debug. Requer \"Mais fluxo das chamadas\" ou \"Tudo\""
 }

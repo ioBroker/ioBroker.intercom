@@ -14,6 +14,10 @@ import {
 import {
     AMI_USER,
     ALL_CODECS,
+    ASTERISK_LOG_LEVELS,
+    getLogCommands,
+    LOG_FILE,
+    type AsteriskLogLevel,
     generateConfig,
     getReloadCommands,
     RESTART_FILES,
@@ -22,6 +26,7 @@ import {
     type GeneratorSubscriber,
 } from './lib/configGenerator';
 import { writeConfigFiles } from './lib/configWriter';
+import { classifyMessage, LogTail, TlsFailureMonitor } from './lib/logTail';
 import { ContactTracker, extensionOfDevice, mapDeviceState } from './lib/subscriberStatus';
 import { PHONE_FILE } from './lib/testPage';
 import type { Codec } from './types';
@@ -32,7 +37,7 @@ interface DockerPluginInstance {
 }
 
 /** Commands that make Asterisk read all generated files again */
-const RELOAD_ALL = getReloadCommands(['pjsip.conf', 'extensions.conf', 'http.conf', 'rtp.conf']);
+const RELOAD_ALL = getReloadCommands(['pjsip.conf', 'extensions.conf', 'http.conf', 'rtp.conf', 'logger.conf']);
 const STATUS_REFRESH_INTERVAL = 5 * 60_000;
 /** Passwords of the subscribers that io-package.json creates on installation */
 const DEFAULT_PASSWORDS: Record<string, string> = { 100: '0100', 101: '0101' };
@@ -68,6 +73,9 @@ export class AsteriskDockerAdapter extends utils.Adapter {
     private configHash = '';
     private configDir = '';
     private statusTimer: ioBroker.Interval | undefined;
+    private logTail: LogTail | null = null;
+    /** Counts the aborted TLS handshakes per client */
+    private readonly tlsFailures = new TlsFailureMonitor();
     private reloading: Promise<void> | null = null;
 
     public constructor(options: Partial<utils.AdapterOptions> = {}) {
@@ -114,6 +122,7 @@ export class AsteriskDockerAdapter extends utils.Adapter {
         await this.syncObjects(result?.subscribers || []);
         this.warnDefaultPasswords();
 
+        this.startLogTail();
         this.startAmi();
     }
 
@@ -237,7 +246,10 @@ export class AsteriskDockerAdapter extends utils.Adapter {
             stunServer: this.config.stunServer || '',
             externalAddress: this.config.externalAddress || '',
             iceDenylist: this.config.iceDenylist || '',
+            logLevel: this.getLogLevel(),
             codecs: codecs.length ? codecs : ['ulaw', 'alaw'],
+            // missing in instances created before video support: enable it like a new installation
+            videoCodecs: Array.isArray(this.config.videoCodecs) ? this.config.videoCodecs : ['vp8', 'h264'],
             echoTest: this.config.echoTest !== false,
             testPage: this.config.testPage !== false,
             subscribers: (this.config.subscribers || []).map(s => ({
@@ -449,6 +461,7 @@ export class AsteriskDockerAdapter extends utils.Adapter {
         if (applied?.val !== this.configHash) {
             await this.reloadAsterisk(RELOAD_ALL);
         }
+        await this.applyLogSettings();
         await this.refreshStatus();
 
         if (this.statusTimer) {
@@ -625,8 +638,65 @@ export class AsteriskDockerAdapter extends utils.Adapter {
         }
     }
 
+    private getLogLevel(): AsteriskLogLevel {
+        const level = this.config.asteriskLogLevel;
+        return ASTERISK_LOG_LEVELS.includes(level) ? level : 'errors';
+    }
+
+    /** Forward the log file of Asterisk to the ioBroker log */
+    private startLogTail(): void {
+        if (this.getLogLevel() === 'none') {
+            return;
+        }
+        this.logTail = new LogTail({
+            file: join(this.configDir, LOG_FILE),
+            onMessage: raw => {
+                const { message, tlsPeer } = classifyMessage(raw);
+                this.log[message.level](`Asterisk: ${message.text}`);
+                if (tlsPeer) {
+                    this.warnTlsPeer(tlsPeer);
+                }
+            },
+            onSkipped: count => this.log.warn(`Asterisk: ${count} log messages skipped (more than 50 per second)`),
+        });
+        this.logTail.start();
+    }
+
+    /**
+     * A client aborted the TLS handshake. Browsers do that with spare connections now and then, which
+     * is harmless; only a client that fails again and again (20 times in 10 minutes) gets a warning.
+     *
+     * @param peer IP address of the client
+     */
+    private warnTlsPeer(peer: string): void {
+        if (!this.tlsFailures.record(peer)) {
+            return;
+        }
+        this.log.warn(
+            `The client ${peer} repeatedly cannot establish the secure WebSocket connection (TLS handshake aborted), ` +
+                'usually because it does not trust the certificate. Open the test page once on that device and ' +
+                'accept the certificate, or close the page/app that still uses an old certificate.',
+        );
+    }
+
+    /** Verbosity of the Asterisk core and SIP trace: runtime settings, applied after every connect */
+    private async applyLogSettings(): Promise<void> {
+        for (const command of getLogCommands(this.getLogLevel(), !!this.config.sipTrace)) {
+            try {
+                await this.ami?.command(command);
+            } catch (e) {
+                this.log.debug(`Asterisk command "${command}" failed: ${(e as Error).message}`);
+            }
+        }
+        if (this.config.sipTrace) {
+            this.log.warn('SIP trace is enabled: every SIP message is logged. Disable it after troubleshooting');
+        }
+    }
+
     private onUnload(callback: () => void): void {
         try {
+            this.logTail?.stop();
+            this.logTail = null;
             if (this.statusTimer) {
                 this.clearInterval(this.statusTimer);
                 this.statusTimer = undefined;

@@ -70,6 +70,22 @@ Apps should pin the certificate by the SHA-256 fingerprint shown in the settings
 The certificate is **never regenerated automatically** - not even when IP addresses change (the adapter only
 writes a warning to the log), because a new fingerprint breaks the pinning in all apps.
 
+### vis-2 widget "Phone"
+
+The adapter brings a widget set for vis-2 (restart vis-2 after the installation if the set does not appear).
+The widget **Phone** registers as a WebRTC subscriber and offers:
+
+- audio and **video calls** (VP8/H.264, passed through by Asterisk - set the video codecs in the tab
+  Asterisk; call `600` with video to see your own camera),
+- a dialog that pops up for incoming calls (answer, answer with video, decline),
+- the **picture of a door camera** (snapshot/MJPEG URL or a state with an image URL, e.g. of the cameras adapter)
+  during calls without video, optionally also without a call,
+- an action button during a call, e.g. "Open door": sends DTMF tones and/or sets a state to `true`.
+
+Settings: instance, extension and password of a WebRTC subscriber. The password is stored in the vis project,
+so use a subscriber of its own for vis. Microphone and camera require that **vis is opened via HTTPS**, and the
+browser must have accepted the certificate of Asterisk once (the widget shows a link).
+
 ### Objects
 
 | Object                                | Meaning                                            |
@@ -124,6 +140,15 @@ and `modules.conf`.
 - All values that end up in the configuration files are sanitized (no line breaks, `[`, `;`, quotes).
 - Asterisk runs as root inside the container, because it has to read the key files of the host (mode `0600`).
 
+### Asterisk log in ioBroker
+
+Asterisk writes its log to `<configDir>/logs/iobroker.log` (a writable volume of the container), the adapter
+follows it and forwards every message to the ioBroker log: `ERROR` as error, `WARNING` as warn, `NOTICE` as info,
+`VERBOSE`/`DEBUG` as debug. Tab **Asterisk** → "Asterisk log in ioBroker" selects how much Asterisk logs
+(default: errors and warnings). Set the log level of the instance to debug to see the verbose messages.
+"Log SIP messages" adds every SIP message - only for troubleshooting. More than 50 messages per second are
+dropped (never errors) and counted in a warning.
+
 ### Troubleshooting
 
 - **The test page does not open**: Asterisk is still being installed. Look at the container log
@@ -136,8 +161,8 @@ and `modules.conf`.
 ### Development
 
 ```bash
-npm run npm         # install the root and the src-www (phone: React + MUI + JsSIP) dependencies
-npm run build       # TypeScript -> build/, phone -> src-www/build -> build/static
+npm run npm         # install the root, src-www (phone) and src-widgets (vis-2 widgets) dependencies
+npm run build       # TypeScript -> build/, phone -> build/static, widgets -> widgets/asterisk-docker
 npm run lint
 npm test            # build + unit tests + package tests
 npm run test:integration   # starts js-controller and the adapter (without Asterisk)
@@ -204,6 +229,22 @@ Apps sollten das Zertifikat über den SHA-256-Fingerprint aus den Einstellungen 
 pinnen. Das Zertifikat wird **nie automatisch neu erzeugt** - auch nicht bei geänderten IP-Adressen (dann gibt es
 nur eine Warnung im Log), weil ein neuer Fingerprint das Pinning in allen Apps bricht.
 
+### vis-2-Widget „Telefon“
+
+Der Adapter bringt einen Widget-Satz für vis-2 mit (vis-2 nach der Installation neu starten, falls er nicht
+erscheint). Das Widget **Telefon** meldet sich als WebRTC-Teilnehmer an und bietet:
+
+- Audio- und **Videoanrufe** (VP8/H.264, von Asterisk durchgereicht - Videocodecs im Reiter Asterisk; mit Video
+  die `600` anrufen, um die eigene Kamera zu sehen),
+- einen Dialog, der bei Anrufen aufgeht (annehmen, mit Video annehmen, ablehnen),
+- das **Bild einer Türkamera** (Snapshot-/MJPEG-URL oder Datenpunkt mit Bild-URL, z.B. vom cameras-Adapter) bei
+  Gesprächen ohne Video, wahlweise auch ohne Anruf,
+- eine Aktionstaste im Gespräch, z.B. „Tür öffnen“: sendet DTMF-Töne und/oder setzt einen Datenpunkt auf `true`.
+
+Einstellungen: Instanz, Nebenstelle und Passwort eines WebRTC-Teilnehmers. Das Passwort steht im vis-Projekt,
+deshalb für vis einen eigenen Teilnehmer anlegen. Mikrofon und Kamera funktionieren nur, wenn **vis über HTTPS**
+geöffnet wird, und der Browser muss das Zertifikat von Asterisk einmal akzeptiert haben (das Widget zeigt einen Link).
+
 ### Eigene Erweiterungen
 
 `pjsip_custom.conf` und `extensions_custom.conf` im Konfigurationsverzeichnis überschreibt der Adapter nie.
@@ -216,6 +257,14 @@ im englischen Teil. Jedes andere Asterisk ab Version 20 mit `res_srtp`, `res_htt
 `res_pjsip_transport_websocket` funktioniert ebenfalls: Konfigurationsverzeichnis nach `/etc/asterisk/iobroker`
 mounten und in `http.conf`, `pjsip.conf`, `rtp.conf`, `extensions.conf`, `manager.conf` und `modules.conf`
 jeweils `#include iobroker/<name>.conf` eintragen.
+
+### Asterisk-Log in ioBroker
+
+Asterisk schreibt sein Log nach `<configDir>/logs/iobroker.log`, der Adapter liest mit und gibt jede Meldung ins
+ioBroker-Log weiter: `ERROR` als error, `WARNING` als warn, `NOTICE` als info, `VERBOSE`/`DEBUG` als debug. Im Reiter
+**Asterisk** legt „Asterisk-Log in ioBroker“ fest, wie viel Asterisk protokolliert (Standard: Fehler und Warnungen).
+Für die verbose-Meldungen den Log-Level der Instanz auf debug stellen. „SIP-Nachrichten protokollieren“ nimmt jede
+SIP-Nachricht mit auf - nur zur Fehlersuche.
 
 ### Fehlersuche
 

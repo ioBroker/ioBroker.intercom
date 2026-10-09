@@ -63,6 +63,9 @@ export async function writeConfigFiles(dir: string, files: Record<string, string
     await fs.mkdir(dir, { recursive: true });
     await fs.mkdir(join(dir, 'keys'), { recursive: true, mode: 0o700 });
     await fs.mkdir(join(dir, 'static-http'), { recursive: true });
+    // written by Asterisk (bind mount), read by the adapter. Must exist before the container is created,
+    // otherwise docker creates it as root
+    await fs.mkdir(join(dir, 'logs'), { recursive: true });
 
     for (const name of Object.keys(files)) {
         const target = join(dir, name);

@@ -54,6 +54,9 @@ async function writeConfigFiles(dir, files) {
     await node_fs_1.promises.mkdir(dir, { recursive: true });
     await node_fs_1.promises.mkdir((0, node_path_1.join)(dir, 'keys'), { recursive: true, mode: 0o700 });
     await node_fs_1.promises.mkdir((0, node_path_1.join)(dir, 'static-http'), { recursive: true });
+    // written by Asterisk (bind mount), read by the adapter. Must exist before the container is created,
+    // otherwise docker creates it as root
+    await node_fs_1.promises.mkdir((0, node_path_1.join)(dir, 'logs'), { recursive: true });
     for (const name of Object.keys(files)) {
         const target = (0, node_path_1.join)(dir, name);
         const mode = configGenerator_1.SECRET_FILES.includes(name) ? 0o600 : name.endsWith('.sh') ? 0o755 : 0o644;

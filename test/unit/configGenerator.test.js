@@ -106,6 +106,29 @@ describe('generateConfig', () => {
         matchSnapshot('mixed', r.files);
     });
 
+    it('does not load modules that are not needed and only produce errors', () => {
+        const modules = generateConfig(config(), secrets).files['modules.conf'];
+        for (const mod of [
+            'chan_sip',
+            'app_voicemail',
+            'app_voicemail_imap',
+            'app_voicemail_odbc',
+            'cdr_pgsql',
+            'cel_tds',
+            'res_config_ldap',
+            'res_geolocation',
+            'res_pjsip_geolocation',
+            'res_hep_pjsip',
+            'res_phoneprov',
+            'res_pjsip_phoneprov_provider',
+        ]) {
+            assert.match(modules, new RegExp(`^noload => ${mod}\\.so$`, 'm'), mod);
+        }
+        const start = generateConfig(config(), secrets).files['start.sh'];
+        assert.ok(start.includes('asterisk-moh-opsound-gsm'), 'music on hold is installed');
+        assert.ok(start.includes("printf '[general]\\nenabled = no\\n' > /etc/asterisk/ari.conf"), 'ARI is disabled');
+    });
+
     it('every config file starts with the header', () => {
         const r = generateConfig(config(), secrets);
         for (const name of Object.keys(r.files).filter(f => f.endsWith('.conf'))) {
@@ -150,7 +173,8 @@ describe('generateConfig', () => {
         assert.equal(r.files['static-http/phone.min.js'], 'console.log(1);');
         const page = r.files['static-http/test.html'];
         assert.ok(page.includes('<script src="phone.min.js"></script>'));
-        assert.ok(page.includes('data-echo="600"'));
+        // no SIP subscriber: the echo test
+        assert.ok(page.includes('data-number="600"'));
         assert.doesNotMatch(page, /https?:\/\//);
 
         const off = generateConfig(config([], { testPage: false }), secrets, { phone: 'x' });
@@ -165,6 +189,14 @@ describe('generateConfig', () => {
         assert.ok(code.length > 200000);
         assert.ok(code.includes(`"${require('../../src-www/node_modules/jssip/package.json').version}"`), 'JsSIP version is bundled');
         assert.ok(code.includes('iobroker-phone'), 'the phone UI is bundled');
+    });
+
+    it('adds the video codecs to both kinds of endpoints', () => {
+        const pjsip = generateConfig(config([], { videoCodecs: ['vp8', 'h264', 'mpeg4'] }), secrets).files['pjsip.conf'];
+        assert.match(pjsip, /\[webrtc-endpoint\][^[]*allow=opus,ulaw,alaw,vp8,h264\n/);
+        assert.match(pjsip, /\[sip-endpoint\][^[]*allow=ulaw,alaw,vp8,h264\n/);
+        // without video codecs: audio only
+        assert.doesNotMatch(generateConfig(config(), secrets).files['pjsip.conf'], /vp8|h264/);
     });
 
     it('accepts passwords with 4 characters, but not with 3', () => {

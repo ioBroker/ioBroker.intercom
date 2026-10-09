@@ -43,6 +43,8 @@
     "Must be greater than the start port": "必须大于起始端口",
     "Codecs": "编解码器",
     "help_codecs": "浏览器支持 Opus、G.722 和 G.711。SIP 终端从不使用 Opus。仅当模块可用时才使用 Opus",
+    "Video codecs": "视频编解码器",
+    "help_video_codecs": "视频直接转发，不进行转码：双方需要共同的编解码器。浏览器支持 VP8 和 H.264。留空 = 仅音频",
     "STUN server": "STUN 服务器",
     "help_stun": "仅当客户端从局域网外连接时需要",
     "External address": "外部地址",
@@ -53,5 +55,14 @@
     "Provide the WebRTC test page": "提供 WebRTC 测试页面",
     "Write configuration and reload Asterisk": "写入配置并重新加载 Asterisk",
     "Asterisk reloaded": "Asterisk 已重新加载",
-    "Password (min. 4 characters)": "密码（至少 4 个字符）"
+    "Password (min. 4 characters)": "密码（至少 4 个字符）",
+    "Asterisk log in ioBroker": "ioBroker 中的 Asterisk 日志",
+    "help_asterisk_log": "在 ioBroker 日志中，错误记为 error，警告记为 warn，通知记为 info，其余记为 debug。仅显示实例日志级别允许的内容",
+    "Off": "关闭",
+    "Errors and warnings": "错误和警告",
+    "Plus notices": "加上通知",
+    "Plus call flow (verbose)": "加上通话流程（verbose）",
+    "Everything (debug)": "全部（debug）",
+    "Log SIP messages": "记录 SIP 消息",
+    "help_sip_trace": "仅用于排查注册和通话问题：每条 SIP 消息都以 debug 记录。需要选择“加上通话流程”或“全部”"
 }

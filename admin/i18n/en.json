@@ -43,6 +43,8 @@
     "Must be greater than the start port": "Must be greater than the start port",
     "Codecs": "Codecs",
     "help_codecs": "Browsers support Opus, G.722 and G.711. SIP endpoints never get Opus. Opus is used only if the module is available",
+    "Video codecs": "Video codecs",
+    "help_video_codecs": "Video is passed through, not transcoded: both parties need a common codec. Browsers support VP8 and H.264. Empty = audio only",
     "STUN server": "STUN server",
     "help_stun": "Only required if clients connect from outside the LAN",
     "External address": "External address",
@@ -53,5 +55,14 @@
     "Provide the WebRTC test page": "Provide the WebRTC test page",
     "Write configuration and reload Asterisk": "Write configuration and reload Asterisk",
     "Asterisk reloaded": "Asterisk reloaded",
-    "Password (min. 4 characters)": "Password (min. 4 characters)"
+    "Password (min. 4 characters)": "Password (min. 4 characters)",
+    "Asterisk log in ioBroker": "Asterisk log in ioBroker",
+    "help_asterisk_log": "Errors become errors, warnings warnings, notices info and everything else debug in the ioBroker log. Shown only if the log level of the instance allows it",
+    "Off": "Off",
+    "Errors and warnings": "Errors and warnings",
+    "Plus notices": "Plus notices",
+    "Plus call flow (verbose)": "Plus call flow (verbose)",
+    "Everything (debug)": "Everything (debug)",
+    "Log SIP messages": "Log SIP messages",
+    "help_sip_trace": "Only for troubleshooting registration and calls: every SIP message appears as debug. Requires \"Plus call flow\" or \"Everything\""
 }

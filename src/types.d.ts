@@ -12,6 +12,8 @@ export interface Subscriber {
 }
 
 export type Codec = 'opus' | 'g722' | 'ulaw' | 'alaw';
+/** Asterisk cannot transcode video: both parties need a common codec */
+export type VideoCodec = 'vp8' | 'h264' | 'vp9';
 
 export interface AsteriskAdapterConfig {
     /** Directory with the generated files. Filled with the data directory of the instance on the first start */
@@ -36,7 +38,13 @@ export interface AsteriskAdapterConfig {
     /** Networks that must not appear in ICE candidates, comma separated */
     iceDenylist: string;
     codecs: Codec[];
+    /** Empty: audio only */
+    videoCodecs: VideoCodec[];
     echoTest: boolean;
+    /** What Asterisk writes into its log, forwarded to the ioBroker log */
+    asteriskLogLevel: 'none' | 'errors' | 'notice' | 'verbose' | 'debug';
+    /** Log every SIP message (pjsip set logger on) */
+    sipTrace: boolean;
     testPage: boolean;
 
     certSource: 'self' | 'iobroker';

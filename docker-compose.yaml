@@ -22,4 +22,6 @@ services:
         volumes:
             # No iobBackup: everything in it is generated from the instance settings, which an ioBroker backup contains
             - '${config.configDir}:/etc/asterisk/iobroker:ro'
+            # log file of Asterisk, read by the adapter and forwarded to the ioBroker log
+            - '${config.configDir}/logs:/var/log/asterisk'
         restart: unless-stopped

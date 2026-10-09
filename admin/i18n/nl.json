@@ -43,6 +43,8 @@
     "Must be greater than the start port": "Moet groter zijn dan de startpoort",
     "Codecs": "Codecs",
     "help_codecs": "Browsers ondersteunen Opus, G.722 en G.711. SIP-apparaten krijgen nooit Opus. Opus wordt alleen gebruikt als de module beschikbaar is",
+    "Video codecs": "Videocodecs",
+    "help_video_codecs": "Video wordt doorgegeven, niet omgezet: beide partijen hebben een gemeenschappelijke codec nodig. Browsers ondersteunen VP8 en H.264. Leeg = alleen audio",
     "STUN server": "STUN-server",
     "help_stun": "Alleen nodig als clients van buiten het LAN verbinden",
     "External address": "Extern adres",
@@ -53,5 +55,14 @@
     "Provide the WebRTC test page": "WebRTC-testpagina aanbieden",
     "Write configuration and reload Asterisk": "Configuratie schrijven en Asterisk herladen",
     "Asterisk reloaded": "Asterisk herladen",
-    "Password (min. 4 characters)": "Wachtwoord (min. 4 tekens)"
+    "Password (min. 4 characters)": "Wachtwoord (min. 4 tekens)",
+    "Asterisk log in ioBroker": "Asterisk-log in ioBroker",
+    "help_asterisk_log": "Fouten worden error, waarschuwingen warn, meldingen info en al het andere debug in het ioBroker-log. Alleen zichtbaar als het logniveau van de instantie dat toelaat",
+    "Off": "Uit",
+    "Errors and warnings": "Fouten en waarschuwingen",
+    "Plus notices": "Plus meldingen",
+    "Plus call flow (verbose)": "Plus gespreksverloop (verbose)",
+    "Everything (debug)": "Alles (debug)",
+    "Log SIP messages": "SIP-berichten loggen",
+    "help_sip_trace": "Alleen voor het oplossen van problemen met registratie en gesprekken: elk SIP-bericht verschijnt als debug. Vereist \"Plus gespreksverloop\" of \"Alles\""
 }

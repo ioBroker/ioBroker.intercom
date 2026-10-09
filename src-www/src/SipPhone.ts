@@ -1,5 +1,6 @@
 /**
- * Phone core without any UI: registration, calls, ring tones, level meters, call statistics and log.
+ * Phone core without any UI: registration, audio and video calls, ring tones, level meters, call
+ * statistics and log.
  *
  * The UI subscribes to it (`subscribe` + `getSnapshot`, made for React's `useSyncExternalStore`)
  * and calls its actions. It has no dependency on React or MUI, so it can be reused as it is in a
@@ -11,7 +12,7 @@ import type { RTCSessionEvent } from 'jssip/lib/UA';
 
 export type Registration = 'offline' | 'connecting' | 'registered' | 'error';
 export type CallState = 'none' | 'calling' | 'incoming' | 'incall';
-export type MediaWarning = '' | 'noSend' | 'noReceive';
+export type MediaWarning = '' | 'noSend' | 'noReceive' | 'micSilent';
 
 export interface CallStats {
     sent: number;
@@ -21,6 +22,10 @@ export interface CallStats {
     /** Round trip time in ms */
     rtt: number | null;
     warning: MediaWarning;
+    /** Codec of the received or sent video, empty without video */
+    videoCodec: string;
+    /** Resolution of the received video, e.g. 640x480 */
+    videoSize: string;
 }
 
 export interface LogEntry {
@@ -47,6 +52,20 @@ export interface PhoneSnapshot {
     audioLocked: boolean;
     /** The microphone is open (call or audio test) */
     micActive: boolean;
+    /** Name of the microphone in use */
+    micLabel: string;
+    /** The own camera is sending */
+    cameraOn: boolean;
+    /** Name of the camera in use */
+    cameraLabel: string;
+    /** The incoming call offers video */
+    incomingVideo: boolean;
+    /** Own microphone and camera, for a preview */
+    localStream: MediaStream | null;
+    /** Media of the other party; the sound is played by the phone itself, use it only for the picture */
+    remoteStream: MediaStream | null;
+    /** The other party really sends pictures (a negotiated but silent video track does not count) */
+    remoteVideo: boolean;
     log: LogEntry[];
 }
 
@@ -59,11 +78,14 @@ export interface PhoneOptions {
     iceServers?: RTCIceServer[];
     /** Maximal number of log entries */
     maxLog?: number;
+    /** Video calls: receive the picture of the other party and allow sending the own camera */
+    video?: boolean;
 }
 
 export interface AudioDevices {
     microphones: MediaDeviceInfo[];
     speakers: MediaDeviceInfo[];
+    cameras: MediaDeviceInfo[];
     canSelectSpeaker: boolean;
 }
 
@@ -96,13 +118,14 @@ function analyserLevel(analyser: AnalyserNode, buffer: Float32Array<ArrayBuffer>
     return rms > 0 ? 20 * Math.log10(rms) : -100;
 }
 
-/** Microphones and speakers of this device. The labels are only filled after the microphone was opened once */
+/** Microphones, speakers and cameras of this device. The labels are only filled after a device was opened once */
 export async function listAudioDevices(): Promise<AudioDevices> {
     const devices = navigator.mediaDevices?.enumerateDevices ? await navigator.mediaDevices.enumerateDevices() : [];
     const real = (d: MediaDeviceInfo): boolean => !!d.deviceId && d.deviceId !== 'default';
     return {
         microphones: devices.filter(d => d.kind === 'audioinput' && real(d)),
         speakers: devices.filter(d => d.kind === 'audiooutput' && real(d)),
+        cameras: devices.filter(d => d.kind === 'videoinput' && !!d.deviceId),
         canSelectSpeaker: 'setSinkId' in HTMLMediaElement.prototype,
     };
 }
@@ -129,15 +152,18 @@ export class SipPhone {
 
     #micDevice = '';
     #speakerDevice = '';
+    #cameraDevice = '';
 
     #ringTimer: ReturnType<typeof setInterval> | null = null;
     #ringbackTimer: ReturnType<typeof setInterval> | null = null;
     #statsTimer: ReturnType<typeof setInterval> | null = null;
     #testTimer: ReturnType<typeof setTimeout> | null = null;
     #lastPackets: { sent: number; received: number } | null = null;
+    /** Seconds in a row in which the microphone delivered (almost) nothing */
+    #silentSeconds = 0;
 
     constructor(options: PhoneOptions) {
-        this.#options = { realm: 'iobroker', iceServers: [], maxLog: 500, ...options };
+        this.#options = { realm: 'iobroker', iceServers: [], maxLog: 500, video: false, ...options };
         this.#snapshot = {
             registration: 'offline',
             error: '',
@@ -150,6 +176,13 @@ export class SipPhone {
             stats: null,
             audioLocked: true,
             micActive: false,
+            micLabel: '',
+            cameraOn: false,
+            cameraLabel: '',
+            incomingVideo: false,
+            localStream: null,
+            remoteStream: null,
+            remoteVideo: false,
             log: [],
         };
         this.#remoteAudio = document.createElement('audio');
@@ -291,8 +324,13 @@ export class SipPhone {
         this.#micDevice = deviceId;
         // takes effect with the next call; a running test is restarted
         if (this.#localStream && !this.#session) {
-            this.#closeMic();
+            this.#closeMedia();
         }
+    }
+
+    /** Takes effect the next time the camera is switched on */
+    setCamera(deviceId: string): void {
+        this.#cameraDevice = deviceId;
     }
 
     setSpeaker(deviceId: string): void {
@@ -301,32 +339,94 @@ export class SipPhone {
         this.#ctx?.setSinkId?.(deviceId).catch(() => {});
     }
 
-    async #openMic(): Promise<MediaStream> {
+    #videoConstraints(): MediaTrackConstraints {
+        return {
+            deviceId: this.#cameraDevice ? { ideal: this.#cameraDevice } : undefined,
+            width: { ideal: 640 },
+            height: { ideal: 480 },
+            frameRate: { ideal: 15, max: 30 },
+        };
+    }
+
+    /**
+     * Open the microphone and, if wanted, the camera. Without a usable camera the call continues with
+     * audio only.
+     *
+     * @param video open the camera too
+     */
+    async #openMedia(video = false): Promise<MediaStream> {
         if (this.#localStream) {
             return this.#localStream;
         }
-        this.#localStream = await navigator.mediaDevices.getUserMedia({
-            audio: {
-                deviceId: this.#micDevice ? { ideal: this.#micDevice } : undefined,
-                echoCancellation: true,
-                noiseSuppression: true,
-                autoGainControl: true,
-            },
-            video: false,
-        });
+        const audio: MediaTrackConstraints = {
+            deviceId: this.#micDevice ? { ideal: this.#micDevice } : undefined,
+            echoCancellation: true,
+            noiseSuppression: true,
+            autoGainControl: true,
+        };
+        let stream: MediaStream;
+        if (video && this.#options.video) {
+            try {
+                stream = await navigator.mediaDevices.getUserMedia({ audio, video: this.#videoConstraints() });
+            } catch (e) {
+                this.log(`Cannot open camera: ${(e as Error).message}. Continuing with audio only`);
+                stream = await navigator.mediaDevices.getUserMedia({ audio, video: false });
+            }
+        } else {
+            stream = await navigator.mediaDevices.getUserMedia({ audio, video: false });
+        }
+        this.#localStream = stream;
+        this.#watchCamera(stream.getVideoTracks()[0]);
         this.#micSource = this.#audio().createMediaStreamSource(this.#localStream);
         this.#micSource.connect(this.#micAnalyser!);
-        this.log(`Microphone: ${this.#localStream.getAudioTracks()[0]?.label || '?'}`);
-        this.#update({ micActive: true });
+        const track = this.#localStream.getAudioTracks()[0];
+        const label = track?.label || '?';
+        const settings = track?.getSettings?.() || {};
+        this.log(
+            `Microphone: ${label} (${settings.sampleRate || '?'} Hz, echo cancellation ${settings.echoCancellation ? 'on' : 'off'})`,
+        );
+        if (track) {
+            // muted by the operating system or the hardware (e.g. a mute key), not by the call
+            track.onmute = () => this.log(`Microphone "${label}" muted by the system`);
+            track.onunmute = () => this.log(`Microphone "${label}" active again`);
+            track.onended = () => this.log(`Microphone "${label}" disconnected`);
+            if (track.muted) {
+                this.log(`Microphone "${label}" is muted by the system`);
+            }
+        }
+        this.#update({ micActive: true, micLabel: label, localStream: stream });
         return this.#localStream;
     }
 
-    #closeMic(): void {
+    /** Update the camera state of the snapshot for a new (or no) camera track */
+    #watchCamera(track: MediaStreamTrack | undefined): void {
+        if (!track) {
+            this.#update({ cameraOn: false, cameraLabel: '' });
+            return;
+        }
+        const label = track.label || '?';
+        const settings = track.getSettings?.() || {};
+        this.log(`Camera: ${label} (${settings.width || '?'}x${settings.height || '?'})`);
+        track.onended = () => {
+            this.log(`Camera "${label}" disconnected`);
+            this.#update({ cameraOn: false });
+        };
+        this.#update({ cameraOn: true, cameraLabel: label });
+    }
+
+    #closeMedia(): void {
         this.#micSource?.disconnect();
         this.#micSource = null;
         this.#localStream?.getTracks().forEach(track => track.stop());
         this.#localStream = null;
-        this.#update({ micActive: false, muted: false });
+        this.#update({
+            micActive: false,
+            muted: false,
+            micLabel: '',
+            cameraOn: false,
+            cameraLabel: '',
+            localStream: null,
+        });
     }
 
     #setRemoteStream(stream: MediaStream): void {
@@ -335,21 +435,38 @@ export class SipPhone {
             this.#remoteAudio.play().catch(e => this.log(`Cannot play remote audio: ${(e as Error).message}`));
         }
         this.#remoteSource?.disconnect();
-        // only for the meter - the sound itself is played by the audio element
-        this.#remoteSource = this.#audio().createMediaStreamSource(stream);
-        this.#remoteSource.connect(this.#spkAnalyser!);
+        this.#remoteSource = null;
+        if (stream.getAudioTracks().length) {
+            // only for the meter - the sound itself is played by the audio element
+            this.#remoteSource = this.#audio().createMediaStreamSource(stream);
+            this.#remoteSource.connect(this.#spkAnalyser!);
+        }
+        // a video track exists as soon as video was negotiated; it is muted until pictures arrive
+        const updateVideo = (): void => {
+            if (this.#snapshot.remoteStream === stream) {
+                this.#update({ remoteVideo: stream.getVideoTracks().some(t => t.readyState === 'live' && !t.muted) });
+            }
+        };
+        stream.getVideoTracks().forEach(t => {
+            t.onmute = updateVideo;
+            t.onunmute = updateVideo;
+            t.onended = updateVideo;
+        });
+        this.#update({ remoteStream: stream });
+        updateVideo();
     }
 
     #clearRemoteStream(): void {
         this.#remoteSource?.disconnect();
         this.#remoteSource = null;
         this.#remoteAudio.srcObject = null;
+        this.#update({ remoteStream: null, remoteVideo: false });
     }
 
     /** Open the microphone for some seconds and play a short melody: both meters must move */
     async audioTest(): Promise<void> {
         try {
-            await this.#openMic();
+            await this.#openMedia();
         } catch (e) {
             this.log(`Cannot open microphone: ${(e as Error).message}`);
             return;
@@ -361,7 +478,7 @@ export class SipPhone {
         }
         this.#testTimer = setTimeout(() => {
             if (!this.#session) {
-                this.#closeMic();
+                this.#closeMedia();
             }
         }, 8000);
     }
@@ -451,6 +568,14 @@ export class SipPhone {
             }
             this.log('Ringing');
         });
+        s.on('connecting', () => {
+            // Offer a video channel even with the camera off: the picture of the other party can be
+            // received, and the own camera can be switched on later without a new negotiation
+            const pc = s.connection;
+            if (this.#options.video && pc && !pc.getTransceivers().some(t => t.receiver.track.kind === 'video')) {
+                pc.addTransceiver('video', { direction: 'sendrecv' });
+            }
+        });
         s.on('accepted', () => this.#stopRingback());
         s.on('confirmed', () => {
             this.#stopRingtone();
@@ -468,8 +593,9 @@ export class SipPhone {
             identity?.display_name && identity.display_name !== user ? `${identity.display_name} (${user})` : user;
 
         if (e.originator === 'remote') {
-            this.log(`Incoming call from ${peer}`);
-            this.#update({ call: 'incoming', peer, stats: null, lastCallEnd: '' });
+            const incomingVideo = this.#options.video && /^m=video [1-9]/m.test(String(e.request?.body || ''));
+            this.log(`Incoming ${incomingVideo ? 'video ' : ''}call from ${peer}`);
+            this.#update({ call: 'incoming', peer, stats: null, lastCallEnd: '', incomingVideo });
             this.#startRingtone();
         } else {
             this.#update({ call: 'calling', peer, stats: null, lastCallEnd: '' });
@@ -483,16 +609,31 @@ export class SipPhone {
         this.#hooked.add(pc);
         pc.addEventListener('track', ev => this.#setRemoteStream(ev.streams[0] || new MediaStream([ev.track])));
         pc.addEventListener('iceconnectionstatechange', () => this.log(`ICE: ${pc.iceConnectionState}`));
+        pc.addEventListener('signalingstatechange', () => {
+            // An offer with video and the camera off: answer with sendrecv anyway, so the camera can be
+            // switched on later without a new negotiation. The state changes before the answer is created.
+            if (this.#options.video && pc.signalingState === 'have-remote-offer') {
+                pc.getTransceivers()
+                    .filter(t => t.receiver.track.kind === 'video' && t.direction === 'recvonly')
+                    .forEach(t => (t.direction = 'sendrecv'));
+            }
+        });
         pc.getReceivers().forEach(r => r.track && this.#setRemoteStream(new MediaStream([r.track])));
     }
 
-    async call(target: string): Promise<void> {
+    /**
+     * Call a number
+     *
+     * @param target number or extension
+     * @param video send the own camera from the start
+     */
+    async call(target: string, video = false): Promise<void> {
         const number = target.trim();
         if (!number || !this.#ua?.isRegistered() || this.#session) {
             return;
         }
         try {
-            const stream = await this.#openMic();
+            const stream = await this.#openMedia(video);
             this.log(`Calling ${number}`);
             this.#ua.call(`sip:${number}@${this.#options.domain}`, {
                 mediaStream: stream,
@@ -503,14 +644,19 @@ export class SipPhone {
         }
     }
 
-    async answer(): Promise<void> {
+    /**
+     * Answer the incoming call
+     *
+     * @param video send the own camera, if the caller offers video
+     */
+    async answer(video = false): Promise<void> {
         const s = this.#session;
         if (!s || this.#snapshot.call !== 'incoming') {
             return;
         }
         this.#stopRingtone();
         try {
-            const stream = await this.#openMic();
+            const stream = await this.#openMedia(video && this.#snapshot.incomingVideo);
             s.answer({ mediaStream: stream, pcConfig: { iceServers: this.#options.iceServers } });
         } catch (e) {
             this.log(`Cannot answer: ${(e as Error).message}`);
@@ -540,6 +686,59 @@ export class SipPhone {
         this.#update({ muted });
     }
 
+    /** The transceiver of the negotiated video channel of the current call */
+    #videoTransceiver(): RTCRtpTransceiver | undefined {
+        return this.#session?.connection
+            ?.getTransceivers()
+            .find(t => t.receiver.track.kind === 'video' && t.currentDirection !== 'stopped');
+    }
+
+    /** Switch the own camera on or off during a call */
+    async toggleCamera(): Promise<void> {
+        const transceiver = this.#videoTransceiver();
+        if (!this.#session || !transceiver) {
+            this.log('The call has no video channel');
+            return;
+        }
+        const current = transceiver.sender.track;
+        if (current) {
+            await transceiver.sender.replaceTrack(null);
+            current.stop();
+            this.#localStream?.removeTrack(current);
+            this.log('Camera off');
+            this.#update({ cameraOn: false, cameraLabel: '' });
+            return;
+        }
+        let track: MediaStreamTrack | undefined;
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ video: this.#videoConstraints() });
+            track = stream.getVideoTracks()[0];
+            await transceiver.sender.replaceTrack(track);
+        } catch (e) {
+            track?.stop();
+            this.log(`Cannot switch the camera on: ${(e as Error).message}`);
+            return;
+        }
+        this.#localStream?.addTrack(track);
+        if (transceiver.currentDirection === 'recvonly' || transceiver.currentDirection === 'inactive') {
+            this.log('The other party does not accept video');
+        }
+        this.#watchCamera(track);
+    }
+
+    /**
+     * Send several DTMF tones during a call, e.g. the code that opens a door
+     *
+     * @param tones digits, `*` and `#`
+     */
+    sendDtmf(tones: string): void {
+        const valid = tones.replace(/[^0-9*#A-D]/gi, '');
+        if (valid && this.#session?.isEstablished()) {
+            this.#session.sendDTMF(valid);
+            this.log(`DTMF ${valid}`);
+        }
+    }
+
     /** Key of the keypad: local DTMF tone and, during a call, DTMF to the other party */
     pressKey(key: string): void {
         const freqs = DTMF_FREQUENCIES[key];
@@ -557,16 +756,17 @@ export class SipPhone {
         this.#stopRingtone();
         this.#stopRingback();
         this.#stopStats();
-        this.#closeMic();
+        this.#closeMedia();
         this.#clearRemoteStream();
         this.#session = null;
-        this.#update({ call: 'none', peer: '', callStart: 0, muted: false, lastCallEnd: reason });
+        this.#update({ call: 'none', peer: '', callStart: 0, muted: false, incomingVideo: false, lastCallEnd: reason });
     }
 
     // ------------------------------------------------------------------ statistics
     #startStats(): void {
         this.#stopStats();
         this.#lastPackets = null;
+        this.#silentSeconds = 0;
         this.#statsTimer = setInterval(() => void this.#readStats(), 1000);
     }
 
@@ -584,10 +784,20 @@ export class SipPhone {
         }
         const report = await pc.getStats();
         const codecs: Record<string, string> = {};
-        const stats: CallStats = { sent: 0, received: 0, lost: 0, codec: '', rtt: null, warning: '' };
+        const stats: CallStats = {
+            sent: 0,
+            received: 0,
+            lost: 0,
+            codec: '',
+            rtt: null,
+            warning: '',
+            videoCodec: '',
+            videoSize: '',
+        };
         report.forEach((r: Record<string, unknown>) => {
             if (r.type === 'codec') {
-                codecs[r.id as string] = typeof r.mimeType === 'string' ? r.mimeType.replace('audio/', '') : '';
+                codecs[r.id as string] =
+                    typeof r.mimeType === 'string' ? r.mimeType.replace(/^(audio|video)\//, '') : '';
             }
         });
         report.forEach((r: Record<string, unknown>) => {
@@ -597,20 +807,40 @@ export class SipPhone {
             } else if (r.type === 'inbound-rtp' && r.kind === 'audio') {
                 stats.received = Number(r.packetsReceived) || 0;
                 stats.lost = Number(r.packetsLost) || 0;
+            } else if ((r.type === 'inbound-rtp' || r.type === 'outbound-rtp') && r.kind === 'video') {
+                stats.videoCodec = codecs[r.codecId as string] || stats.videoCodec;
+                if (r.type === 'inbound-rtp' && r.frameWidth) {
+                    stats.videoSize = `${Number(r.frameWidth)}x${Number(r.frameHeight)}`;
+                }
             } else if (r.type === 'candidate-pair' && r.nominated && r.state === 'succeeded') {
                 stats.rtt =
                     typeof r.currentRoundTripTime === 'number' ? Math.round(r.currentRoundTripTime * 1000) : null;
             }
         });
+        // A silent microphone still sends packets: check the level itself
+        const micLevel = this.getLevels().mic;
+        if (!this.#snapshot.muted && (micLevel === null || micLevel < -65)) {
+            this.#silentSeconds++;
+        } else {
+            this.#silentSeconds = 0;
+        }
         const last = this.#lastPackets;
         if (last) {
             if (stats.sent === last.sent) {
                 stats.warning = 'noSend';
             } else if (stats.received === last.received) {
                 stats.warning = 'noReceive';
+            } else if (this.#silentSeconds >= 5) {
+                stats.warning = 'micSilent';
             }
             if (stats.warning && this.#snapshot.stats?.warning !== stats.warning) {
-                this.log(stats.warning === 'noSend' ? 'No audio packets are sent' : 'No audio packets are received');
+                this.log(
+                    {
+                        noSend: 'No audio packets are sent',
+                        noReceive: 'No audio packets are received',
+                        micSilent: `The microphone "${this.#snapshot.micLabel}" delivers no sound - wrong device or muted in the system?`,
+                    }[stats.warning],
+                );
             }
         }
         this.#lastPackets = { sent: stats.sent, received: stats.received };
@@ -619,7 +849,7 @@ export class SipPhone {
 
     destroy(): void {
         this.logout(false);
-        this.#closeMic();
+        this.#closeMedia();
         this.#remoteAudio.remove();
         void this.#ctx?.close();
         this.#listeners.clear();

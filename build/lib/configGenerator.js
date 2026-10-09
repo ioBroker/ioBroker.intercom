@@ -1,11 +1,12 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.ALL_CODECS = exports.RESTART_FILES = exports.SECRET_FILES = exports.CONTAINER_DIR = exports.MIN_PASSWORD_LENGTH = exports.ECHO_EXTENSION = exports.AMI_USER = exports.CONTEXT = exports.REALM = exports.HEADER = void 0;
+exports.LOG_FILE = exports.CONTAINER_LOG_DIR = exports.ASTERISK_LOG_LEVELS = exports.ALL_VIDEO_CODECS = exports.ALL_CODECS = exports.RESTART_FILES = exports.SECRET_FILES = exports.CONTAINER_DIR = exports.MIN_PASSWORD_LENGTH = exports.ECHO_EXTENSION = exports.AMI_USER = exports.CONTEXT = exports.REALM = exports.HEADER = void 0;
 exports.sanitizeName = sanitizeName;
 exports.sanitizeHost = sanitizeHost;
 exports.isValidExtension = isValidExtension;
 exports.md5Credential = md5Credential;
 exports.validateSubscribers = validateSubscribers;
+exports.getLogCommands = getLogCommands;
 exports.genStartScript = genStartScript;
 exports.generateConfig = generateConfig;
 exports.getReloadCommands = getReloadCommands;
@@ -31,6 +32,12 @@ exports.SECRET_FILES = ['manager.conf', 'keys/asterisk.key'];
 /** Files that require a restart of Asterisk (or of the container) instead of a reload */
 exports.RESTART_FILES = ['start.sh', 'modules.conf', 'manager.conf'];
 exports.ALL_CODECS = ['opus', 'g722', 'ulaw', 'alaw'];
+exports.ALL_VIDEO_CODECS = ['vp8', 'h264', 'vp9'];
+exports.ASTERISK_LOG_LEVELS = ['none', 'errors', 'notice', 'verbose', 'debug'];
+/** Directory of the log files inside the container, bind mounted to `<configDir>/logs` */
+exports.CONTAINER_LOG_DIR = '/var/log/asterisk';
+/** Log file read by the adapter, relative to the configuration directory */
+exports.LOG_FILE = 'logs/iobroker.log';
 /**
  * Remove everything that could break out of a value in an Asterisk config file:
  * line breaks, comments (`;`), section headers (`[` `]`), quotes and the angle brackets of a CallerID.
@@ -95,7 +102,7 @@ function validateSubscribers(config, secrets) {
     }
     return { subscribers, warnings };
 }
-function codecList(codecs, kind) {
+function codecList(codecs, kind, videoCodecs = []) {
     let list = (codecs || []).filter(c => exports.ALL_CODECS.includes(c));
     if (kind === 'sip') {
         // Desk phones and door intercoms rarely talk opus
@@ -104,7 +111,8 @@ function codecList(codecs, kind) {
     if (!list.length) {
         list = ['ulaw', 'alaw'];
     }
-    return [...new Set(list)].join(',');
+    const video = (videoCodecs || []).filter(c => exports.ALL_VIDEO_CODECS.includes(c));
+    return [...new Set([...list, ...video])].join(',');
 }
 function genHttp(config) {
     return [
@@ -141,10 +149,10 @@ function genPjsip(config, secrets, subscribers) {
     if (hasSip) {
         lines.push('[transport-udp]', 'type=transport', 'protocol=udp', 'bind=0.0.0.0:5060', ...nat, '');
     }
-    lines.push('; ---- templates ----', '[webrtc-endpoint](!)', 'type=endpoint', `context=${exports.CONTEXT}`, 'transport=transport-wss', 'disallow=all', `allow=${codecList(config.codecs, 'webrtc')}`, 
+    lines.push('; ---- templates ----', '[webrtc-endpoint](!)', 'type=endpoint', `context=${exports.CONTEXT}`, 'transport=transport-wss', 'disallow=all', `allow=${codecList(config.codecs, 'webrtc', config.videoCodecs)}`, 
     // webrtc=yes implies use_avpf, media_encryption=dtls, dtls_verify=fingerprint,
     // dtls_setup=actpass, ice_support, media_use_received_transport and rtcp_mux
-    'webrtc=yes', 'dtls_auto_generate_cert=yes', 'direct_media=no', 'allow_subscribe=no', '', '[sip-endpoint](!)', 'type=endpoint', `context=${exports.CONTEXT}`, 'transport=transport-udp', 'disallow=all', `allow=${codecList(config.codecs, 'sip')}`, 'direct_media=no', 'rtp_symmetric=yes', 'force_rport=yes', 'rewrite_contact=yes', 'allow_subscribe=no', '', '[aor-template](!)', 'type=aor', 'max_contacts=5', 'remove_existing=yes', 'qualify_frequency=30', '', '[auth-template](!)', 'type=auth', 'auth_type=md5', `realm=${exports.REALM}`, '');
+    'webrtc=yes', 'dtls_auto_generate_cert=yes', 'direct_media=no', 'allow_subscribe=no', '', '[sip-endpoint](!)', 'type=endpoint', `context=${exports.CONTEXT}`, 'transport=transport-udp', 'disallow=all', `allow=${codecList(config.codecs, 'sip', config.videoCodecs)}`, 'direct_media=no', 'rtp_symmetric=yes', 'force_rport=yes', 'rewrite_contact=yes', 'allow_subscribe=no', '', '[aor-template](!)', 'type=aor', 'max_contacts=5', 'remove_existing=yes', 'qualify_frequency=30', '', '[auth-template](!)', 'type=auth', 'auth_type=md5', `realm=${exports.REALM}`, '');
     for (const sub of subscribers) {
         const password = secrets.passwords[sub.extension];
         lines.push(`; ---- ${sub.extension} (${sub.kind}) ----`, `[${sub.extension}](${sub.kind === 'sip' ? 'sip-endpoint' : 'webrtc-endpoint'})`, `auth=${sub.extension}`, `aors=${sub.extension}`, `callerid="${sub.name}" <${sub.extension}>`, '', `[${sub.extension}](aor-template)`, '', `[${sub.extension}](auth-template)`, `username=${sub.extension}`, `md5_cred=${md5Credential(sub.extension, password)}`, '');
@@ -221,9 +229,77 @@ function genModules() {
         'noload => chan_oss.so',
         'noload => chan_console.so',
         'noload => chan_mobile.so',
-        'noload => res_pjsip_phoneprov.so',
+        // Phone provisioning; the PJSIP part fails to load without res_phoneprov
+        'noload => res_pjsip_phoneprov_provider.so',
+        'noload => res_phoneprov.so',
+        // Voicemail is not used. The three variants (file, IMAP, ODBC) also collide with each other
+        'noload => app_voicemail.so',
+        'noload => app_voicemail_imap.so',
+        'noload => app_voicemail_odbc.so',
+        // Call records into databases that do not exist here
+        'noload => cdr_tds.so',
+        'noload => cdr_pgsql.so',
+        'noload => cdr_radius.so',
+        'noload => cdr_odbc.so',
+        'noload => cdr_adaptive_odbc.so',
+        'noload => cdr_sqlite3_custom.so',
+        'noload => cel_tds.so',
+        'noload => cel_pgsql.so',
+        'noload => cel_radius.so',
+        'noload => cel_odbc.so',
+        'noload => cel_sqlite3_custom.so',
+        'noload => res_config_ldap.so',
+        'noload => res_config_pgsql.so',
+        'noload => res_config_odbc.so',
+        // Not needed, and their sample configurations only produce errors
+        'noload => res_hep.so',
+        'noload => res_hep_pjsip.so',
+        'noload => res_hep_rtcp.so',
+        'noload => res_pjsip_geolocation.so',
+        'noload => res_geolocation.so',
+        'noload => app_adsiprog.so',
+        'noload => app_getcpeid.so',
+        'noload => res_adsi.so',
+        'noload => app_macro.so',
         '',
     ].join('\n');
+}
+/** Logger levels of Asterisk for each log level of the adapter */
+const LOGGER_LEVELS = {
+    none: '',
+    errors: 'error,warning',
+    notice: 'error,warning,notice',
+    verbose: 'error,warning,notice,verbose(3)',
+    debug: 'error,warning,notice,verbose(5),debug',
+};
+/** Verbosity of the Asterisk core, set by AMI: verbose(N) only logs what the core produces */
+function getLogCommands(level, sipTrace) {
+    return [
+        `core set verbose ${level === 'debug' ? 5 : 3}`,
+        level === 'debug' ? 'core set debug 3' : 'core set debug off',
+        `pjsip set logger ${sipTrace ? 'on' : 'off'}`,
+    ];
+}
+function genLogger(config) {
+    const level = exports.ASTERISK_LOG_LEVELS.includes(config.logLevel)
+        ? config.logLevel
+        : 'errors';
+    const lines = [
+        exports.HEADER,
+        '[general]',
+        // milliseconds help to correlate with the ioBroker log
+        'dateformat=%F %T.%3q',
+        'appendhostname=no',
+        '',
+        '[logfiles]',
+        // the container log (docker logs) keeps the important messages
+        'console => notice,warning,error',
+    ];
+    if (LOGGER_LEVELS[level]) {
+        lines.push(`${exports.LOG_FILE.replace('logs/', '')} => ${LOGGER_LEVELS[level]}`);
+    }
+    lines.push('');
+    return lines.join('\n');
 }
 /**
  * Entry point of the container. The image is a plain `ubuntu:24.04`: Asterisk (with res_srtp, WSS
@@ -250,8 +326,19 @@ if ! command -v asterisk >/dev/null 2>&1; then
     rm -rf /var/lib/apt/lists/*
 fi
 
+# Music on hold (a phone puts a call on hold). Separate check: also for containers installed before
+if [ ! -d /usr/share/asterisk/moh ]; then
+    export DEBIAN_FRONTEND=noninteractive
+    (apt-get update && apt-get install -y --no-install-recommends asterisk-moh-opsound-gsm) >/dev/null 2>&1 \\
+        || echo "[iobroker] Music on hold could not be installed"
+    rm -rf /var/lib/apt/lists/*
+fi
+
+# ARI (REST interface) is not used: disabled, otherwise it complains about missing users
+printf '[general]\\nenabled = no\\n' > /etc/asterisk/ari.conf
+
 # The configuration files of Asterisk only include the generated files
-for f in http pjsip rtp extensions manager modules; do
+for f in http pjsip rtp extensions manager modules logger; do
     echo "#include iobroker/$f.conf" > /etc/asterisk/$f.conf
 done
 # Asterisk runs as root in the container: it must read the key files of the host (mode 0600)
@@ -283,12 +370,15 @@ function generateConfig(config, secrets, assets = {}) {
         'extensions.conf': genExtensions(config, subscribers),
         'manager.conf': genManager(config, secrets),
         'modules.conf': genModules(),
+        'logger.conf': genLogger(config),
         'start.sh': genStartScript(),
         'keys/asterisk.crt': secrets.certPublic || '',
         'keys/asterisk.key': secrets.certPrivate || '',
     };
     if (config.testPage) {
-        files['static-http/test.html'] = (0, testPage_1.generateTestPage)(config.echoTest ? exports.ECHO_EXTENSION : '');
+        // the browser calls the phone: the first SIP subscriber (101 of a new installation), else the echo test
+        const sipPhone = subscribers.find(s => s.kind === 'sip');
+        files['static-http/test.html'] = (0, testPage_1.generateTestPage)(sipPhone ? sipPhone.extension : config.echoTest ? exports.ECHO_EXTENSION : '');
         if (assets.phone) {
             files[`static-http/${testPage_1.PHONE_FILE}`] = assets.phone;
         }
@@ -309,6 +399,9 @@ function getReloadCommands(changedFiles) {
     }
     if (changedFiles.includes('rtp.conf')) {
         commands.push('module reload res_rtp_asterisk.so');
+    }
+    if (changedFiles.includes('logger.conf')) {
+        commands.push('logger reload');
     }
     if (changedFiles.includes('manager.conf')) {
         commands.push('manager reload');

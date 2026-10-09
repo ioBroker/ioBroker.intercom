@@ -9,8 +9,12 @@
                 "subscribers": {
                     "type": "table",
                     "xs": 12,
-                    "uniqueColumns": ["extension"],
-                    "encryptedAttributes": ["password"],
+                    "uniqueColumns": [
+                        "extension"
+                    ],
+                    "encryptedAttributes": [
+                        "password"
+                    ],
                     "showSecondAddAt": 5,
                     "export": true,
                     "items": [
@@ -49,8 +53,14 @@
                             "width": 160,
                             "default": "webrtc",
                             "options": [
-                                { "label": "WebRTC (browser, app)", "value": "webrtc" },
-                                { "label": "SIP (phone, intercom)", "value": "sip" }
+                                {
+                                    "label": "WebRTC (browser, app)",
+                                    "value": "webrtc"
+                                },
+                                {
+                                    "label": "SIP (phone, intercom)",
+                                    "value": "sip"
+                                }
                             ]
                         },
                         {
@@ -114,8 +124,14 @@
                     "md": 6,
                     "label": "Certificate source",
                     "options": [
-                        { "label": "Self-signed certificate of the adapter", "value": "self" },
-                        { "label": "Certificate of ioBroker (e.g. from ACME)", "value": "iobroker" }
+                        {
+                            "label": "Self-signed certificate of the adapter",
+                            "value": "self"
+                        },
+                        {
+                            "label": "Certificate of ioBroker (e.g. from ACME)",
+                            "value": "iobroker"
+                        }
                     ]
                 },
                 "_hintPinning": {
@@ -222,7 +238,9 @@
                     "copyToClipboard": true,
                     "command": "getIobFingerprint",
                     "jsonData": "{\"certIobPublic\": \"${data.certIobPublic}\"}",
-                    "alsoDependsOn": ["certIobPublic"]
+                    "alsoDependsOn": [
+                        "certIobPublic"
+                    ]
                 }
             }
         },
@@ -313,10 +331,44 @@
                     "label": "Codecs",
                     "help": "help_codecs",
                     "options": [
-                        { "label": "Opus", "value": "opus" },
-                        { "label": "G.722 (HD)", "value": "g722" },
-                        { "label": "G.711 µ-law (ulaw)", "value": "ulaw" },
-                        { "label": "G.711 A-law (alaw)", "value": "alaw" }
+                        {
+                            "label": "Opus",
+                            "value": "opus"
+                        },
+                        {
+                            "label": "G.722 (HD)",
+                            "value": "g722"
+                        },
+                        {
+                            "label": "G.711 µ-law (ulaw)",
+                            "value": "ulaw"
+                        },
+                        {
+                            "label": "G.711 A-law (alaw)",
+                            "value": "alaw"
+                        }
+                    ]
+                },
+                "videoCodecs": {
+                    "type": "select",
+                    "multiple": true,
+                    "xs": 12,
+                    "md": 4,
+                    "label": "Video codecs",
+                    "help": "help_video_codecs",
+                    "options": [
+                        {
+                            "label": "VP8",
+                            "value": "vp8"
+                        },
+                        {
+                            "label": "H.264",
+                            "value": "h264"
+                        },
+                        {
+                            "label": "VP9",
+                            "value": "vp9"
+                        }
                     ]
                 },
                 "stunServer": {
@@ -355,6 +407,44 @@
                     "md": 6,
                     "label": "Provide the WebRTC test page"
                 },
+                "asteriskLogLevel": {
+                    "type": "select",
+                    "newLine": true,
+                    "xs": 12,
+                    "md": 6,
+                    "label": "Asterisk log in ioBroker",
+                    "help": "help_asterisk_log",
+                    "options": [
+                        {
+                            "label": "Off",
+                            "value": "none"
+                        },
+                        {
+                            "label": "Errors and warnings",
+                            "value": "errors"
+                        },
+                        {
+                            "label": "Plus notices",
+                            "value": "notice"
+                        },
+                        {
+                            "label": "Plus call flow (verbose)",
+                            "value": "verbose"
+                        },
+                        {
+                            "label": "Everything (debug)",
+                            "value": "debug"
+                        }
+                    ]
+                },
+                "sipTrace": {
+                    "type": "checkbox",
+                    "xs": 12,
+                    "md": 6,
+                    "label": "Log SIP messages",
+                    "help": "help_sip_trace",
+                    "hidden": "data.asteriskLogLevel === 'none'"
+                },
                 "_reload": {
                     "type": "sendTo",
                     "newLine": true,
@@ -366,7 +456,9 @@
                     "icon": "send",
                     "showProcess": true,
                     "timeout": 30000,
-                    "result": { "ok": "Asterisk reloaded" }
+                    "result": {
+                        "ok": "Asterisk reloaded"
+                    }
                 }
             }
         }

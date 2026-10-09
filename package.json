@@ -46,14 +46,15 @@
     "files": [
         "admin/",
         "build/",
+        "widgets/",
         "docker-compose.yaml",
         "io-package.json",
         "LICENSE"
     ],
     "scripts": {
-        "build": "tsc -p tsconfig.build.json && npm run build:www",
-        "check:ts": "tsc -p tsconfig.json --noEmit && cd src-www && npm run check:ts",
-        "lint": "eslint -c eslint.config.mjs && cd src-www && npm run lint",
+        "build": "tsc -p tsconfig.build.json && npm run build:www && npm run build:widgets",
+        "check:ts": "tsc -p tsconfig.json --noEmit && cd src-www && npm run check:ts && cd ../src-widgets && npm run check:ts",
+        "lint": "eslint -c eslint.config.mjs && cd src-www && npm run lint && cd ../src-widgets && npm run lint",
         "test:unit": "mocha --config test/mocharc.custom.json \"test/unit/*.test.js\" --exit",
         "test:package": "mocha --config test/mocharc.custom.json test/package.js --exit",
         "test:integration": "mocha --config test/mocharc.custom.json test/integration.js --exit",
@@ -63,9 +64,10 @@
         "release-patch": "release-script patch --yes",
         "release-minor": "release-script minor --yes",
         "release-major": "release-script major --yes",
-        "update-packages": "npx -y npm-check-updates --upgrade && cd src-www && npx -y npm-check-updates --upgrade",
-        "npm": "npm i && cd src-www && npm i",
-        "build:www": "cd src-www && npm run build && cd .. && node tasks.mts"
+        "update-packages": "npx -y npm-check-updates --upgrade && cd src-www && npx -y npm-check-updates --upgrade && cd ../src-widgets && npx -y npm-check-updates --upgrade",
+        "npm": "npm i && cd src-www && npm i && cd ../src-widgets && npm i",
+        "build:www": "cd src-www && npm run build && cd .. && node tasks.mts --www",
+        "build:widgets": "cd src-widgets && npm run build && cd .. && node tasks.mts --widgets"
     },
     "license": "MIT"
 }

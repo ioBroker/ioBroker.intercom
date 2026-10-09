@@ -43,6 +43,8 @@
     "Must be greater than the start port": "Должен быть больше начального порта",
     "Codecs": "Кодеки",
     "help_codecs": "Браузеры поддерживают Opus, G.722 и G.711. SIP-устройства никогда не получают Opus. Opus используется, только если модуль доступен",
+    "Video codecs": "Видеокодеки",
+    "help_video_codecs": "Видео передаётся без перекодирования: обеим сторонам нужен общий кодек. Браузеры поддерживают VP8 и H.264. Пусто = только звук",
     "STUN server": "STUN-сервер",
     "help_stun": "Нужен только при подключении клиентов извне локальной сети",
     "External address": "Внешний адрес",
@@ -53,5 +55,14 @@
     "Provide the WebRTC test page": "Предоставлять тестовую страницу WebRTC",
     "Write configuration and reload Asterisk": "Записать конфигурацию и перезагрузить Asterisk",
     "Asterisk reloaded": "Asterisk перезагружен",
-    "Password (min. 4 characters)": "Пароль (мин. 4 символов)"
+    "Password (min. 4 characters)": "Пароль (мин. 4 символов)",
+    "Asterisk log in ioBroker": "Журнал Asterisk в ioBroker",
+    "help_asterisk_log": "Ошибки попадают в журнал ioBroker как error, предупреждения как warn, уведомления как info, всё остальное как debug. Показывается только то, что разрешает уровень журнала экземпляра",
+    "Off": "Выкл.",
+    "Errors and warnings": "Ошибки и предупреждения",
+    "Plus notices": "Плюс уведомления",
+    "Plus call flow (verbose)": "Плюс ход вызовов (verbose)",
+    "Everything (debug)": "Всё (debug)",
+    "Log SIP messages": "Записывать SIP-сообщения",
+    "help_sip_trace": "Только для поиска ошибок регистрации и вызовов: каждое SIP-сообщение записывается как debug. Требует «Плюс ход вызовов» или «Всё»"
 }

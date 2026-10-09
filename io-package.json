@@ -78,6 +78,20 @@
         },
         "eraseOnUpload": true,
         "stopTimeout": 10000,
+        "restartAdapters": [
+            "vis-2"
+        ],
+        "visWidgets": {
+            "vis2AsteriskWidgets": {
+                "i18n": "component",
+                "name": "vis2AsteriskWidgets",
+                "url": "asterisk-docker/customWidgets.js",
+                "bundlerType": "module",
+                "components": [
+                    "Phone"
+                ]
+            }
+        },
         "plugins": {
             "docker": {
                 "iobDockerComposeFiles": [
@@ -121,6 +135,10 @@
             "ulaw",
             "alaw"
         ],
+        "videoCodecs": [
+            "vp8",
+            "h264"
+        ],
         "echoTest": true,
         "testPage": true,
         "certSource": "self",
@@ -147,7 +165,9 @@
                 "password": "0101"
             }
         ],
-        "subscribersPlain": true
+        "subscribersPlain": true,
+        "asteriskLogLevel": "errors",
+        "sipTrace": false
     },
     "objects": [],
     "instanceObjects": [

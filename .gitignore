@@ -12,3 +12,7 @@ Thumbs.db
 
 # phone of the test page
 src-www/build/
+
+# vis-2 widgets: built by npm run build:widgets into widgets/ (committed like build/ for installs from GitHub)
+src-widgets/build/
+src-widgets/.__mf__temp/

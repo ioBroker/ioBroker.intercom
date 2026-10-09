@@ -27,6 +27,10 @@ describe('docker-compose.yaml', () => {
         }
     });
 
+    it('mounts the log directory writable, the configuration read-only', () => {
+        assert.ok(compose.includes("'${config.configDir}/logs:/var/log/asterisk'"));
+    });
+
     it('mounts the configuration directory where start.sh expects it', () => {
         assert.ok(compose.includes("'${config.configDir}:/etc/asterisk/iobroker:ro'"));
         assert.ok(compose.includes("'/etc/asterisk/iobroker/start.sh'"));
@@ -56,6 +60,11 @@ describe('io-package.json', () => {
             r.subscribers.map(s => s.extension),
             ['100', '101'],
         );
+        // the test page calls the phone (101), not the echo test
+        assert.ok(r.files['static-http/test.html'].includes('data-number="101"'));
+        // errors and warnings of Asterisk go to the ioBroker log by default
+        assert.equal(ioPackage.native.asteriskLogLevel, 'errors');
+        assert.match(r.files['logger.conf'], /^iobroker\.log => error,warning$/m);
     });
 
     it('encrypts and protects the secrets', () => {

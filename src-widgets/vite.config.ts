@@ -1,0 +1,60 @@
+import react from '@vitejs/plugin-react';
+import commonjs from 'vite-plugin-commonjs';
+import { federation } from '@module-federation/vite';
+import { moduleFederationShared } from '@iobroker/types-vis-2/modulefederation.vis.config';
+import { readFileSync } from 'node:fs';
+const pack = JSON.parse(readFileSync('./package.json').toString());
+
+const config = {
+    plugins: [
+        federation({
+            manifest: true,
+            // must be equal to the key in common.visWidgets of io-package.json
+            name: 'vis2AsteriskWidgets',
+            filename: 'customWidgets.js',
+            exposes: {
+                './Phone': './src/PhoneWidget',
+                './translations': './src/translations',
+            },
+            remotes: {},
+            shared: moduleFederationShared(pack),
+            dts: false,
+        }),
+        react(),
+        commonjs(),
+    ],
+    server: {
+        port: 3000,
+        proxy: {
+            '/_socket': 'http://localhost:8082',
+            '/vis.0': 'http://localhost:8082',
+            '/adapter': 'http://localhost:8082',
+            '/vis': 'http://localhost:8082',
+            '/widgets': 'http://localhost:8082/vis',
+            '/widgets.html': 'http://localhost:8082/vis',
+            '/web': 'http://localhost:8082',
+            '/state': 'http://localhost:8082',
+        },
+    },
+    base: './',
+    resolve: {
+        tsconfigPaths: true,
+        // the phone core (../src-www/src/SipPhone.ts) is shared with the test page
+        dedupe: ['react', 'react-dom'],
+    },
+    build: {
+        target: 'chrome89',
+        outDir: './build',
+        rollupOptions: {
+            onwarn(warning: { code: string }, warn: (warning: { code: string }) => void): void {
+                // Suppress "Module level directives cause errors when bundled" warnings
+                if (warning.code === 'MODULE_LEVEL_DIRECTIVE') {
+                    return;
+                }
+                warn(warning);
+            },
+        },
+    },
+};
+
+export default config;

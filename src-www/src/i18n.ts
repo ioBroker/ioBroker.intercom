@@ -22,7 +22,7 @@ const en = {
     callEnded: 'Call ended',
     microphone: 'Microphone',
     speaker: 'Speaker',
-    devices: 'Audio devices',
+    devices: 'Devices',
     defaultDevice: 'Default',
     log: 'Log',
     clearLog: 'Clear log',
@@ -33,7 +33,17 @@ const en = {
     signedInAs: 'Signed in as',
     noSend: 'no audio is sent',
     noReceive: 'no audio is received',
+    micSilent: 'the microphone is silent - choose the right one under "Devices"',
+    micInUse: 'Microphone',
     backspace: 'Delete',
+    videoCall: 'Video call',
+    answerVideo: 'Answer with video',
+    incomingVideo: 'Incoming video call',
+    camera: 'Camera',
+    cameraOn: 'Switch camera on',
+    cameraOff: 'Switch camera off',
+    noRemoteVideo: 'The other party sends no video',
+    cameraInUse: 'Camera',
 };
 
 type Texts = typeof en;
@@ -62,7 +72,7 @@ const de: Texts = {
     callEnded: 'Gespräch beendet',
     microphone: 'Mikrofon',
     speaker: 'Lautsprecher',
-    devices: 'Audiogeräte',
+    devices: 'Geräte',
     defaultDevice: 'Standard',
     log: 'Protokoll',
     clearLog: 'Protokoll löschen',
@@ -73,7 +83,17 @@ const de: Texts = {
     signedInAs: 'Angemeldet als',
     noSend: 'es wird kein Ton gesendet',
     noReceive: 'es kommt kein Ton an',
+    micSilent: 'das Mikrofon ist stumm - unter „Geräte“ das richtige wählen',
+    micInUse: 'Mikrofon',
     backspace: 'Löschen',
+    videoCall: 'Videoanruf',
+    answerVideo: 'Mit Video annehmen',
+    incomingVideo: 'Eingehender Videoanruf',
+    camera: 'Kamera',
+    cameraOn: 'Kamera einschalten',
+    cameraOff: 'Kamera ausschalten',
+    noRemoteVideo: 'Die Gegenseite sendet kein Video',
+    cameraInUse: 'Kamera',
 };
 
 const lang = (navigator.language || 'en').toLowerCase().startsWith('de') ? 'de' : 'en';
