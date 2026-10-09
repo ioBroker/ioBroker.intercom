@@ -163,7 +163,7 @@ describe('generateConfig', () => {
         assert.ok(existsSync(file), 'run npm run build first');
         const code = readFileSync(file, 'utf8');
         assert.ok(code.length > 200000);
-        assert.ok(code.includes(`"${require('jssip/package.json').version}"`), 'JsSIP version is bundled');
+        assert.ok(code.includes(`"${require('../../src-www/node_modules/jssip/package.json').version}"`), 'JsSIP version is bundled');
         assert.ok(code.includes('iobroker-phone'), 'the phone UI is bundled');
     });
 

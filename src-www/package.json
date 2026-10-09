@@ -1,0 +1,24 @@
+{
+    "name": "iobroker-asterisk-docker-phone",
+    "private": true,
+    "version": "0.0.1",
+    "description": "WebRTC phone (React + MUI + JsSIP) served by Asterisk as test page",
+    "scripts": {
+        "build": "tsc && esbuild src/index.tsx --bundle --minify --format=iife --platform=browser --target=es2020 --jsx=automatic --define:process.env.NODE_ENV=\\\"production\\\" --legal-comments=eof --outfile=build/phone.min.js",
+        "check:ts": "tsc",
+        "lint": "eslint -c eslint.config.mjs",
+        "npm": "npm i"
+    },
+    "devDependencies": {
+        "@emotion/react": "^11.14.0",
+        "@emotion/styled": "^11.14.1",
+        "@mui/icons-material": "^9.4.0",
+        "@mui/material": "^9.4.0",
+        "@types/react": "^19.3.0",
+        "@types/react-dom": "^19.3.0",
+        "esbuild": "^0.28.2",
+        "jssip": "3.13.8",
+        "react": "^19.3.0",
+        "react-dom": "^19.3.0"
+    }
+}

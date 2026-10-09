@@ -22,6 +22,8 @@ jobs:
             - uses: ioBroker/testing-action-check@v2
               with:
                   node-version: '24.x'
+                  # src-www (the phone of the test page) has its own dependencies
+                  install-command: 'npm run npm'
                   type-checking: true
                   lint: true
 
@@ -41,7 +43,7 @@ jobs:
               with:
                   node-version: ${{ matrix.node-version }}
             - name: Install Dependencies
-              run: npm install
+              run: npm run npm
             - name: Build, unit and package tests
               run: npm test
             - name: Integration test (starts without Asterisk)
@@ -60,7 +62,7 @@ jobs:
         steps:
             - uses: ioBroker/testing-action-deploy@v1
               with:
-                  install-command: 'npm i'
+                  install-command: 'npm run npm'
                   build: true
                   node-version: '24.x'
                   github-token: ${{ secrets.GITHUB_TOKEN }}

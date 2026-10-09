@@ -9,3 +9,6 @@ iobroker.*.tgz
 Thumbs.db
 .commitinfo
 /ioBroker-asterisk-adapter-ANLEITUNG.md
+
+# phone of the test page
+src-www/build/

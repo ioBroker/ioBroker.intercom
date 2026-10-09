@@ -136,7 +136,8 @@ and `modules.conf`.
 ### Development
 
 ```bash
-npm run build       # TypeScript -> build/
+npm run npm         # install the root and the src-www (phone: React + MUI + JsSIP) dependencies
+npm run build       # TypeScript -> build/, phone -> src-www/build -> build/static
 npm run lint
 npm test            # build + unit tests + package tests
 npm run test:integration   # starts js-controller and the adapter (without Asterisk)
