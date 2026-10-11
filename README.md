@@ -86,6 +86,9 @@ Settings: instance, extension and password of a WebRTC subscriber. The password 
 so use a subscriber of its own for vis. Microphone and camera require that **vis is opened via HTTPS**, and the
 browser must have accepted the certificate of Asterisk once (the widget shows a link).
 
+The own camera is **off by default**: the picture of the other party is shown, but the widget opens the camera
+only when "Use own camera" is enabled. Then video call buttons and the camera button in a call appear.
+
 ### Camera pictures (snapshot proxy)
 
 Many cameras deliver a snapshot only with a password, an API key or a token - which a browser cannot send in an
@@ -257,6 +260,10 @@ erscheint). Das Widget **Telefon** meldet sich als WebRTC-Teilnehmer an und biet
 Einstellungen: Instanz, Nebenstelle und Passwort eines WebRTC-Teilnehmers. Das Passwort steht im vis-Projekt,
 deshalb für vis einen eigenen Teilnehmer anlegen. Mikrofon und Kamera funktionieren nur, wenn **vis über HTTPS**
 geöffnet wird, und der Browser muss das Zertifikat von Asterisk einmal akzeptiert haben (das Widget zeigt einen Link).
+
+Die eigene Kamera ist **standardmäßig aus**: Das Bild der Gegenseite wird angezeigt, aber das Widget öffnet die
+Kamera nur, wenn „Eigene Kamera benutzen“ eingeschaltet ist. Erst dann erscheinen die Videoanruf-Tasten und die
+Kamerataste im Gespräch.
 
 ### Kamerabilder (Snapshot-Proxy)
 

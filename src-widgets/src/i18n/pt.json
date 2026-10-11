@@ -14,6 +14,8 @@
     "show_keypad": "Mostrar teclado",
     "popup": "Abrir uma janela para chamadas",
     "video_calls": "Chamadas de vídeo",
+    "use_camera": "Usar a própria câmara",
+    "use_camera_tooltip": "Desligado: a câmara nunca é aberta, a imagem do outro lado continua a ser mostrada",
     "send_camera": "Sempre enviar a própria câmera",
     "group_camera": "Imagem da câmera",
     "camera_url": "URL da câmera",

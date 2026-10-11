@@ -14,6 +14,8 @@
     "show_keypad": "Wähltastatur anzeigen",
     "popup": "Bei Anrufen einen Dialog öffnen",
     "video_calls": "Videoanrufe",
+    "use_camera": "Eigene Kamera benutzen",
+    "use_camera_tooltip": "Aus: die Kamera wird nie geöffnet, das Bild der Gegenseite wird trotzdem angezeigt",
     "send_camera": "Eigene Kamera immer senden",
     "group_camera": "Kamerabild",
     "camera_url": "Kamera-URL",

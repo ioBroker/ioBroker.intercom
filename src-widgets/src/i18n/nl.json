@@ -14,6 +14,8 @@
     "show_keypad": "Toetsenblok tonen",
     "popup": "Bij gesprekken een venster openen",
     "video_calls": "Videogesprekken",
+    "use_camera": "Eigen camera gebruiken",
+    "use_camera_tooltip": "Uit: de camera wordt nooit geopend, het beeld van de andere partij wordt wel getoond",
     "send_camera": "Eigen camera altijd verzenden",
     "group_camera": "Camerabeeld",
     "camera_url": "Camera-URL",

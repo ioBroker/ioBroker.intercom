@@ -7,7 +7,7 @@ const node_fs_1 = require("node:fs");
 const node_path_1 = require("node:path");
 const configGenerator_1 = require("./configGenerator");
 /** Generated file names that may be removed when they are no longer generated */
-const MANAGED_PATTERN = /^(?:[a-z_]+\.conf|start\.sh|keys\/asterisk\.(?:crt|key)|static-http\/(?:test\.html|phone\.min\.js|jssip\.min\.js))$/;
+const MANAGED_PATTERN = /^(?:[a-z_]+\.conf|start\.sh|keys\/asterisk\.(?:crt|key)|static-http\/(?:test\.html|cert\.html|phone\.min\.js|jssip\.min\.js))$/;
 const CUSTOM_PATTERN = /_custom\.conf$/;
 /** Hash over the sorted file names and contents */
 function hashFiles(files) {

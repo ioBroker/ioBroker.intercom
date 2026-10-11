@@ -78,8 +78,10 @@ export interface PhoneOptions {
     iceServers?: RTCIceServer[];
     /** Maximal number of log entries */
     maxLog?: number;
-    /** Video calls: receive the picture of the other party and allow sending the own camera */
+    /** Video calls: receive the picture of the other party */
     video?: boolean;
+    /** The own camera may be used in video calls. false: it is never opened, and only receiving is offered */
+    camera?: boolean;
 }
 
 export interface AudioDevices {
@@ -169,9 +171,13 @@ export class SipPhone {
     #lastPackets: { sent: number; received: number } | null = null;
     /** Seconds in a row in which the microphone delivered (almost) nothing */
     #silentSeconds = 0;
+    /** Video frames of the other party decoded so far */
+    #lastFrames = 0;
+    /** Seconds in a row without a new video frame */
+    #frozenSeconds = 0;
 
     constructor(options: PhoneOptions) {
-        this.#options = { realm: 'iobroker', iceServers: [], maxLog: 500, video: false, ...options };
+        this.#options = { realm: 'iobroker', iceServers: [], maxLog: 500, video: false, camera: true, ...options };
         this.#snapshot = {
             registration: 'offline',
             error: '',
@@ -373,7 +379,7 @@ export class SipPhone {
             autoGainControl: true,
         };
         let stream: MediaStream;
-        if (video && this.#options.video) {
+        if (video && this.#options.video && this.#options.camera) {
             try {
                 stream = await navigator.mediaDevices.getUserMedia({ audio, video: this.#videoConstraints() });
             } catch (e) {
@@ -465,19 +471,17 @@ export class SipPhone {
             this.#remoteSource = this.#audio().createMediaStreamSource(new MediaStream([track]));
             this.#remoteSource.connect(this.#spkAnalyser!);
         } else if (track.kind === 'video') {
-            // a video track exists as soon as video was negotiated; it is muted until pictures arrive
+            // A video track exists as soon as video was negotiated. Whether pictures really arrive is
+            // decided by the statistics (#readStats): some devices send a few packets and then nothing,
+            // and the video would freeze instead of the camera picture being shown.
             const remote = stream;
-            const updateVideo = (): void => {
-                if (this.#remoteMedia === remote) {
-                    this.#update({
-                        remoteVideo: remote.getVideoTracks().some(t => t.readyState === 'live' && !t.muted),
-                    });
+            const stopVideo = (): void => {
+                if (this.#remoteMedia === remote && this.#snapshot.remoteVideo) {
+                    this.#update({ remoteVideo: false });
                 }
             };
-            track.addEventListener('mute', updateVideo);
-            track.addEventListener('unmute', updateVideo);
-            track.addEventListener('ended', updateVideo);
-            updateVideo();
+            track.addEventListener('mute', stopVideo);
+            track.addEventListener('ended', stopVideo);
         }
         this.#update({ remoteStream: stream });
     }
@@ -597,10 +601,11 @@ export class SipPhone {
         });
         s.on('connecting', () => {
             // Offer a video channel even with the camera off: the picture of the other party can be
-            // received, and the own camera can be switched on later without a new negotiation
+            // received, and the own camera can be switched on later without a new negotiation.
+            // Without permission for the camera only receiving is offered.
             const pc = s.connection;
             if (this.#options.video && pc && !pc.getTransceivers().some(t => t.receiver.track.kind === 'video')) {
-                pc.addTransceiver('video', { direction: 'sendrecv' });
+                pc.addTransceiver('video', { direction: this.#options.camera ? 'sendrecv' : 'recvonly' });
             }
         });
         s.on('accepted', () => this.#stopRingback());
@@ -639,7 +644,7 @@ export class SipPhone {
         pc.addEventListener('signalingstatechange', () => {
             // An offer with video and the camera off: answer with sendrecv anyway, so the camera can be
             // switched on later without a new negotiation. The state changes before the answer is created.
-            if (this.#options.video && pc.signalingState === 'have-remote-offer') {
+            if (this.#options.video && this.#options.camera && pc.signalingState === 'have-remote-offer') {
                 pc.getTransceivers()
                     .filter(t => t.receiver.track.kind === 'video' && t.direction === 'recvonly')
                     .forEach(t => (t.direction = 'sendrecv'));
@@ -722,6 +727,10 @@ export class SipPhone {
 
     /** Switch the own camera on or off during a call */
     async toggleCamera(): Promise<void> {
+        if (!this.#options.camera) {
+            this.log('The own camera is disabled in the settings');
+            return;
+        }
         const transceiver = this.#videoTransceiver();
         if (!this.#session || !transceiver) {
             this.log('The call has no video channel');
@@ -794,6 +803,8 @@ export class SipPhone {
         this.#stopStats();
         this.#lastPackets = null;
         this.#silentSeconds = 0;
+        this.#lastFrames = 0;
+        this.#frozenSeconds = 0;
         this.#statsTimer = setInterval(() => void this.#readStats(), 1000);
     }
 
@@ -811,6 +822,7 @@ export class SipPhone {
         }
         const report = await pc.getStats();
         const codecs: Record<string, string> = {};
+        let frames = 0;
         const stats: CallStats = {
             sent: 0,
             received: 0,
@@ -836,8 +848,11 @@ export class SipPhone {
                 stats.lost = Number(r.packetsLost) || 0;
             } else if ((r.type === 'inbound-rtp' || r.type === 'outbound-rtp') && r.kind === 'video') {
                 stats.videoCodec = codecs[r.codecId as string] || stats.videoCodec;
-                if (r.type === 'inbound-rtp' && r.frameWidth) {
-                    stats.videoSize = `${Number(r.frameWidth)}x${Number(r.frameHeight)}`;
+                if (r.type === 'inbound-rtp') {
+                    frames += Number(r.framesDecoded) || 0;
+                    if (r.frameWidth) {
+                        stats.videoSize = `${Number(r.frameWidth)}x${Number(r.frameHeight)}`;
+                    }
                 }
             } else if (r.type === 'candidate-pair' && r.nominated && r.state === 'succeeded') {
                 stats.rtt =
@@ -871,7 +886,22 @@ export class SipPhone {
             }
         }
         this.#lastPackets = { sent: stats.sent, received: stats.received };
-        this.#update({ stats });
+
+        // show the video of the other party only while new pictures arrive
+        if (frames > this.#lastFrames) {
+            this.#lastFrames = frames;
+            this.#frozenSeconds = 0;
+        } else {
+            this.#frozenSeconds++;
+        }
+        const remoteVideo =
+            frames > 0 &&
+            this.#frozenSeconds < 2 &&
+            !!this.#remoteMedia?.getVideoTracks().some(t => t.readyState === 'live' && !t.muted);
+        if (remoteVideo !== this.#snapshot.remoteVideo) {
+            this.log(remoteVideo ? 'Video of the other party is received' : 'No video from the other party');
+        }
+        this.#update({ stats, remoteVideo });
     }
 
     destroy(): void {

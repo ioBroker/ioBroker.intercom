@@ -126,7 +126,8 @@ function genHttp(config) {
         `tlsbindaddr=0.0.0.0:${toPort(config.wssPort, 8089)}`,
         `tlscertfile=${exports.CONTAINER_DIR}/keys/asterisk.crt`,
         `tlsprivatekey=${exports.CONTAINER_DIR}/keys/asterisk.key`,
-        `enablestatic=${config.testPage ? 'yes' : 'no'}`,
+        // static-http holds only the generated pages: the certificate page always, the test page if enabled
+        'enablestatic=yes',
         '',
     ].join('\n');
 }
@@ -152,7 +153,9 @@ function genPjsip(config, secrets, subscribers) {
     lines.push('; ---- templates ----', '[webrtc-endpoint](!)', 'type=endpoint', `context=${exports.CONTEXT}`, 'transport=transport-wss', 'disallow=all', `allow=${codecList(config.codecs, 'webrtc', config.videoCodecs)}`, 
     // webrtc=yes implies use_avpf, media_encryption=dtls, dtls_verify=fingerprint,
     // dtls_setup=actpass, ice_support, media_use_received_transport and rtcp_mux
-    'webrtc=yes', 'dtls_auto_generate_cert=yes', 'direct_media=no', 'allow_subscribe=no', '', '[sip-endpoint](!)', 'type=endpoint', `context=${exports.CONTEXT}`, 'transport=transport-udp', 'disallow=all', `allow=${codecList(config.codecs, 'sip', config.videoCodecs)}`, 'direct_media=no', 'rtp_symmetric=yes', 'force_rport=yes', 'rewrite_contact=yes', 'allow_subscribe=no', '', '[aor-template](!)', 'type=aor', 'max_contacts=5', 'remove_existing=yes', 'qualify_frequency=30', '', '[auth-template](!)', 'type=auth', 'auth_type=md5', `realm=${exports.REALM}`, '');
+    'webrtc=yes', 'dtls_auto_generate_cert=yes', 'direct_media=no', 'allow_subscribe=no', '', '[sip-endpoint](!)', 'type=endpoint', `context=${exports.CONTEXT}`, 'transport=transport-udp', 'disallow=all', `allow=${codecList(config.codecs, 'sip', config.videoCodecs)}`, 'direct_media=no', 'rtp_symmetric=yes', 'force_rport=yes', 'rewrite_contact=yes', 'allow_subscribe=no', '', '[aor-template](!)', 'type=aor', 'max_contacts=5', 'remove_existing=yes', 
+    // a new registration replaces contacts that do not answer, e.g. of a closed WebSocket
+    'remove_unavailable=yes', 'qualify_frequency=30', '', '[auth-template](!)', 'type=auth', 'auth_type=md5', `realm=${exports.REALM}`, '');
     for (const sub of subscribers) {
         const password = secrets.passwords[sub.extension];
         lines.push(`; ---- ${sub.extension} (${sub.kind}) ----`, `[${sub.extension}](${sub.kind === 'sip' ? 'sip-endpoint' : 'webrtc-endpoint'})`, `auth=${sub.extension}`, `aors=${sub.extension}`, `callerid="${sub.name}" <${sub.extension}>`, '', `[${sub.extension}](aor-template)`, '', `[${sub.extension}](auth-template)`, `username=${sub.extension}`, `md5_cred=${md5Credential(sub.extension, password)}`, '');
@@ -374,6 +377,7 @@ function generateConfig(config, secrets, assets = {}) {
         'start.sh': genStartScript(),
         'keys/asterisk.crt': secrets.certPublic || '',
         'keys/asterisk.key': secrets.certPrivate || '',
+        [`static-http/${testPage_1.CERT_FILE}`]: (0, testPage_1.generateCertPage)(),
     };
     if (config.testPage) {
         // the browser calls the phone: the first SIP subscriber (101 of a new installation), else the echo test

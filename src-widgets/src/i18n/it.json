@@ -14,6 +14,8 @@
     "show_keypad": "Mostra tastierino",
     "popup": "Apri una finestra per le chiamate",
     "video_calls": "Videochiamate",
+    "use_camera": "Usa la propria videocamera",
+    "use_camera_tooltip": "Disattivato: la videocamera non viene mai aperta, l'immagine dell'interlocutore viene comunque mostrata",
     "send_camera": "Invia sempre la propria videocamera",
     "group_camera": "Immagine della videocamera",
     "camera_url": "URL della videocamera",

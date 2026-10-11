@@ -42,9 +42,11 @@ export interface PhoneViewOptions {
     /** Text of the call button instead of the number */
     numberLabel: string;
     showKeypad: boolean;
-    /** Video calls are allowed */
+    /** Video calls are allowed: the picture of the other party is shown */
     video: boolean;
-    /** Switch the own camera on with every call */
+    /** The own camera may be used (only with video) */
+    useCamera: boolean;
+    /** Switch the own camera on with every call (only with useCamera) */
     sendCamera: boolean;
     /** Open a dialog for calls */
     popup: boolean;
@@ -493,7 +495,7 @@ function PhoneBody(
                             onChange={e => setNumber(e.target.value.replace(/[^0-9*#+]/g, ''))}
                             onKeyDown={e => {
                                 if (e.key === 'Enter' && target) {
-                                    void phone?.call(target, options.video && options.sendCamera);
+                                    void phone?.call(target, options.sendCamera);
                                 }
                             }}
                             fullWidth
@@ -593,11 +595,11 @@ function PhoneBody(
                                 size={fabBig}
                                 glow
                                 disabled={!registered || !target}
-                                onClick={() => void phone?.call(target, options.video && options.sendCamera)}
+                                onClick={() => void phone?.call(target, options.sendCamera)}
                             >
                                 <CallIcon />
                             </RoundFab>
-                            {options.video && !options.sendCamera ? (
+                            {options.useCamera && !options.sendCamera ? (
                                 <RoundFab
                                     title={t('video_call')}
                                     color="primary"
@@ -626,11 +628,11 @@ function PhoneBody(
                                 color="success"
                                 size={fabBig}
                                 glow
-                                onClick={() => void phone?.answer(options.video && options.sendCamera)}
+                                onClick={() => void phone?.answer(options.sendCamera)}
                             >
                                 <CallIcon />
                             </RoundFab>
-                            {options.video && snap.incomingVideo && !options.sendCamera ? (
+                            {options.useCamera && snap.incomingVideo && !options.sendCamera ? (
                                 <RoundFab
                                     title={t('answer_video')}
                                     color="primary"
@@ -654,7 +656,7 @@ function PhoneBody(
                             >
                                 {snap.muted ? <MicOffIcon /> : <MicIcon />}
                             </RoundFab>
-                            {options.video ? (
+                            {options.useCamera ? (
                                 <RoundFab
                                     title={snap.cameraOn ? t('camera_off') : t('camera_on')}
                                     color={snap.cameraOn ? 'primary' : 'default'}

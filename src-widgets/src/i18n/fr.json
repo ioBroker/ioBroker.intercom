@@ -14,6 +14,8 @@
     "show_keypad": "Afficher le clavier",
     "popup": "Ouvrir une fenêtre pour les appels",
     "video_calls": "Appels vidéo",
+    "use_camera": "Utiliser sa propre caméra",
+    "use_camera_tooltip": "Désactivé : la caméra n'est jamais ouverte, l'image de l'interlocuteur reste affichée",
     "send_camera": "Toujours envoyer sa propre caméra",
     "group_camera": "Image de la caméra",
     "camera_url": "URL de la caméra",

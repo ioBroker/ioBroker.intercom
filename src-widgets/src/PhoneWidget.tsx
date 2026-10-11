@@ -19,6 +19,8 @@ interface PhoneRxData {
     numberLabel: string;
     showKeypad: boolean;
     video: boolean;
+    /** The own camera may be used at all */
+    useCamera: boolean;
     sendCamera: boolean;
     popup: boolean;
     cameraOid: string;
@@ -46,9 +48,15 @@ function bool(value: unknown): boolean {
  * and a dialog that pops up for incoming calls.
  */
 export default class PhoneWidget extends (window.visRxWidget as typeof VisRxWidget)<PhoneRxData, PhoneWidgetState> {
+    /**
+     * The running phone. this.state.phone is only for rendering: it is updated asynchronously, and a phone
+     * started in between would be overwritten without being stopped - and stay registered in the background.
+     */
+    private phone: SipPhone | null = null;
     /** Settings the running phone was created with */
     private phoneKey = '';
     private starting: Promise<void> | null = null;
+    private unmounted = false;
 
     constructor(props: VisRxWidgetProps) {
         super(props);
@@ -91,11 +99,19 @@ export default class PhoneWidget extends (window.visRxWidget as typeof VisRxWidg
                         { name: 'popup', label: 'popup', type: 'checkbox', default: true },
                         { name: 'video', label: 'video_calls', type: 'checkbox', default: true },
                         {
+                            name: 'useCamera',
+                            label: 'use_camera',
+                            type: 'checkbox',
+                            default: false,
+                            tooltip: 'use_camera_tooltip',
+                            hidden: '!data.video',
+                        },
+                        {
                             name: 'sendCamera',
                             label: 'send_camera',
                             type: 'checkbox',
                             default: false,
-                            hidden: '!data.video',
+                            hidden: '!data.video || !data.useCamera',
                         },
                     ],
                 },
@@ -146,6 +162,7 @@ export default class PhoneWidget extends (window.visRxWidget as typeof VisRxWidg
 
     componentDidMount(): void {
         super.componentDidMount();
+        this.unmounted = false;
         // the browser plays the ring tone only after the first click or key into the page
         document.addEventListener('pointerdown', this.unlockAudio, true);
         document.addEventListener('keydown', this.unlockAudio, true);
@@ -154,6 +171,7 @@ export default class PhoneWidget extends (window.visRxWidget as typeof VisRxWidg
 
     componentWillUnmount(): void {
         super.componentWillUnmount();
+        this.unmounted = true;
         document.removeEventListener('pointerdown', this.unlockAudio, true);
         document.removeEventListener('keydown', this.unlockAudio, true);
         this.stopPhone();
@@ -164,11 +182,12 @@ export default class PhoneWidget extends (window.visRxWidget as typeof VisRxWidg
     }
 
     private unlockAudio = (): void => {
-        this.state.phone?.unlockAudio();
+        this.phone?.unlockAudio();
     };
 
     private stopPhone(): void {
-        this.state.phone?.destroy();
+        this.phone?.destroy();
+        this.phone = null;
         this.phoneKey = '';
     }
 
@@ -184,11 +203,15 @@ export default class PhoneWidget extends (window.visRxWidget as typeof VisRxWidg
         } finally {
             this.starting = null;
         }
+        // unmounted while the start was waiting for the server
+        if (this.unmounted) {
+            this.stopPhone();
+        }
     }
 
     private async doStartPhone(): Promise<void> {
         const data = this.state.rxData;
-        if (this.props.editMode) {
+        if (this.props.editMode || this.unmounted) {
             this.stopPhone();
             this.setState({ phone: null, problem: '' });
             return;
@@ -216,6 +239,9 @@ export default class PhoneWidget extends (window.visRxWidget as typeof VisRxWidg
                 // no access or no such instance
             }
         }
+        if (this.unmounted) {
+            return;
+        }
         let url: URL;
         try {
             url = new URL(wssUrl.replace(/^ws/, 'http'));
@@ -226,21 +252,23 @@ export default class PhoneWidget extends (window.visRxWidget as typeof VisRxWidg
         }
 
         const video = bool(data.video);
-        const key = JSON.stringify([wssUrl, extension, password, video]);
-        if (key === this.phoneKey && this.state.phone) {
+        const camera = video && bool(data.useCamera);
+        const key = JSON.stringify([wssUrl, extension, password, video, camera]);
+        if (key === this.phoneKey && this.phone) {
             return;
         }
         this.stopPhone();
-        const phone = new SipPhone({ wssUrl, domain: url.hostname, video });
+        const phone = new SipPhone({ wssUrl, domain: url.hostname, video, camera });
+        this.phone = phone;
         this.phoneKey = key;
-        this.setState({ phone, problem: '', certUrl: `https://${url.host}/` });
+        this.setState({ phone, problem: '', certUrl: `https://${url.host}/static/cert.html` });
         phone.login(extension, password);
     }
 
     private onAction = (): void => {
         const data = this.state.rxData;
         if (data.actionDtmf) {
-            this.state.phone?.sendDtmf(String(data.actionDtmf));
+            this.phone?.sendDtmf(String(data.actionDtmf));
         }
         if (data.actionOid && data.actionOid !== 'nothing_selected') {
             void this.props.context.socket.setState(data.actionOid, true);
@@ -262,7 +290,8 @@ export default class PhoneWidget extends (window.visRxWidget as typeof VisRxWidg
             numberLabel: String(data.numberLabel || ''),
             showKeypad: bool(data.showKeypad),
             video: bool(data.video),
-            sendCamera: bool(data.sendCamera),
+            useCamera: bool(data.video) && bool(data.useCamera),
+            sendCamera: bool(data.video) && bool(data.useCamera) && bool(data.sendCamera),
             popup: bool(data.popup),
             cameraSrc,
             cameraRefresh: Number(data.cameraRefresh) || 0,

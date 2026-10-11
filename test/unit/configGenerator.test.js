@@ -99,7 +99,9 @@ describe('generateConfig', () => {
         assert.ok(r.files['pjsip.conf'].includes('[transport-udp]'));
         assert.ok(!r.files['pjsip.conf'].includes('[102]'));
         assert.equal(r.files['static-http/test.html'], undefined);
-        assert.ok(r.files['http.conf'].includes('enablestatic=no'));
+        // the certificate page for the vis widget is served also without the test page
+        assert.ok(r.files['http.conf'].includes('enablestatic=yes'));
+        assert.match(r.files['static-http/cert.html'], /Certificate accepted/);
         assert.ok(!r.files['extensions.conf'].includes('exten => 600'));
         // SIP endpoints never get opus
         assert.match(r.files['pjsip.conf'], /\[sip-endpoint\][^[]*allow=g722,ulaw\n/);

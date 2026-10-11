@@ -14,6 +14,8 @@
     "show_keypad": "Show keypad",
     "popup": "Open a dialog for calls",
     "video_calls": "Video calls",
+    "use_camera": "Use own camera",
+    "use_camera_tooltip": "Off: the camera is never opened, the picture of the other party is still shown",
     "send_camera": "Always send the own camera",
     "group_camera": "Camera picture",
     "camera_url": "Camera URL",
