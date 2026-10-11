@@ -54,5 +54,11 @@
     "no_config": "Introduzca la extensión y la contraseña en la configuración del widget",
     "no_wss": "Dirección de Asterisk desconocida: ¿se está ejecutando la instancia del adaptador?",
     "cert_hint": "¿Sin conexión? El navegador debe confiar una vez en el certificado de Asterisk:",
-    "accept_cert": "abrir y aceptar"
+    "accept_cert": "abrir y aceptar",
+    "editor_preview": "vista previa en el editor, se conecta solo en tiempo de ejecución",
+    "title": "Título",
+    "title_tooltip": "Vacío: \"Teléfono\"",
+    "preview": "vista previa",
+    "signed_in_as": "Conectado como",
+    "connected": "Conectado"
 }

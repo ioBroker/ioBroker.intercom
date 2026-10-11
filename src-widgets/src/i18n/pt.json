@@ -54,5 +54,11 @@
     "no_config": "Informe o ramal e a senha nas configurações do widget",
     "no_wss": "Endereço do Asterisk desconhecido: a instância do adaptador está em execução?",
     "cert_hint": "Sem conexão? O navegador precisa confiar no certificado do Asterisk uma vez:",
-    "accept_cert": "abrir e aceitar"
+    "accept_cert": "abrir e aceitar",
+    "editor_preview": "pré-visualização no editor, conecta apenas no tempo de execução",
+    "title": "Título",
+    "title_tooltip": "Vazio: \"Telefone\"",
+    "preview": "pré-visualização",
+    "signed_in_as": "Conectado como",
+    "connected": "Conectado"
 }

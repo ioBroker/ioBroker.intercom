@@ -64,5 +64,20 @@
     "Plus call flow (verbose)": "Più flusso delle chiamate (verbose)",
     "Everything (debug)": "Tutto (debug)",
     "Log SIP messages": "Registra i messaggi SIP",
-    "help_sip_trace": "Solo per diagnosticare registrazione e chiamate: ogni messaggio SIP appare come debug. Richiede \"Più flusso delle chiamate\" o \"Tutto\""
+    "help_sip_trace": "Solo per diagnosticare registrazione e chiamate: ogni messaggio SIP appare come debug. Richiede \"Più flusso delle chiamate\" o \"Tutto\"",
+    "Cameras": "Videocamere",
+    "hint_cameras": "L'adattatore recupera le immagini di queste videocamere - anche con password o chiave API, cosa che un browser in vis non può fare - e le scrive in asterisk-docker.X.cameras.<name>.image. Seleziona questo stato nel widget telefono in \"Immagine della videocamera da stato\". Durante una chiamata l'immagine viene aggiornata rapidamente, altrimenti lentamente. UniFi Protect: https://<IP console>/proxy/protect/integration/v1/cameras/<ID videocamera>/snapshot con una chiave API (UniFi OS → Impostazioni → Control Plane → Integrazioni).",
+    "Snapshot URL": "URL snapshot",
+    "Authentication": "Autenticazione",
+    "None": "Nessuna",
+    "User and password": "Utente e password",
+    "API key (UniFi Protect)": "Chiave API (UniFi Protect)",
+    "Bearer token": "Token Bearer",
+    "User": "Utente",
+    "Password / key": "Password / chiave",
+    "Self-signed certificate": "Certificato autofirmato",
+    "During calls (s)": "Durante le chiamate (s)",
+    "Without call (s)": "Senza chiamata (s)",
+    "Only a-z, 0-9, _ and -": "Solo a-z, 0-9, _ e -",
+    "http:// or https:// URL": "URL http:// o https://"
 }

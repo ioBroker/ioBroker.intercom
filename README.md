@@ -86,6 +86,19 @@ Settings: instance, extension and password of a WebRTC subscriber. The password 
 so use a subscriber of its own for vis. Microphone and camera require that **vis is opened via HTTPS**, and the
 browser must have accepted the certificate of Asterisk once (the widget shows a link).
 
+### Camera pictures (snapshot proxy)
+
+Many cameras deliver a snapshot only with a password, an API key or a token - which a browser cannot send in an
+`<img>` of vis. Enter such cameras in the tab **Cameras**: the adapter fetches the pictures (Basic and Digest
+authentication, API key header, Bearer token, self-signed certificates) and writes them as data URL into
+`asterisk-docker.0.cameras.<name>.image`. In the phone widget select this state under "Camera picture from state".
+During a call (a subscriber rings or talks) the picture is updated fast (default every second), otherwise slowly
+(default every 10 seconds, 0 = off). Errors are logged once and written to `cameras.<name>.error`.
+
+UniFi Protect: create an API key in UniFi OS (Settings → Control Plane → Integrations) and use
+`https://<console IP>/proxy/protect/integration/v1/cameras/<camera ID>/snapshot` with the authentication
+"API key (UniFi Protect)". The camera ID is part of the address of the camera in Protect.
+
 ### Objects
 
 | Object                                | Meaning                                            |
@@ -244,6 +257,20 @@ erscheint). Das Widget **Telefon** meldet sich als WebRTC-Teilnehmer an und biet
 Einstellungen: Instanz, Nebenstelle und Passwort eines WebRTC-Teilnehmers. Das Passwort steht im vis-Projekt,
 deshalb für vis einen eigenen Teilnehmer anlegen. Mikrofon und Kamera funktionieren nur, wenn **vis über HTTPS**
 geöffnet wird, und der Browser muss das Zertifikat von Asterisk einmal akzeptiert haben (das Widget zeigt einen Link).
+
+### Kamerabilder (Snapshot-Proxy)
+
+Viele Kameras liefern ein Standbild nur mit Passwort, API-Schlüssel oder Token - das kann ein Browser in einem
+`<img>` von vis nicht mitschicken. Solche Kameras im Reiter **Kameras** eintragen: Der Adapter holt die Bilder
+(Basic- und Digest-Anmeldung, API-Schlüssel, Bearer-Token, selbst signierte Zertifikate) und schreibt sie als
+Data-URL nach `asterisk-docker.0.cameras.<name>.image`. Im Telefon-Widget diesen Datenpunkt unter „Kamerabild aus
+Datenpunkt“ auswählen. Während eines Anrufs (ein Teilnehmer klingelt oder spricht) wird das Bild schnell
+aktualisiert (Standard jede Sekunde), sonst langsam (Standard alle 10 Sekunden, 0 = aus). Fehler landen einmal im
+Log und in `cameras.<name>.error`.
+
+UniFi Protect: In UniFi OS einen API-Schlüssel anlegen (Einstellungen → Control Plane → Integrationen) und
+`https://<Konsolen-IP>/proxy/protect/integration/v1/cameras/<Kamera-ID>/snapshot` mit der Anmeldung
+„API-Schlüssel (UniFi Protect)“ verwenden. Die Kamera-ID steht in der Adresse der Kamera in Protect.
 
 ### Eigene Erweiterungen
 

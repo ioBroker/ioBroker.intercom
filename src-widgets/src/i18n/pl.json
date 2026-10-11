@@ -54,5 +54,11 @@
     "no_config": "Wpisz numer wewnętrzny i hasło w ustawieniach widżetu",
     "no_wss": "Nieznany adres Asterisk: czy instancja adaptera działa?",
     "cert_hint": "Brak połączenia? Przeglądarka musi raz zaufać certyfikatowi Asterisk:",
-    "accept_cert": "otwórz i zaakceptuj"
+    "accept_cert": "otwórz i zaakceptuj",
+    "editor_preview": "podgląd w edytorze, łączy się dopiero w trybie działania",
+    "title": "Tytuł",
+    "title_tooltip": "Puste: „Telefon”",
+    "preview": "podgląd",
+    "signed_in_as": "Zalogowano jako",
+    "connected": "Połączono"
 }

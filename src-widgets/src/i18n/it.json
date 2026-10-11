@@ -54,5 +54,11 @@
     "no_config": "Inserisci interno e password nelle impostazioni del widget",
     "no_wss": "Indirizzo di Asterisk sconosciuto: l'istanza dell'adattatore è in esecuzione?",
     "cert_hint": "Nessuna connessione? Il browser deve accettare una volta il certificato di Asterisk:",
-    "accept_cert": "apri e accetta"
+    "accept_cert": "apri e accetta",
+    "editor_preview": "anteprima nell'editor, si connette solo in esecuzione",
+    "title": "Titolo",
+    "title_tooltip": "Vuoto: \"Telefono\"",
+    "preview": "anteprima",
+    "signed_in_as": "Connesso come",
+    "connected": "Connesso"
 }

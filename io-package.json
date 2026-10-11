@@ -116,7 +116,8 @@
     ],
     "protectedNative": [
         "amiSecret",
-        "certPrivate"
+        "certPrivate",
+        "cameras"
     ],
     "native": {
         "configDir": "",
@@ -167,7 +168,8 @@
         ],
         "subscribersPlain": true,
         "asteriskLogLevel": "errors",
-        "sipTrace": false
+        "sipTrace": false,
+        "cameras": []
     },
     "objects": [],
     "instanceObjects": [

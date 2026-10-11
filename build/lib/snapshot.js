@@ -1,0 +1,202 @@
+"use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.describeUrl = describeUrl;
+exports.parseDigestChallenge = parseDigestChallenge;
+exports.digestAuthorization = digestAuthorization;
+exports.fetchSnapshot = fetchSnapshot;
+/**
+ * Fetches the snapshot of a camera over HTTP(S), with the authentication that the browser cannot do in
+ * an `<img>`: API key header (UniFi Protect), Bearer token, Basic or Digest authentication.
+ */
+const node_crypto_1 = require("node:crypto");
+const http = __importStar(require("node:http"));
+const https = __importStar(require("node:https"));
+const MAX_REDIRECTS = 3;
+/** URL without credentials and query (it may contain a token), for the log */
+function describeUrl(url) {
+    try {
+        const u = new URL(url);
+        return `${u.protocol}//${u.host}${u.pathname}`;
+    }
+    catch {
+        return '(invalid URL)';
+    }
+}
+/** Parameters of a `WWW-Authenticate: Digest ...` header, or null for other schemes */
+function parseDigestChallenge(header) {
+    const values = Array.isArray(header) ? header : header ? [header] : [];
+    const digest = values.find(v => /^\s*Digest\s/i.test(v));
+    if (!digest) {
+        return null;
+    }
+    const params = {};
+    const re = /(\w+)=(?:"([^"]*)"|([^\s,]+))/g;
+    let m;
+    while ((m = re.exec(digest.replace(/^\s*Digest\s+/i, '')))) {
+        params[m[1].toLowerCase()] = m[2] ?? m[3];
+    }
+    return params.nonce ? params : null;
+}
+const md5 = (text) => (0, node_crypto_1.createHash)('md5').update(text).digest('hex');
+/** `Authorization` header for HTTP Digest (RFC 7616, MD5, qop=auth or none) */
+function digestAuthorization(options) {
+    const { user, password, method, uri, challenge } = options;
+    const cnonce = options.cnonce || (0, node_crypto_1.randomBytes)(8).toString('hex');
+    const nc = options.nc || '00000001';
+    const qop = (challenge.qop || '')
+        .split(',')
+        .map(q => q.trim())
+        .includes('auth')
+        ? 'auth'
+        : '';
+    let ha1 = md5(`${user}:${challenge.realm || ''}:${password}`);
+    if ((challenge.algorithm || '').toLowerCase() === 'md5-sess') {
+        ha1 = md5(`${ha1}:${challenge.nonce}:${cnonce}`);
+    }
+    const ha2 = md5(`${method}:${uri}`);
+    const response = qop
+        ? md5(`${ha1}:${challenge.nonce}:${nc}:${cnonce}:${qop}:${ha2}`)
+        : md5(`${ha1}:${challenge.nonce}:${ha2}`);
+    const parts = [
+        `username="${user}"`,
+        `realm="${challenge.realm || ''}"`,
+        `nonce="${challenge.nonce}"`,
+        `uri="${uri}"`,
+        `response="${response}"`,
+    ];
+    if (challenge.algorithm) {
+        parts.push(`algorithm=${challenge.algorithm}`);
+    }
+    if (qop) {
+        parts.push(`qop=${qop}`, `nc=${nc}`, `cnonce="${cnonce}"`);
+    }
+    if (challenge.opaque) {
+        parts.push(`opaque="${challenge.opaque}"`);
+    }
+    return `Digest ${parts.join(', ')}`;
+}
+function get(url, headers, req) {
+    const maxSize = req.maxSize || 5 * 1024 * 1024;
+    return new Promise((resolve, reject) => {
+        const lib = url.protocol === 'https:' ? https : http;
+        const request = lib.get(url, {
+            headers: { Accept: 'image/*', ...headers },
+            timeout: req.timeout || 5000,
+            rejectUnauthorized: !req.insecure,
+        }, res => {
+            const chunks = [];
+            let size = 0;
+            res.on('data', (chunk) => {
+                size += chunk.length;
+                if (size > maxSize) {
+                    request.destroy(new Error(`picture bigger than ${Math.round(maxSize / 1024)} kB`));
+                    return;
+                }
+                chunks.push(chunk);
+            });
+            res.on('end', () => resolve({ status: res.statusCode || 0, headers: res.headers, body: Buffer.concat(chunks) }));
+            res.on('error', reject);
+        });
+        request.on('timeout', () => request.destroy(new Error('timeout')));
+        request.on('error', reject);
+    });
+}
+/**
+ * Fetch one picture. Credentials in the URL (`http://user:pass@host/...`) are used for Basic/Digest.
+ *
+ * @param req what to fetch and how to authenticate
+ */
+async function fetchSnapshot(req) {
+    let url = new URL(req.url);
+    if (url.protocol !== 'http:' && url.protocol !== 'https:') {
+        throw new Error('only http and https are supported');
+    }
+    let user = req.user || '';
+    let password = req.password || '';
+    if (url.username) {
+        user = user || decodeURIComponent(url.username);
+        password = password || decodeURIComponent(url.password);
+        url.username = '';
+        url.password = '';
+    }
+    const auth = req.auth === 'none' && user ? 'basic' : req.auth;
+    const origin = url.origin;
+    const headers = {};
+    if (auth === 'apikey') {
+        headers['X-API-KEY'] = password;
+    }
+    else if (auth === 'bearer') {
+        headers.Authorization = `Bearer ${password}`;
+    }
+    else if (auth === 'basic') {
+        headers.Authorization = `Basic ${Buffer.from(`${user}:${password}`).toString('base64')}`;
+    }
+    let res = await get(url, headers, req);
+    for (let i = 0; i < MAX_REDIRECTS && res.status >= 300 && res.status < 400 && res.headers.location; i++) {
+        url = new URL(res.headers.location, url);
+        // never send the credentials to another server
+        res = await get(url, url.origin === origin ? headers : {}, req);
+    }
+    if (res.status === 401 && auth === 'basic') {
+        const challenge = parseDigestChallenge(res.headers['www-authenticate']);
+        if (challenge) {
+            res = await get(url, {
+                Authorization: digestAuthorization({
+                    user,
+                    password,
+                    method: 'GET',
+                    uri: `${url.pathname}${url.search}`,
+                    challenge,
+                }),
+            }, req);
+        }
+    }
+    if (res.status !== 200) {
+        throw new Error(`HTTP ${res.status}`);
+    }
+    const contentType = String(res.headers['content-type'] || '')
+        .split(';')[0]
+        .trim()
+        .toLowerCase();
+    if (!contentType.startsWith('image/')) {
+        throw new Error(`not a picture (${contentType || 'no content type'})`);
+    }
+    if (!res.body.length) {
+        throw new Error('empty picture');
+    }
+    return { data: res.body, contentType };
+}
+//# sourceMappingURL=snapshot.js.map

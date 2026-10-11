@@ -4,6 +4,7 @@ import { join } from 'node:path';
 import * as utils from '@iobroker/adapter-core';
 
 import { AmiClient, type AmiMessage } from './lib/ami';
+import { CameraPoller, validateCameras, type CameraSettings } from './lib/cameras';
 import {
     generateCertificate,
     getFingerprint,
@@ -28,6 +29,7 @@ import {
 import { writeConfigFiles } from './lib/configWriter';
 import { classifyMessage, LogTail, TlsFailureMonitor } from './lib/logTail';
 import { ContactTracker, extensionOfDevice, mapDeviceState } from './lib/subscriberStatus';
+import { describeUrl, fetchSnapshot } from './lib/snapshot';
 import { PHONE_FILE } from './lib/testPage';
 import type { Codec } from './types';
 
@@ -77,6 +79,9 @@ export class AsteriskDockerAdapter extends utils.Adapter {
     /** Counts the aborted TLS handshakes per client */
     private readonly tlsFailures = new TlsFailureMonitor();
     private reloading: Promise<void> | null = null;
+    private cameraPoller: CameraPoller | null = null;
+    /** Device state of every subscriber, to know whether a call is going on */
+    private readonly deviceStates = new Map<string, string>();
 
     public constructor(options: Partial<utils.AdapterOptions> = {}) {
         super({
@@ -123,6 +128,7 @@ export class AsteriskDockerAdapter extends utils.Adapter {
         this.warnDefaultPasswords();
 
         this.startLogTail();
+        await this.startCameras();
         this.startAmi();
     }
 
@@ -421,6 +427,8 @@ export class AsteriskDockerAdapter extends utils.Adapter {
     }
 
     private async setSubscribersOffline(): Promise<void> {
+        this.deviceStates.clear();
+        this.cameraPoller?.setActive(false);
         for (const sub of this.subscribers) {
             await this.setStateChangedAsync(`subscribers.${sub.extension}.registered`, false, true);
             await this.setStateChangedAsync(`subscribers.${sub.extension}.contacts`, 0, true);
@@ -539,7 +547,10 @@ export class AsteriskDockerAdapter extends utils.Adapter {
     private async updateDeviceState(ev: AmiMessage): Promise<void> {
         const extension = extensionOfDevice(ev.Device);
         if (extension && this.subscribers.some(s => s.extension === extension)) {
-            await this.setStateChangedAsync(`subscribers.${extension}.state`, mapDeviceState(ev.State), true);
+            const state = mapDeviceState(ev.State);
+            this.deviceStates.set(extension, state);
+            this.cameraPoller?.setActive([...this.deviceStates.values()].some(s => s === 'ringing' || s === 'inuse'));
+            await this.setStateChangedAsync(`subscribers.${extension}.state`, state, true);
         }
     }
 
@@ -693,8 +704,89 @@ export class AsteriskDockerAdapter extends utils.Adapter {
         }
     }
 
+    /**
+     * Snapshot proxy: fetch the pictures of the cameras (with credentials the browser cannot send in an
+     * `<img>`) into `cameras.<name>.image` as data URL, for the camera picture of the phone widget.
+     */
+    private async startCameras(): Promise<void> {
+        const rows = (this.config.cameras || []).map(c => ({
+            ...c,
+            password: c?.password ? this.decrypt(c.password) : '',
+        }));
+        const { cameras, warnings } = validateCameras(rows);
+        warnings.forEach(w => this.log.warn(w));
+
+        await this.setObjectNotExistsAsync('cameras', {
+            type: 'folder',
+            common: { name: 'Cameras' },
+            native: {},
+        });
+        for (const camera of cameras) {
+            await this.extendObjectAsync(`cameras.${camera.id}`, {
+                type: 'channel',
+                common: { name: camera.id },
+                native: {},
+            });
+            await this.extendObjectAsync(`cameras.${camera.id}.image`, {
+                type: 'state',
+                common: {
+                    name: 'Picture (data URL)',
+                    desc: 'Select it in the phone widget under "Camera picture from state"',
+                    type: 'string',
+                    role: 'url',
+                    read: true,
+                    write: false,
+                    def: '',
+                },
+                native: {},
+            });
+            await this.extendObjectAsync(`cameras.${camera.id}.error`, {
+                type: 'state',
+                common: { name: 'Error', type: 'string', role: 'text', read: true, write: false, def: '' },
+                native: {},
+            });
+        }
+        const channels = await this.getChannelsOfAsync('cameras').catch(() => []);
+        for (const channel of channels || []) {
+            const id = channel._id.split('.').pop() || '';
+            if (!cameras.some(c => c.id === id)) {
+                this.log.info(`Deleting objects of removed camera ${id}`);
+                await this.delObjectAsync(`cameras.${id}`, { recursive: true });
+            }
+        }
+        if (!cameras.length) {
+            return;
+        }
+
+        const describe = (camera: CameraSettings): string => `Camera ${camera.id} (${describeUrl(camera.url)})`;
+        this.cameraPoller = new CameraPoller({
+            cameras,
+            fetch: camera =>
+                fetchSnapshot({
+                    url: camera.url,
+                    auth: camera.auth,
+                    user: camera.user,
+                    password: camera.password,
+                    insecure: camera.insecure,
+                }),
+            onImage: (camera, dataUrl) => void this.setState(`cameras.${camera.id}.image`, dataUrl, true),
+            onError: (camera, error) => {
+                if (error) {
+                    this.log.warn(`${describe(camera)}: ${error}`);
+                } else {
+                    this.log.debug(`${describe(camera)}: OK`);
+                }
+                void this.setState(`cameras.${camera.id}.error`, error, true);
+            },
+        });
+        this.cameraPoller.start();
+        this.log.info(`Snapshot proxy for ${cameras.length} camera(s) started`);
+    }
+
     private onUnload(callback: () => void): void {
         try {
+            this.cameraPoller?.stop();
+            this.cameraPoller = null;
             this.logTail?.stop();
             this.logTail = null;
             if (this.statusTimer) {

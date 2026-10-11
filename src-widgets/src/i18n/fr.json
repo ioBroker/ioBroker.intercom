@@ -54,5 +54,11 @@
     "no_config": "Saisissez le poste et le mot de passe dans les paramètres du widget",
     "no_wss": "Adresse d'Asterisk inconnue : l'instance de l'adaptateur est-elle en cours d'exécution ?",
     "cert_hint": "Pas de connexion ? Le navigateur doit faire confiance une fois au certificat d'Asterisk :",
-    "accept_cert": "ouvrir et accepter"
+    "accept_cert": "ouvrir et accepter",
+    "editor_preview": "aperçu dans l'éditeur, se connecte uniquement à l'exécution",
+    "title": "Titre",
+    "title_tooltip": "Vide : « Téléphone »",
+    "preview": "aperçu",
+    "signed_in_as": "Connecté en tant que",
+    "connected": "Connecté"
 }

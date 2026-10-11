@@ -54,5 +54,11 @@
     "no_config": "Vul toestel en wachtwoord in bij de widgetinstellingen",
     "no_wss": "Adres van Asterisk onbekend: draait de adapterinstantie?",
     "cert_hint": "Geen verbinding? De browser moet het certificaat van Asterisk eenmaal vertrouwen:",
-    "accept_cert": "openen en accepteren"
+    "accept_cert": "openen en accepteren",
+    "editor_preview": "voorbeeld in de editor, verbindt pas in de runtime",
+    "title": "Titel",
+    "title_tooltip": "Leeg: \"Telefoon\"",
+    "preview": "voorbeeld",
+    "signed_in_as": "Aangemeld als",
+    "connected": "Verbonden"
 }

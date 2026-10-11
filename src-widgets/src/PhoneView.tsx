@@ -1,9 +1,14 @@
 import React, { useEffect, useState, useSyncExternalStore } from 'react';
 import {
     Alert,
+    Avatar,
     Box,
-    Button,
+    ButtonBase,
+    Card,
+    Chip,
     Dialog,
+    Divider,
+    Fab,
     IconButton,
     InputAdornment,
     Link,
@@ -11,8 +16,9 @@ import {
     Tooltip,
     Typography,
 } from '@mui/material';
+import { alpha, keyframes } from '@mui/material/styles';
 import {
-    Backspace as BackspaceIcon,
+    BackspaceOutlined as BackspaceIcon,
     Call as CallIcon,
     CallEnd as CallEndIcon,
     CloseFullscreen as MinimizeIcon,
@@ -20,10 +26,8 @@ import {
     MeetingRoom as ActionIcon,
     Mic as MicIcon,
     MicOff as MicOffIcon,
-    Person as PersonIcon,
     Videocam as VideocamIcon,
     VideocamOff as VideocamOffIcon,
-    VolumeUp as VolumeUpIcon,
 } from '@mui/icons-material';
 
 import type { PhoneSnapshot, SipPhone } from '../../src-www/src/SipPhone';
@@ -31,6 +35,8 @@ import { CameraImage } from './CameraImage';
 import { StreamVideo } from './StreamVideo';
 
 export interface PhoneViewOptions {
+    /** Title in the header, empty: "Phone" */
+    title: string;
     /** Number called by the call button, e.g. the door */
     number: string;
     /** Text of the call button instead of the number */
@@ -54,6 +60,8 @@ export interface PhoneViewOptions {
 export interface PhoneViewProps {
     /** `null` in the editor: only a preview without any connection */
     phone: SipPhone | null;
+    /** Extension of the settings, shown in the preview of the editor */
+    extension: string;
     options: PhoneViewOptions;
     t: (key: string) => string;
     /** Problem that prevents the phone from starting */
@@ -63,10 +71,11 @@ export interface PhoneViewProps {
     onAction: () => void;
 }
 
+/** Snapshot in the editor: the widget does not connect there, so it must not look online */
 const PREVIEW: PhoneSnapshot = {
-    registration: 'registered',
+    registration: 'offline',
     error: '',
-    extension: '100',
+    extension: '',
     call: 'none',
     peer: '',
     callStart: 0,
@@ -88,13 +97,38 @@ const PREVIEW: PhoneSnapshot = {
 const noSubscribe = (): (() => void) => () => {};
 const getPreview = (): PhoneSnapshot => PREVIEW;
 
-const KEYS = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '*', '0', '#'];
+/** Keys with the letters of a phone keypad, as on the test page */
+const KEYS: [string, string][] = [
+    ['1', ''],
+    ['2', 'ABC'],
+    ['3', 'DEF'],
+    ['4', 'GHI'],
+    ['5', 'JKL'],
+    ['6', 'MNO'],
+    ['7', 'PQRS'],
+    ['8', 'TUV'],
+    ['9', 'WXYZ'],
+    ['*', ''],
+    ['0', '+'],
+    ['#', ''],
+];
+
+/** Gradient of the app icon, the same as the primary buttons of admin 8 and the test page */
+const BRAND_GRADIENT = 'linear-gradient(135deg, #48A1FA 0%, #0B76F5 100%)';
+
+const pulse = keyframes`
+    from { transform: scale(1); opacity: 0.7; }
+    to { transform: scale(1.8); opacity: 0; }
+`;
+const shake = keyframes`
+    0%, 50%, 100% { transform: rotate(0); }
+    5%, 15%, 25%, 35%, 45% { transform: rotate(-14deg); }
+    10%, 20%, 30%, 40% { transform: rotate(14deg); }
+`;
 
 function formatDuration(ms: number): string {
-    const s = Math.max(0, Math.floor(ms / 1000));
-    const mm = String(Math.floor(s / 60) % 60).padStart(2, '0');
-    const ss = String(s % 60).padStart(2, '0');
-    return s >= 3600 ? `${Math.floor(s / 3600)}:${mm}:${ss}` : `${mm}:${ss}`;
+    const sec = Math.max(0, Math.floor(ms / 1000));
+    return `${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, '0')}`;
 }
 
 function CallTimer({ start }: { start: number }): React.JSX.Element {
@@ -103,45 +137,66 @@ function CallTimer({ start }: { start: number }): React.JSX.Element {
         const timer = setInterval(() => setNow(Date.now()), 1000);
         return () => clearInterval(timer);
     }, []);
-    return <span>{formatDuration(now - start)}</span>;
+    return <>{formatDuration(now - start)}</>;
 }
 
-/** Round action button with a caption */
-function RoundButton(props: {
-    color: string;
+/** Framed area inside the card, like the panels of the test page */
+function Panel({ children, sx }: { children: React.ReactNode; sx?: object }): React.JSX.Element {
+    return (
+        <Box
+            sx={{
+                border: 1,
+                borderColor: 'divider',
+                borderRadius: '16px',
+                bgcolor: theme => alpha(theme.palette.text.primary, theme.palette.mode === 'dark' ? 0.025 : 0.015),
+                ...sx,
+            }}
+        >
+            {children}
+        </Box>
+    );
+}
+
+type FabColor = 'default' | 'primary' | 'success' | 'error';
+
+/** Round button of the test page, the main ones with a glow */
+function RoundFab(props: {
     title: string;
+    color: FabColor;
+    size: number;
+    glow?: boolean;
+    disabled?: boolean;
     onClick: () => void;
     children: React.ReactNode;
-    active?: boolean;
-    size: number;
 }): React.JSX.Element {
+    const { title, color, size, glow, disabled, onClick, children } = props;
     return (
-        <Tooltip title={props.title}>
-            <IconButton
-                onClick={props.onClick}
-                aria-label={props.title}
-                sx={{
-                    width: props.size,
-                    height: props.size,
-                    color: '#fff',
-                    bgcolor: props.color,
-                    boxShadow: props.active ? `0 0 0 3px ${props.color}55` : 2,
-                    '&:hover': { bgcolor: props.color, filter: 'brightness(1.12)' },
-                    '& svg': { fontSize: props.size * 0.5 },
-                }}
-            >
-                {props.children}
-            </IconButton>
+        <Tooltip title={title}>
+            <span>
+                <Fab
+                    color={color}
+                    disabled={disabled}
+                    onClick={onClick}
+                    aria-label={title}
+                    sx={{
+                        width: size,
+                        height: size,
+                        minHeight: size,
+                        '& svg': { fontSize: size * 0.44 },
+                        boxShadow:
+                            glow && !disabled && color !== 'default'
+                                ? theme => `0 0 28px ${alpha(theme.palette[color].main, 0.55)}`
+                                : undefined,
+                    }}
+                >
+                    {children}
+                </Fab>
+            </span>
         </Tooltip>
     );
 }
 
-const GREEN = '#2e7d32';
-const RED = '#d32f2f';
-const GREY = '#607d8b';
-const BLUE = '#1976d2';
-
-/** Content of the phone: picture, status and buttons. Used in the widget and in the call dialog */
+/** Content of the phone: header, picture, number, keypad and buttons. In the widget and in the call dialog */
 function PhoneBody(
     props: PhoneViewProps & { snap: PhoneSnapshot; large: boolean; onMinimize?: () => void },
 ): React.JSX.Element {
@@ -149,35 +204,22 @@ function PhoneBody(
     const [number, setNumber] = useState('');
     const [keypadInCall, setKeypadInCall] = useState(false);
 
-    const buttonSize = large ? 64 : 48;
+    const preview = !phone;
     const target = (options.showKeypad ? number : '') || options.number;
     const inCall = snap.call === 'incall';
+    const registered = snap.registration === 'registered';
     const showRemoteVideo = snap.remoteVideo && snap.call !== 'none';
     const showCamera = !showRemoteVideo && !!options.cameraSrc && (snap.call !== 'none' || options.cameraAlways);
-    const registered = snap.registration === 'registered';
+    const fabBig = large ? 72 : 56;
+    const fabSmall = large ? 60 : 46;
+    const keyHeight = large ? 60 : 46;
 
-    const statusColor =
-        snap.call !== 'none'
-            ? GREEN
-            : registered
-              ? GREEN
-              : snap.registration === 'error'
-                ? RED
-                : snap.registration === 'connecting'
-                  ? '#ed6c02'
-                  : GREY;
-    let status: React.ReactNode;
-    if (snap.call === 'incoming') {
-        status = snap.incomingVideo ? t('incoming_video') : t('incoming');
-    } else if (snap.call === 'calling') {
-        status = t('calling');
-    } else if (inCall) {
-        status = <CallTimer start={snap.callStart} />;
-    } else if (snap.registration === 'error') {
-        status = `${t('error')}${snap.error ? `: ${snap.error}` : ''}`;
-    } else {
-        status = `${snap.extension || '-'} · ${t(snap.registration)}`;
-    }
+    const chipColor = preview
+        ? 'default'
+        : ({ registered: 'success', connecting: 'warning', error: 'error', offline: 'default' } as const)[
+              snap.registration
+          ];
+    const chipLabel = preview ? t('preview') : t(snap.registration);
 
     const press = (key: string): void => {
         phone?.pressKey(key);
@@ -186,36 +228,35 @@ function PhoneBody(
         }
     };
 
-    const keypad = (
-        <Box
-            sx={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(3, 1fr)',
-                gap: large ? 1 : 0.5,
-                width: '100%',
-                maxWidth: 280,
-                mx: 'auto',
-            }}
-        >
-            {KEYS.map(key => (
-                <Button
-                    key={key}
-                    variant="outlined"
-                    onClick={() => press(key)}
-                    sx={{ minWidth: 0, py: large ? 1 : 0.25, fontSize: large ? 20 : 16 }}
-                >
-                    {key}
-                </Button>
-            ))}
-        </Box>
-    );
+    let callText: React.ReactNode = '';
+    if (snap.call === 'incoming') {
+        callText = snap.incomingVideo ? t('incoming_video') : t('incoming');
+    } else if (snap.call === 'calling') {
+        callText = t('calling');
+    } else if (inCall) {
+        callText = (
+            <>
+                {t('connected')} · <CallTimer start={snap.callStart} />
+            </>
+        );
+    }
 
-    let picture: React.ReactNode;
+    let subtitle: string;
+    if (preview && !props.problem) {
+        subtitle = `${props.extension || '-'} · ${t('editor_preview')}`;
+    } else if (snap.registration === 'error') {
+        subtitle = `${t('error')}${snap.error ? `: ${snap.error}` : ''}`;
+    } else {
+        subtitle = `${t('signed_in_as')} ${snap.extension || props.extension || '-'}`;
+    }
+
+    let picture: React.ReactNode = null;
     if (showRemoteVideo) {
         picture = (
             <StreamVideo
                 stream={snap.remoteStream}
                 version={snap.remoteVideo}
+                style={{ objectFit: 'contain' }}
             />
         );
     } else if (showCamera) {
@@ -226,302 +267,439 @@ function PhoneBody(
                 alt={t('camera')}
             />
         );
-    } else if (snap.call !== 'none') {
+    } else if (snap.call === 'incoming') {
+        // the ringing avatar of the test page
         picture = (
-            <Box sx={{ textAlign: 'center', color: 'text.secondary' }}>
-                <PersonIcon sx={{ fontSize: large ? 96 : 56, opacity: 0.6 }} />
+            <Box sx={{ position: 'relative', width: 96, height: 96 }}>
+                {[0, 0.8].map(delay => (
+                    <Box
+                        key={delay}
+                        sx={{
+                            position: 'absolute',
+                            inset: 0,
+                            borderRadius: '50%',
+                            border: 3,
+                            borderColor: 'success.main',
+                            animation: `${pulse} 1.6s ease-out ${delay}s infinite`,
+                        }}
+                    />
+                ))}
+                <Avatar sx={{ width: 96, height: 96, bgcolor: 'success.main' }}>
+                    <CallIcon sx={{ fontSize: 44, animation: `${shake} 1.2s infinite`, color: '#fff' }} />
+                </Avatar>
             </Box>
         );
     }
+    const dark = showRemoteVideo || showCamera;
 
-    return (
+    const keypad = (
         <Box
             sx={{
-                position: 'relative',
-                display: 'flex',
-                flexDirection: 'column',
+                display: 'grid',
+                gridTemplateColumns: 'repeat(3, 1fr)',
+                gap: large ? 1.25 : 0.75,
                 width: '100%',
-                height: '100%',
-                gap: 1,
-                p: large ? 2 : 1,
-                boxSizing: 'border-box',
-                overflow: 'hidden',
+                maxWidth: 360,
+                mx: 'auto',
             }}
         >
-            {/* status */}
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, minHeight: 24 }}>
+            {KEYS.map(([key, letters]) => (
+                <ButtonBase
+                    key={key}
+                    onClick={() => press(key)}
+                    sx={theme => ({
+                        height: keyHeight,
+                        borderRadius: large ? '16px' : '12px',
+                        border: 1,
+                        borderColor: 'divider',
+                        flexDirection: 'column',
+                        background:
+                            theme.palette.mode === 'dark'
+                                ? 'linear-gradient(180deg, rgba(255,255,255,0.07) 0%, rgba(255,255,255,0.02) 100%)'
+                                : 'linear-gradient(180deg, #FFFFFF 0%, #F1F4F9 100%)',
+                        boxShadow:
+                            theme.palette.mode === 'dark'
+                                ? 'inset 0 1px 0 rgba(255,255,255,0.06), 0 2px 6px rgba(0,0,0,0.25)'
+                                : '0 1px 3px rgba(15,23,42,0.08)',
+                        transition: 'border-color 0.15s, transform 0.05s',
+                        '&:hover': { borderColor: 'primary.main' },
+                        '&:active': { transform: 'scale(0.97)' },
+                    })}
+                >
+                    <Typography sx={{ fontSize: large ? 26 : 20, fontWeight: 500, lineHeight: 1 }}>{key}</Typography>
+                    <Typography
+                        sx={{ fontSize: 10, letterSpacing: 2, color: 'text.secondary', minHeight: 12, mt: 0.25 }}
+                    >
+                        {letters}
+                    </Typography>
+                </ButtonBase>
+            ))}
+        </Box>
+    );
+
+    return (
+        <Card
+            variant="outlined"
+            sx={{
+                width: '100%',
+                height: '100%',
+                display: 'flex',
+                flexDirection: 'column',
+                borderRadius: large ? '24px' : '20px',
+                boxSizing: 'border-box',
+                boxShadow: theme =>
+                    large
+                        ? 'none'
+                        : theme.palette.mode === 'dark'
+                          ? '0 24px 60px rgba(0, 0, 0, 0.45)'
+                          : '0 24px 60px rgba(15, 23, 42, 0.12)',
+            }}
+        >
+            {/* header */}
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, px: large ? 2.5 : 2, py: large ? 2 : 1.25 }}>
                 <Box
                     sx={{
-                        width: 10,
-                        height: 10,
-                        borderRadius: '50%',
+                        width: large ? 40 : 34,
+                        height: large ? 40 : 34,
                         flexShrink: 0,
-                        bgcolor: statusColor,
-                        boxShadow: `0 0 6px ${statusColor}`,
-                    }}
-                />
-                <Typography
-                    variant="body2"
-                    noWrap
-                    sx={{ flex: 1, fontWeight: snap.call !== 'none' ? 600 : 400 }}
-                >
-                    {snap.peer ? `${snap.peer} · ` : ''}
-                    {status}
-                </Typography>
-                {snap.audioLocked && registered ? (
-                    <Tooltip title={t('click_sound')}>
-                        <IconButton
-                            size="small"
-                            onClick={() => phone?.unlockAudio()}
-                            sx={{ color: 'warning.main' }}
-                        >
-                            <VolumeUpIcon fontSize="small" />
-                        </IconButton>
-                    </Tooltip>
-                ) : null}
-                {props.onMinimize ? (
-                    <IconButton
-                        size="small"
-                        onClick={props.onMinimize}
-                        title={t('minimize')}
-                    >
-                        <MinimizeIcon fontSize="small" />
-                    </IconButton>
-                ) : null}
-            </Box>
-
-            {props.problem ? (
-                <Alert
-                    severity="warning"
-                    sx={{ py: 0 }}
-                >
-                    {props.problem}
-                </Alert>
-            ) : null}
-            {!props.problem &&
-            props.certUrl &&
-            snap.registration !== 'registered' &&
-            snap.registration !== 'offline' ? (
-                <Alert
-                    severity="info"
-                    sx={{ py: 0 }}
-                >
-                    {t('cert_hint')}{' '}
-                    <Link
-                        href={props.certUrl}
-                        target="_blank"
-                        rel="noreferrer"
-                    >
-                        {t('accept_cert')}
-                    </Link>
-                </Alert>
-            ) : null}
-
-            {/* picture */}
-            {picture ? (
-                <Box
-                    sx={{
-                        position: 'relative',
-                        flex: 1,
-                        minHeight: 60,
-                        borderRadius: 2,
-                        overflow: 'hidden',
-                        bgcolor: showRemoteVideo || showCamera ? '#000' : 'action.hover',
+                        borderRadius: '11px',
+                        background: BRAND_GRADIENT,
+                        color: '#fff',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
+                        boxShadow: '0 4px 14px rgba(19, 123, 248, 0.35)',
                     }}
                 >
-                    {picture}
-                    {snap.cameraOn && snap.call !== 'none' ? (
-                        <Box
-                            sx={{
-                                position: 'absolute',
-                                right: 8,
-                                bottom: 8,
-                                width: '28%',
-                                aspectRatio: '4 / 3',
-                                borderRadius: 1,
-                                overflow: 'hidden',
-                                boxShadow: 4,
-                                border: '2px solid rgba(255,255,255,0.7)',
-                                bgcolor: '#000',
-                            }}
-                        >
-                            <StreamVideo
-                                stream={snap.localStream}
-                                version={snap.cameraLabel}
-                                mirrored
-                            />
-                        </Box>
-                    ) : null}
+                    <CallIcon fontSize={large ? 'medium' : 'small'} />
                 </Box>
-            ) : (
-                <Box sx={{ flex: 1 }} />
-            )}
-
-            {/* number and keypad */}
-            {snap.call === 'none' && options.showKeypad ? (
-                <>
-                    <TextField
-                        size="small"
-                        value={number}
-                        placeholder={options.number || t('number')}
-                        onChange={e => setNumber(e.target.value.replace(/[^0-9*#+]/g, ''))}
-                        onKeyDown={e => {
-                            if (e.key === 'Enter' && target) {
-                                void phone?.call(target, options.video && options.sendCamera);
-                            }
-                        }}
-                        slotProps={{
-                            input: {
-                                endAdornment: number ? (
-                                    <InputAdornment position="end">
-                                        <IconButton
-                                            size="small"
-                                            onClick={() => setNumber(n => n.slice(0, -1))}
-                                            title={t('backspace')}
-                                        >
-                                            <BackspaceIcon fontSize="small" />
-                                        </IconButton>
-                                    </InputAdornment>
-                                ) : null,
-                            },
-                        }}
+                <Typography
+                    variant={large ? 'h6' : 'subtitle1'}
+                    noWrap
+                    sx={{ flex: 1, fontWeight: 700 }}
+                >
+                    {options.title || t('phone_widget')}
+                </Typography>
+                <Tooltip title={snap.error || ''}>
+                    <Chip
+                        variant="outlined"
+                        size={large ? 'medium' : 'small'}
+                        color={chipColor}
+                        label={chipLabel}
+                        icon={
+                            <Box
+                                component="span"
+                                sx={{
+                                    width: 8,
+                                    height: 8,
+                                    borderRadius: '50%',
+                                    bgcolor: 'currentColor',
+                                    ml: '10px !important',
+                                }}
+                            />
+                        }
+                        sx={{ borderRadius: '16px', fontWeight: 500 }}
                     />
-                    {keypad}
-                </>
-            ) : null}
-            {inCall && keypadInCall ? keypad : null}
-
-            {/* actions */}
-            <Box
-                sx={{
-                    display: 'flex',
-                    justifyContent: 'center',
-                    alignItems: 'center',
-                    flexWrap: 'wrap',
-                    gap: large ? 2 : 1,
-                    pt: 0.5,
-                }}
-            >
-                {snap.call === 'none' ? (
-                    <>
-                        {target ? (
-                            <Button
-                                variant="contained"
-                                color="success"
-                                disabled={!registered}
-                                startIcon={<CallIcon />}
-                                onClick={() => void phone?.call(target, options.video && options.sendCamera)}
-                                sx={{ borderRadius: 99, px: 3 }}
-                            >
-                                {!options.showKeypad && options.numberLabel ? options.numberLabel : t('call')}
-                            </Button>
-                        ) : null}
-                        {target && options.video && !options.sendCamera ? (
-                            <Tooltip title={t('video_call')}>
-                                <span>
-                                    <IconButton
-                                        disabled={!registered}
-                                        onClick={() => void phone?.call(target, true)}
-                                        color="success"
-                                    >
-                                        <VideocamIcon />
-                                    </IconButton>
-                                </span>
-                            </Tooltip>
-                        ) : null}
-                    </>
-                ) : null}
-
-                {snap.call === 'incoming' ? (
-                    <>
-                        <RoundButton
-                            color={GREEN}
-                            title={t('answer')}
-                            size={buttonSize}
-                            onClick={() => void phone?.answer(options.video && options.sendCamera)}
-                        >
-                            <CallIcon />
-                        </RoundButton>
-                        {options.video && snap.incomingVideo && !options.sendCamera ? (
-                            <RoundButton
-                                color={BLUE}
-                                title={t('answer_video')}
-                                size={buttonSize}
-                                onClick={() => void phone?.answer(true)}
-                            >
-                                <VideocamIcon />
-                            </RoundButton>
-                        ) : null}
-                        <RoundButton
-                            color={RED}
-                            title={t('decline')}
-                            size={buttonSize}
-                            onClick={() => phone?.decline()}
-                        >
-                            <CallEndIcon />
-                        </RoundButton>
-                    </>
-                ) : null}
-
-                {inCall ? (
-                    <>
-                        <RoundButton
-                            color={snap.muted ? RED : GREY}
-                            title={snap.muted ? t('unmute') : t('mute')}
-                            size={buttonSize * 0.8}
-                            active={snap.muted}
-                            onClick={() => phone?.toggleMute()}
-                        >
-                            {snap.muted ? <MicOffIcon /> : <MicIcon />}
-                        </RoundButton>
-                        {options.video ? (
-                            <RoundButton
-                                color={snap.cameraOn ? BLUE : GREY}
-                                title={snap.cameraOn ? t('camera_off') : t('camera_on')}
-                                size={buttonSize * 0.8}
-                                active={snap.cameraOn}
-                                onClick={() => void phone?.toggleCamera()}
-                            >
-                                {snap.cameraOn ? <VideocamIcon /> : <VideocamOffIcon />}
-                            </RoundButton>
-                        ) : null}
-                        <RoundButton
-                            color={keypadInCall ? BLUE : GREY}
-                            title={t('keypad')}
-                            size={buttonSize * 0.8}
-                            active={keypadInCall}
-                            onClick={() => setKeypadInCall(v => !v)}
-                        >
-                            <DialpadIcon />
-                        </RoundButton>
-                        {options.actionLabel ? (
-                            <Button
-                                variant="contained"
-                                startIcon={<ActionIcon />}
-                                onClick={props.onAction}
-                                sx={{ borderRadius: 99 }}
-                            >
-                                {options.actionLabel}
-                            </Button>
-                        ) : null}
-                    </>
-                ) : null}
-
-                {inCall || snap.call === 'calling' ? (
-                    <RoundButton
-                        color={RED}
-                        title={t('hangup')}
-                        size={buttonSize}
-                        onClick={() => phone?.hangup()}
-                    >
-                        <CallEndIcon />
-                    </RoundButton>
+                </Tooltip>
+                {props.onMinimize ? (
+                    <Tooltip title={t('minimize')}>
+                        <IconButton onClick={props.onMinimize}>
+                            <MinimizeIcon />
+                        </IconButton>
+                    </Tooltip>
                 ) : null}
             </Box>
-        </Box>
+            <Divider />
+
+            {registered && snap.audioLocked ? (
+                <Alert
+                    severity="warning"
+                    sx={{ borderRadius: 0, cursor: 'pointer', py: 0 }}
+                    onClick={() => phone?.unlockAudio()}
+                >
+                    {t('click_sound')}
+                </Alert>
+            ) : null}
+
+            <Box
+                sx={{
+                    flex: 1,
+                    minHeight: 0,
+                    overflowY: 'auto',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: large ? 2 : 1.25,
+                    p: large ? 2.5 : 1.5,
+                }}
+            >
+                <Typography
+                    variant="body2"
+                    color="text.secondary"
+                    align="center"
+                    noWrap
+                >
+                    {subtitle}
+                </Typography>
+
+                {props.problem ? (
+                    <Alert
+                        severity="warning"
+                        sx={{ py: 0 }}
+                    >
+                        {props.problem}
+                    </Alert>
+                ) : null}
+                {!props.problem &&
+                props.certUrl &&
+                (snap.registration === 'connecting' || snap.registration === 'error') ? (
+                    <Alert
+                        severity="info"
+                        sx={{ py: 0 }}
+                    >
+                        {t('cert_hint')}{' '}
+                        <Link
+                            href={props.certUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                        >
+                            {t('accept_cert')}
+                        </Link>
+                    </Alert>
+                ) : null}
+
+                {/* number or other party */}
+                {snap.call !== 'none' ? (
+                    <Panel sx={{ px: 2, py: 1, textAlign: 'center' }}>
+                        <Typography
+                            variant={large ? 'h5' : 'h6'}
+                            noWrap
+                            sx={{ fontWeight: 600 }}
+                        >
+                            {snap.peer || '-'}
+                        </Typography>
+                        <Typography
+                            variant="body2"
+                            color={inCall ? 'success.main' : 'text.secondary'}
+                        >
+                            {callText}
+                        </Typography>
+                    </Panel>
+                ) : options.showKeypad ? (
+                    <Panel sx={{ px: 2, minHeight: large ? 76 : 60, display: 'flex', alignItems: 'center' }}>
+                        <TextField
+                            variant="standard"
+                            value={number}
+                            placeholder={options.number || t('number')}
+                            onChange={e => setNumber(e.target.value.replace(/[^0-9*#+]/g, ''))}
+                            onKeyDown={e => {
+                                if (e.key === 'Enter' && target) {
+                                    void phone?.call(target, options.video && options.sendCamera);
+                                }
+                            }}
+                            fullWidth
+                            slotProps={{
+                                htmlInput: {
+                                    inputMode: 'numeric',
+                                    'aria-label': t('number'),
+                                    style: {
+                                        textAlign: 'center',
+                                        fontSize: large ? 36 : 28,
+                                        fontWeight: 600,
+                                        letterSpacing: 1,
+                                        paddingLeft: 40,
+                                    },
+                                },
+                                input: {
+                                    disableUnderline: true,
+                                    endAdornment: (
+                                        <InputAdornment position="end">
+                                            <IconButton
+                                                aria-label={t('backspace')}
+                                                onClick={() => setNumber(n => n.slice(0, -1))}
+                                                sx={{ visibility: number ? 'visible' : 'hidden' }}
+                                            >
+                                                <BackspaceIcon />
+                                            </IconButton>
+                                        </InputAdornment>
+                                    ),
+                                },
+                            }}
+                        />
+                    </Panel>
+                ) : null}
+
+                {/* picture: video of the other party, camera or ringing */}
+                {picture ? (
+                    <Box
+                        sx={{
+                            position: 'relative',
+                            flex: 1,
+                            minHeight: large ? 200 : 120,
+                            borderRadius: '16px',
+                            overflow: 'hidden',
+                            border: dark ? 0 : 1,
+                            borderColor: 'divider',
+                            bgcolor: dark ? '#000' : 'transparent',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                        }}
+                    >
+                        {picture}
+                        {snap.cameraOn && snap.call !== 'none' ? (
+                            <Box
+                                sx={{
+                                    position: 'absolute',
+                                    right: 10,
+                                    bottom: 10,
+                                    width: '30%',
+                                    aspectRatio: '4 / 3',
+                                    borderRadius: '10px',
+                                    overflow: 'hidden',
+                                    border: '2px solid rgba(255, 255, 255, 0.75)',
+                                    boxShadow: 4,
+                                    bgcolor: '#000',
+                                }}
+                            >
+                                <StreamVideo
+                                    stream={snap.localStream}
+                                    version={snap.cameraLabel}
+                                    mirrored
+                                />
+                            </Box>
+                        ) : null}
+                    </Box>
+                ) : null}
+
+                {(snap.call === 'none' && options.showKeypad) || (inCall && keypadInCall) ? keypad : null}
+                {!picture ? <Box sx={{ flex: 1 }} /> : null}
+
+                {/* buttons */}
+                <Box
+                    sx={{
+                        display: 'flex',
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                        flexWrap: 'wrap',
+                        gap: large ? 3 : 2,
+                        pb: 0.5,
+                    }}
+                >
+                    {snap.call === 'none' ? (
+                        <>
+                            <RoundFab
+                                title={!options.showKeypad && options.numberLabel ? options.numberLabel : t('call')}
+                                color="success"
+                                size={fabBig}
+                                glow
+                                disabled={!registered || !target}
+                                onClick={() => void phone?.call(target, options.video && options.sendCamera)}
+                            >
+                                <CallIcon />
+                            </RoundFab>
+                            {options.video && !options.sendCamera ? (
+                                <RoundFab
+                                    title={t('video_call')}
+                                    color="primary"
+                                    size={fabSmall}
+                                    disabled={!registered || !target}
+                                    onClick={() => void phone?.call(target, true)}
+                                >
+                                    <VideocamIcon />
+                                </RoundFab>
+                            ) : null}
+                        </>
+                    ) : null}
+
+                    {snap.call === 'incoming' ? (
+                        <>
+                            <RoundFab
+                                title={t('decline')}
+                                color="error"
+                                size={fabBig}
+                                onClick={() => phone?.decline()}
+                            >
+                                <CallEndIcon />
+                            </RoundFab>
+                            <RoundFab
+                                title={t('answer')}
+                                color="success"
+                                size={fabBig}
+                                glow
+                                onClick={() => void phone?.answer(options.video && options.sendCamera)}
+                            >
+                                <CallIcon />
+                            </RoundFab>
+                            {options.video && snap.incomingVideo && !options.sendCamera ? (
+                                <RoundFab
+                                    title={t('answer_video')}
+                                    color="primary"
+                                    size={fabBig}
+                                    glow
+                                    onClick={() => void phone?.answer(true)}
+                                >
+                                    <VideocamIcon />
+                                </RoundFab>
+                            ) : null}
+                        </>
+                    ) : null}
+
+                    {inCall ? (
+                        <>
+                            <RoundFab
+                                title={snap.muted ? t('unmute') : t('mute')}
+                                color={snap.muted ? 'error' : 'default'}
+                                size={fabSmall}
+                                onClick={() => phone?.toggleMute()}
+                            >
+                                {snap.muted ? <MicOffIcon /> : <MicIcon />}
+                            </RoundFab>
+                            {options.video ? (
+                                <RoundFab
+                                    title={snap.cameraOn ? t('camera_off') : t('camera_on')}
+                                    color={snap.cameraOn ? 'primary' : 'default'}
+                                    size={fabSmall}
+                                    onClick={() => void phone?.toggleCamera()}
+                                >
+                                    {snap.cameraOn ? <VideocamIcon /> : <VideocamOffIcon />}
+                                </RoundFab>
+                            ) : null}
+                            <RoundFab
+                                title={t('keypad')}
+                                color={keypadInCall ? 'primary' : 'default'}
+                                size={fabSmall}
+                                onClick={() => setKeypadInCall(v => !v)}
+                            >
+                                <DialpadIcon />
+                            </RoundFab>
+                            {options.actionLabel ? (
+                                <RoundFab
+                                    title={options.actionLabel}
+                                    color="primary"
+                                    size={fabSmall}
+                                    glow
+                                    onClick={props.onAction}
+                                >
+                                    <ActionIcon />
+                                </RoundFab>
+                            ) : null}
+                        </>
+                    ) : null}
+
+                    {inCall || snap.call === 'calling' ? (
+                        <RoundFab
+                            title={t('hangup')}
+                            color="error"
+                            size={fabBig}
+                            glow
+                            onClick={() => phone?.hangup()}
+                        >
+                            <CallEndIcon />
+                        </RoundFab>
+                    ) : null}
+                </Box>
+            </Box>
+        </Card>
     );
 }
 
@@ -554,9 +732,11 @@ export function PhoneView(props: PhoneViewProps): React.JSX.Element {
                 <Dialog
                     open
                     fullWidth
-                    maxWidth="sm"
+                    maxWidth="xs"
                     onClose={() => setMinimizedCall(callId)}
-                    slotProps={{ paper: { sx: { height: 'min(720px, 90vh)', borderRadius: 3 } } }}
+                    slotProps={{
+                        paper: { sx: { height: 'min(760px, 92vh)', borderRadius: '24px', overflow: 'hidden' } },
+                    }}
                 >
                     <PhoneBody
                         {...props}

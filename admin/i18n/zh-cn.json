@@ -64,5 +64,20 @@
     "Plus call flow (verbose)": "加上通话流程（verbose）",
     "Everything (debug)": "全部（debug）",
     "Log SIP messages": "记录 SIP 消息",
-    "help_sip_trace": "仅用于排查注册和通话问题：每条 SIP 消息都以 debug 记录。需要选择“加上通话流程”或“全部”"
+    "help_sip_trace": "仅用于排查注册和通话问题：每条 SIP 消息都以 debug 记录。需要选择“加上通话流程”或“全部”",
+    "Cameras": "摄像头",
+    "hint_cameras": "适配器获取这些摄像头的画面（也支持密码或 API 密钥，这是 vis 中的浏览器做不到的），并写入 asterisk-docker.X.cameras.<name>.image。在电话小部件的“来自数据点的摄像头画面”中选择该数据点。通话期间画面快速刷新，否则缓慢刷新。UniFi Protect：https://<控制台 IP>/proxy/protect/integration/v1/cameras/<摄像头 ID>/snapshot，并使用 API 密钥（UniFi OS → 设置 → Control Plane → 集成）。",
+    "Snapshot URL": "快照地址",
+    "Authentication": "认证",
+    "None": "无",
+    "User and password": "用户名和密码",
+    "API key (UniFi Protect)": "API 密钥 (UniFi Protect)",
+    "Bearer token": "Bearer 令牌",
+    "User": "用户",
+    "Password / key": "密码 / 密钥",
+    "Self-signed certificate": "自签名证书",
+    "During calls (s)": "通话中（秒）",
+    "Without call (s)": "无通话（秒）",
+    "Only a-z, 0-9, _ and -": "仅限 a-z、0-9、_ 和 -",
+    "http:// or https:// URL": "http:// 或 https:// 地址"
 }

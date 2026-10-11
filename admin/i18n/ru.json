@@ -64,5 +64,20 @@
     "Plus call flow (verbose)": "Плюс ход вызовов (verbose)",
     "Everything (debug)": "Всё (debug)",
     "Log SIP messages": "Записывать SIP-сообщения",
-    "help_sip_trace": "Только для поиска ошибок регистрации и вызовов: каждое SIP-сообщение записывается как debug. Требует «Плюс ход вызовов» или «Всё»"
+    "help_sip_trace": "Только для поиска ошибок регистрации и вызовов: каждое SIP-сообщение записывается как debug. Требует «Плюс ход вызовов» или «Всё»",
+    "Cameras": "Камеры",
+    "hint_cameras": "Адаптер получает изображения этих камер - также с паролем или ключом API, чего браузер в vis не умеет - и записывает их в asterisk-docker.X.cameras.<name>.image. Выберите это состояние в виджете телефона в поле «Изображение камеры из состояния». Во время звонка изображение обновляется быстро, иначе медленно. UniFi Protect: https://<IP консоли>/proxy/protect/integration/v1/cameras/<ID камеры>/snapshot с ключом API (UniFi OS → Настройки → Control Plane → Интеграции).",
+    "Snapshot URL": "URL снимка",
+    "Authentication": "Аутентификация",
+    "None": "Нет",
+    "User and password": "Пользователь и пароль",
+    "API key (UniFi Protect)": "Ключ API (UniFi Protect)",
+    "Bearer token": "Токен Bearer",
+    "User": "Пользователь",
+    "Password / key": "Пароль / ключ",
+    "Self-signed certificate": "Самоподписанный сертификат",
+    "During calls (s)": "Во время звонка (с)",
+    "Without call (s)": "Без звонка (с)",
+    "Only a-z, 0-9, _ and -": "Только a-z, 0-9, _ и -",
+    "http:// or https:// URL": "URL http:// или https://"
 }

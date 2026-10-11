@@ -104,6 +104,12 @@ const DTMF_FREQUENCIES: Record<string, [number, number]> = {
     '#': [941, 1477],
 };
 
+/**
+ * DTMF in the media stream (RFC 4733/2833), the default of Asterisk (dtmf_mode=rfc4733). It reaches SIP
+ * devices like door intercoms the same way. JsSIP would send SIP INFO by default.
+ */
+const DTMF_OPTIONS = { transportType: JsSIP.C.DTMF_TRANSPORT.RFC2833 };
+
 type AudioContextWithSink = AudioContext & { setSinkId?: (id: string) => Promise<void> };
 type AudioElementWithSink = HTMLAudioElement & { setSinkId?: (id: string) => Promise<void> };
 
@@ -148,6 +154,8 @@ export class SipPhone {
     #micSource: MediaStreamAudioSourceNode | null = null;
     #remoteSource: MediaStreamAudioSourceNode | null = null;
     #localStream: MediaStream | null = null;
+    /** All tracks received from the other party */
+    #remoteMedia: MediaStream | null = null;
     readonly #remoteAudio: AudioElementWithSink;
 
     #micDevice = '';
@@ -429,36 +437,55 @@ export class SipPhone {
         });
     }
 
-    #setRemoteStream(stream: MediaStream): void {
-        if (this.#remoteAudio.srcObject !== stream) {
+    /**
+     * Collect a received track in the one stream of the other party. Audio and video arrive as separate
+     * tracks, often in separate streams: replacing the source of the audio element for every track would
+     * interrupt the playback and could leave it with the video only.
+     */
+    #addRemoteTrack(track: MediaStreamTrack): void {
+        let stream = this.#remoteMedia;
+        if (!stream) {
+            stream = new MediaStream();
+            this.#remoteMedia = stream;
             this.#remoteAudio.srcObject = stream;
-            this.#remoteAudio.play().catch(e => this.log(`Cannot play remote audio: ${(e as Error).message}`));
+            this.#remoteAudio.play().catch(e => {
+                // AbortError: replaced by the next call - nothing to report
+                if ((e as Error).name !== 'AbortError') {
+                    this.log(`Cannot play remote audio: ${(e as Error).message}`);
+                }
+            });
         }
-        this.#remoteSource?.disconnect();
-        this.#remoteSource = null;
-        if (stream.getAudioTracks().length) {
+        if (stream.getTracks().includes(track)) {
+            return;
+        }
+        stream.addTrack(track);
+        if (track.kind === 'audio') {
+            this.#remoteSource?.disconnect();
             // only for the meter - the sound itself is played by the audio element
-            this.#remoteSource = this.#audio().createMediaStreamSource(stream);
+            this.#remoteSource = this.#audio().createMediaStreamSource(new MediaStream([track]));
             this.#remoteSource.connect(this.#spkAnalyser!);
+        } else if (track.kind === 'video') {
+            // a video track exists as soon as video was negotiated; it is muted until pictures arrive
+            const remote = stream;
+            const updateVideo = (): void => {
+                if (this.#remoteMedia === remote) {
+                    this.#update({
+                        remoteVideo: remote.getVideoTracks().some(t => t.readyState === 'live' && !t.muted),
+                    });
+                }
+            };
+            track.addEventListener('mute', updateVideo);
+            track.addEventListener('unmute', updateVideo);
+            track.addEventListener('ended', updateVideo);
+            updateVideo();
         }
-        // a video track exists as soon as video was negotiated; it is muted until pictures arrive
-        const updateVideo = (): void => {
-            if (this.#snapshot.remoteStream === stream) {
-                this.#update({ remoteVideo: stream.getVideoTracks().some(t => t.readyState === 'live' && !t.muted) });
-            }
-        };
-        stream.getVideoTracks().forEach(t => {
-            t.onmute = updateVideo;
-            t.onunmute = updateVideo;
-            t.onended = updateVideo;
-        });
         this.#update({ remoteStream: stream });
-        updateVideo();
     }
 
     #clearRemoteStream(): void {
         this.#remoteSource?.disconnect();
         this.#remoteSource = null;
+        this.#remoteMedia = null;
         this.#remoteAudio.srcObject = null;
         this.#update({ remoteStream: null, remoteVideo: false });
     }
@@ -607,7 +634,7 @@ export class SipPhone {
             return;
         }
         this.#hooked.add(pc);
-        pc.addEventListener('track', ev => this.#setRemoteStream(ev.streams[0] || new MediaStream([ev.track])));
+        pc.addEventListener('track', ev => this.#addRemoteTrack(ev.track));
         pc.addEventListener('iceconnectionstatechange', () => this.log(`ICE: ${pc.iceConnectionState}`));
         pc.addEventListener('signalingstatechange', () => {
             // An offer with video and the camera off: answer with sendrecv anyway, so the camera can be
@@ -618,7 +645,7 @@ export class SipPhone {
                     .forEach(t => (t.direction = 'sendrecv'));
             }
         });
-        pc.getReceivers().forEach(r => r.track && this.#setRemoteStream(new MediaStream([r.track])));
+        pc.getReceivers().forEach(r => r.track && this.#addRemoteTrack(r.track));
     }
 
     /**
@@ -734,7 +761,7 @@ export class SipPhone {
     sendDtmf(tones: string): void {
         const valid = tones.replace(/[^0-9*#A-D]/gi, '');
         if (valid && this.#session?.isEstablished()) {
-            this.#session.sendDTMF(valid);
+            this.#session.sendDTMF(valid, DTMF_OPTIONS);
             this.log(`DTMF ${valid}`);
         }
     }
@@ -746,7 +773,7 @@ export class SipPhone {
             this.#tone(freqs, this.#audio().currentTime + 0.01, 0.12, 0.08);
         }
         if (this.#session?.isEstablished()) {
-            this.#session.sendDTMF(key);
+            this.#session.sendDTMF(key, DTMF_OPTIONS);
             this.log(`DTMF ${key}`);
         }
     }

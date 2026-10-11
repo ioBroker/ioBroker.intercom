@@ -64,5 +64,20 @@
     "Plus call flow (verbose)": "Plus call flow (verbose)",
     "Everything (debug)": "Everything (debug)",
     "Log SIP messages": "Log SIP messages",
-    "help_sip_trace": "Only for troubleshooting registration and calls: every SIP message appears as debug. Requires \"Plus call flow\" or \"Everything\""
+    "help_sip_trace": "Only for troubleshooting registration and calls: every SIP message appears as debug. Requires \"Plus call flow\" or \"Everything\"",
+    "Cameras": "Cameras",
+    "hint_cameras": "The adapter fetches the pictures of these cameras - also with password or API key, which a browser in vis cannot do - and writes them into asterisk-docker.X.cameras.<name>.image. Select this state in the phone widget under \"Camera picture from state\". During a call the picture is updated fast, otherwise slowly. UniFi Protect: https://<console IP>/proxy/protect/integration/v1/cameras/<camera ID>/snapshot with an API key (UniFi OS → Settings → Control Plane → Integrations).",
+    "Snapshot URL": "Snapshot URL",
+    "Authentication": "Authentication",
+    "None": "None",
+    "User and password": "User and password",
+    "API key (UniFi Protect)": "API key (UniFi Protect)",
+    "Bearer token": "Bearer token",
+    "User": "User",
+    "Password / key": "Password / key",
+    "Self-signed certificate": "Self-signed certificate",
+    "During calls (s)": "During calls (s)",
+    "Without call (s)": "Without call (s)",
+    "Only a-z, 0-9, _ and -": "Only a-z, 0-9, _ and -",
+    "http:// or https:// URL": "http:// or https:// URL"
 }

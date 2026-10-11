@@ -64,5 +64,20 @@
     "Plus call flow (verbose)": "Plus gespreksverloop (verbose)",
     "Everything (debug)": "Alles (debug)",
     "Log SIP messages": "SIP-berichten loggen",
-    "help_sip_trace": "Alleen voor het oplossen van problemen met registratie en gesprekken: elk SIP-bericht verschijnt als debug. Vereist \"Plus gespreksverloop\" of \"Alles\""
+    "help_sip_trace": "Alleen voor het oplossen van problemen met registratie en gesprekken: elk SIP-bericht verschijnt als debug. Vereist \"Plus gespreksverloop\" of \"Alles\"",
+    "Cameras": "Camera's",
+    "hint_cameras": "De adapter haalt de beelden van deze camera's op - ook met wachtwoord of API-sleutel, wat een browser in vis niet kan - en schrijft ze naar asterisk-docker.X.cameras.<name>.image. Selecteer dit datapunt in de telefoonwidget onder \"Camerabeeld uit datapunt\". Tijdens een gesprek wordt het beeld snel bijgewerkt, anders langzaam. UniFi Protect: https://<console-IP>/proxy/protect/integration/v1/cameras/<camera-ID>/snapshot met een API-sleutel (UniFi OS → Instellingen → Control Plane → Integraties).",
+    "Snapshot URL": "Snapshot-URL",
+    "Authentication": "Authenticatie",
+    "None": "Geen",
+    "User and password": "Gebruiker en wachtwoord",
+    "API key (UniFi Protect)": "API-sleutel (UniFi Protect)",
+    "Bearer token": "Bearer-token",
+    "User": "Gebruiker",
+    "Password / key": "Wachtwoord / sleutel",
+    "Self-signed certificate": "Zelfondertekend certificaat",
+    "During calls (s)": "Tijdens gesprekken (s)",
+    "Without call (s)": "Zonder gesprek (s)",
+    "Only a-z, 0-9, _ and -": "Alleen a-z, 0-9, _ en -",
+    "http:// or https:// URL": "http://- of https://-URL"
 }

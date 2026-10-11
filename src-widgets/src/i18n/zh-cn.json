@@ -54,5 +54,11 @@
     "no_config": "请在小部件设置中填写分机号和密码",
     "no_wss": "Asterisk 地址未知：适配器实例是否在运行？",
     "cert_hint": "无法连接？浏览器需要先信任一次 Asterisk 的证书：",
-    "accept_cert": "打开并接受"
+    "accept_cert": "打开并接受",
+    "editor_preview": "编辑器预览，仅在运行时连接",
+    "title": "标题",
+    "title_tooltip": "留空：“电话”",
+    "preview": "预览",
+    "signed_in_as": "已登录为",
+    "connected": "已接通"
 }

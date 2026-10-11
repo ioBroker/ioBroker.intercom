@@ -69,6 +69,12 @@ describe('Asterisk log', () => {
         const ws = classifyMessage(err('res_http_websocket.c: Error reading from web socket: Connection reset by peer'));
         assert.equal(ws.message.level, 'debug');
 
+        // the start of every WebRTC call
+        const dtls = classifyMessage(
+            err('res_rtp_asterisk.c: 1791704072.13: DTLS packet from 192.168.100.114:58998 dropped. ICE not completed yet.'),
+        );
+        assert.equal(dtls.message.level, 'debug');
+
         // everything else keeps its level
         const other = classifyMessage(err('chan_pjsip.c: Something broke'));
         assert.equal(other.message.level, 'error');

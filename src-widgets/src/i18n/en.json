@@ -54,5 +54,11 @@
     "no_config": "Enter extension and password in the widget settings",
     "no_wss": "Address of Asterisk unknown: is the adapter instance running?",
     "cert_hint": "No connection? The browser must trust the certificate of Asterisk once:",
-    "accept_cert": "open and accept"
+    "accept_cert": "open and accept",
+    "editor_preview": "editor preview, connects only in the runtime",
+    "title": "Title",
+    "title_tooltip": "Empty: \"Phone\"",
+    "preview": "preview",
+    "signed_in_as": "Signed in as",
+    "connected": "Connected"
 }

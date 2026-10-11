@@ -54,5 +54,11 @@
     "no_config": "Nebenstelle und Passwort in den Widget-Einstellungen eintragen",
     "no_wss": "Adresse von Asterisk unbekannt: Läuft die Adapterinstanz?",
     "cert_hint": "Keine Verbindung? Der Browser muss dem Zertifikat von Asterisk einmal vertrauen:",
-    "accept_cert": "öffnen und akzeptieren"
+    "accept_cert": "öffnen und akzeptieren",
+    "editor_preview": "Vorschau im Editor, verbindet sich erst in der Laufzeit",
+    "title": "Titel",
+    "title_tooltip": "Leer: „Telefon“",
+    "preview": "Vorschau",
+    "signed_in_as": "Angemeldet als",
+    "connected": "Verbunden"
 }

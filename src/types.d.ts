@@ -11,6 +11,24 @@ export interface Subscriber {
     enabled: boolean;
 }
 
+/** Camera of the snapshot proxy (table "Cameras") */
+export interface CameraEntry {
+    enabled: boolean;
+    /** Becomes the object ID `cameras.<name>` */
+    name: string;
+    url: string;
+    auth: 'none' | 'basic' | 'apikey' | 'bearer';
+    user: string;
+    /** Password, API key or token. Encrypted by admin (`encryptedAttributes` of the table) */
+    password: string;
+    /** Accept self-signed certificates */
+    insecure: boolean;
+    /** Seconds between two pictures during a call */
+    interval: number | string;
+    /** Seconds between two pictures without a call, 0 = none */
+    idleInterval: number | string;
+}
+
 export type Codec = 'opus' | 'g722' | 'ulaw' | 'alaw';
 /** Asterisk cannot transcode video: both parties need a common codec */
 export type VideoCodec = 'vp8' | 'h264' | 'vp9';
@@ -59,6 +77,8 @@ export interface AsteriskAdapterConfig {
     certIobChained: string;
 
     subscribers: Subscriber[];
+    /** Snapshot proxy */
+    cameras: CameraEntry[];
     /** The passwords of `subscribers` are still clear text (default subscribers of io-package.json) */
     subscribersPlain?: boolean;
 }

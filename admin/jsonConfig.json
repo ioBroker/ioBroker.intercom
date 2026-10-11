@@ -114,6 +114,124 @@
                 }
             }
         },
+        "_cameras": {
+            "type": "panel",
+            "label": "Cameras",
+            "items": {
+                "_hintCameras": {
+                    "type": "staticText",
+                    "xs": 12,
+                    "text": "hint_cameras"
+                },
+                "cameras": {
+                    "type": "table",
+                    "newLine": true,
+                    "xs": 12,
+                    "uniqueColumns": [
+                        "name"
+                    ],
+                    "encryptedAttributes": [
+                        "password"
+                    ],
+                    "export": true,
+                    "items": [
+                        {
+                            "type": "checkbox",
+                            "attr": "enabled",
+                            "title": "Active",
+                            "width": 60,
+                            "default": true
+                        },
+                        {
+                            "type": "text",
+                            "attr": "name",
+                            "title": "Name",
+                            "width": 140,
+                            "default": "",
+                            "maxLength": 32,
+                            "validator": "/^[a-z0-9_-]+$/.test(data.name || '')",
+                            "validatorErrorText": "Only a-z, 0-9, _ and -",
+                            "validatorNoSaveOnError": true
+                        },
+                        {
+                            "type": "text",
+                            "attr": "url",
+                            "title": "Snapshot URL",
+                            "default": "",
+                            "validator": "/^https?:\\/\\/./.test(data.url || '')",
+                            "validatorErrorText": "http:// or https:// URL",
+                            "validatorNoSaveOnError": true
+                        },
+                        {
+                            "type": "select",
+                            "attr": "auth",
+                            "title": "Authentication",
+                            "width": 170,
+                            "default": "none",
+                            "options": [
+                                {
+                                    "label": "None",
+                                    "value": "none"
+                                },
+                                {
+                                    "label": "User and password",
+                                    "value": "basic"
+                                },
+                                {
+                                    "label": "API key (UniFi Protect)",
+                                    "value": "apikey"
+                                },
+                                {
+                                    "label": "Bearer token",
+                                    "value": "bearer"
+                                }
+                            ]
+                        },
+                        {
+                            "type": "text",
+                            "attr": "user",
+                            "title": "User",
+                            "width": 120,
+                            "default": ""
+                        },
+                        {
+                            "type": "password",
+                            "attr": "password",
+                            "title": "Password / key",
+                            "width": 160,
+                            "visible": true,
+                            "default": ""
+                        },
+                        {
+                            "type": "checkbox",
+                            "attr": "insecure",
+                            "title": "Self-signed certificate",
+                            "width": 90,
+                            "default": true
+                        },
+                        {
+                            "type": "number",
+                            "attr": "interval",
+                            "title": "During calls (s)",
+                            "width": 100,
+                            "min": 0.5,
+                            "max": 60,
+                            "step": 0.5,
+                            "default": 1
+                        },
+                        {
+                            "type": "number",
+                            "attr": "idleInterval",
+                            "title": "Without call (s)",
+                            "width": 100,
+                            "min": 0,
+                            "max": 3600,
+                            "default": 10
+                        }
+                    ]
+                }
+            }
+        },
         "_certificate": {
             "type": "panel",
             "label": "Certificate",

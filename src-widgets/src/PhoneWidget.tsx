@@ -9,6 +9,7 @@ import { PhoneView, type PhoneViewOptions } from './PhoneView';
 const ADAPTER = 'asterisk-docker';
 
 interface PhoneRxData {
+    title: string;
     instance: string;
     extension: string;
     password: string;
@@ -67,6 +68,7 @@ export default class PhoneWidget extends (window.visRxWidget as typeof VisRxWidg
                 {
                     name: 'common',
                     fields: [
+                        { name: 'title', label: 'title', tooltip: 'title_tooltip' },
                         {
                             name: 'instance',
                             label: 'instance',
@@ -255,6 +257,7 @@ export default class PhoneWidget extends (window.visRxWidget as typeof VisRxWidg
             }
         }
         return {
+            title: String(data.title || ''),
             number: String(data.number || '').trim(),
             numberLabel: String(data.numberLabel || ''),
             showKeypad: bool(data.showKeypad),
@@ -274,6 +277,7 @@ export default class PhoneWidget extends (window.visRxWidget as typeof VisRxWidg
             <div style={{ width: '100%', height: '100%', overflow: 'hidden' }}>
                 <PhoneView
                     phone={this.state.phone}
+                    extension={String(this.state.rxData.extension || '')}
                     options={this.getOptions()}
                     t={(key: string) => PhoneWidget.t(key)}
                     problem={this.state.problem}

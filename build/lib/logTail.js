@@ -32,9 +32,11 @@ function mapLevel(asteriskLevel) {
 const TLS_PEER = /^tcptls\.c: Unable to set up ssl connection with peer '\[?([^'\]]+?)\]?:\d+'/;
 /**
  * Messages of connections that a client closed early: follow-ups of an aborted TLS handshake, and a
- * WebSocket that was closed without a close frame (tab closed or reloaded). They carry no information.
+ * WebSocket that was closed without a close frame (tab closed or reloaded). Also the DTLS packets that a
+ * browser sends at the start of every call before ICE is through - Asterisk drops them, the browser repeats
+ * them. They carry no information.
  */
-const CONNECTION_NOISE = /^(?:iostream\.c: (?:SSL_shutdown\(\) failed|Problem setting up ssl connection)|res_http_websocket\.c: Error reading from web socket)/;
+const CONNECTION_NOISE = /^(?:iostream\.c: (?:SSL_shutdown\(\) failed|Problem setting up ssl connection)|res_http_websocket\.c: Error reading from web socket|res_rtp_asterisk\.c: [^ ]+ DTLS packet from \S+ dropped\. ICE not completed yet)/;
 /**
  * Adjust messages whose level of Asterisk is misleading.
  * Browsers open spare TLS connections and close them during the handshake - Chrome especially for a
