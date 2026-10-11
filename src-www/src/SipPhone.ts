@@ -66,6 +66,12 @@ export interface PhoneSnapshot {
     remoteStream: MediaStream | null;
     /** The other party really sends pictures (a negotiated but silent video track does not count) */
     remoteVideo: boolean;
+    /**
+     * The microphone cannot be used: 'denied' by the browser, the user or the app around the page
+     * (e.g. a WebView without the permission), 'nodevice' when there is none. Known before a call if the
+     * browser reports the permission.
+     */
+    mediaError: '' | 'denied' | 'nodevice';
     log: LogEntry[];
 }
 
@@ -175,6 +181,7 @@ export class SipPhone {
     #lastFrames = 0;
     /** Seconds in a row without a new video frame */
     #frozenSeconds = 0;
+    #permissionWatched = false;
 
     constructor(options: PhoneOptions) {
         this.#options = { realm: 'iobroker', iceServers: [], maxLog: 500, video: false, camera: true, ...options };
@@ -197,6 +204,7 @@ export class SipPhone {
             localStream: null,
             remoteStream: null,
             remoteVideo: false,
+            mediaError: '',
             log: [],
         };
         this.#remoteAudio = document.createElement('audio');
@@ -390,6 +398,9 @@ export class SipPhone {
             stream = await navigator.mediaDevices.getUserMedia({ audio, video: false });
         }
         this.#localStream = stream;
+        if (this.#snapshot.mediaError) {
+            this.#update({ mediaError: '' });
+        }
         this.#watchCamera(stream.getVideoTracks()[0]);
         this.#micSource = this.#audio().createMediaStreamSource(this.#localStream);
         this.#micSource.connect(this.#micAnalyser!);
@@ -514,10 +525,47 @@ export class SipPhone {
         }, 8000);
     }
 
+    /** Remember why the microphone could not be opened, so the UI can explain it */
+    #noteMediaError(e: unknown): void {
+        const name = (e as Error)?.name;
+        if (name === 'NotAllowedError' || name === 'SecurityError') {
+            this.#update({ mediaError: 'denied' });
+        } else if (name === 'NotFoundError' || name === 'OverconstrainedError') {
+            this.#update({ mediaError: 'nodevice' });
+        }
+    }
+
+    /**
+     * Report a blocked microphone already before a call: otherwise a door phone notices it only when
+     * somebody rings. Not every browser or WebView supports the query - then the error comes with the call.
+     */
+    async #watchMicPermission(): Promise<void> {
+        if (this.#permissionWatched || !navigator.permissions?.query) {
+            return;
+        }
+        this.#permissionWatched = true;
+        try {
+            const status = await navigator.permissions.query({ name: 'microphone' });
+            const apply = (): void => {
+                if (status.state === 'denied') {
+                    this.log('The microphone is blocked for this page');
+                    this.#update({ mediaError: 'denied' });
+                } else if (this.#snapshot.mediaError === 'denied') {
+                    this.#update({ mediaError: '' });
+                }
+            };
+            status.addEventListener('change', apply);
+            apply();
+        } catch {
+            // "microphone" is not supported by this browser
+        }
+    }
+
     // ------------------------------------------------------------------ registration
     login(extension: string, password: string): void {
         this.logout(false);
         this.unlockAudio();
+        void this.#watchMicPermission();
         try {
             this.#ua = new JsSIP.UA({
                 sockets: [new JsSIP.WebSocketInterface(this.#options.wssUrl)],
@@ -672,6 +720,7 @@ export class SipPhone {
                 pcConfig: { iceServers: this.#options.iceServers },
             });
         } catch (e) {
+            this.#noteMediaError(e);
             this.#endCall(`Cannot start call: ${(e as Error).message}`, (e as Error).message);
         }
     }
@@ -691,6 +740,7 @@ export class SipPhone {
             const stream = await this.#openMedia(video && this.#snapshot.incomingVideo);
             s.answer({ mediaStream: stream, pcConfig: { iceServers: this.#options.iceServers } });
         } catch (e) {
+            this.#noteMediaError(e);
             this.log(`Cannot answer: ${(e as Error).message}`);
             s.terminate();
         }

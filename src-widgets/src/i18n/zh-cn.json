@@ -62,5 +62,7 @@
     "title_tooltip": "留空：“电话”",
     "preview": "预览",
     "signed_in_as": "已登录为",
-    "connected": "已接通"
+    "connected": "已接通",
+    "mic_denied": "麦克风未被允许。请在浏览器中为此页面允许麦克风——在应用中（例如 ioBroker.visu、Fully Kiosk），该应用本身也需要麦克风权限。",
+    "mic_missing": "未找到麦克风"
 }

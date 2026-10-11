@@ -62,5 +62,7 @@
     "title_tooltip": "Vuoto: \"Telefono\"",
     "preview": "anteprima",
     "signed_in_as": "Connesso come",
-    "connected": "Connesso"
+    "connected": "Connesso",
+    "mic_denied": "Microfono non consentito. Consentilo per questa pagina nel browser - in un'app (ad es. ioBroker.visu, Fully Kiosk) anche l'app ha bisogno del permesso per il microfono.",
+    "mic_missing": "Nessun microfono trovato"
 }

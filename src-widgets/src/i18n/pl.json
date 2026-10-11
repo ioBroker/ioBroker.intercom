@@ -62,5 +62,7 @@
     "title_tooltip": "Puste: „Telefon”",
     "preview": "podgląd",
     "signed_in_as": "Zalogowano jako",
-    "connected": "Połączono"
+    "connected": "Połączono",
+    "mic_denied": "Mikrofon niedozwolony. Zezwól na niego dla tej strony w przeglądarce - w aplikacji (np. ioBroker.visu, Fully Kiosk) także aplikacja potrzebuje uprawnienia do mikrofonu.",
+    "mic_missing": "Nie znaleziono mikrofonu"
 }

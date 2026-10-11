@@ -93,6 +93,7 @@ const PREVIEW: PhoneSnapshot = {
     localStream: null,
     remoteStream: null,
     remoteVideo: false,
+    mediaError: '',
     log: [],
 };
 
@@ -449,6 +450,14 @@ function PhoneBody(
                         sx={{ py: 0 }}
                     >
                         {props.problem}
+                    </Alert>
+                ) : null}
+                {snap.mediaError ? (
+                    <Alert
+                        severity="error"
+                        sx={{ py: 0 }}
+                    >
+                        {t(snap.mediaError === 'denied' ? 'mic_denied' : 'mic_missing')}
                     </Alert>
                 ) : null}
                 {!props.problem &&
