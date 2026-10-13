@@ -44,6 +44,16 @@ function bool(value: unknown): boolean {
 }
 
 /**
+ * Has the view open in the editor the option "Render always"? A `hidden` predicate gets only the data of the
+ * widget, but vis-2 keeps the project and the view open in the editor (that is the view of the selected widget)
+ * in `window.vis`.
+ */
+function viewAlwaysRendered(): boolean {
+    const vis = window.vis as typeof window.vis | undefined;
+    return !!vis?.views?.[vis.activeView]?.settings?.alwaysRender;
+}
+
+/**
  * Phone of the Asterisk adapter: audio and video calls over WebRTC, picture of a door camera,
  * and a dialog that pops up for incoming calls.
  */
@@ -76,6 +86,13 @@ export default class PhoneWidget extends (window.visRxWidget as typeof VisRxWidg
                 {
                     name: 'common',
                     fields: [
+                        // vis-2 renders only the active view: the phone rings on other views only with this option
+                        {
+                            name: 'alwaysRenderHelp',
+                            type: 'help',
+                            text: 'always_render_hint',
+                            hidden: viewAlwaysRendered,
+                        },
                         { name: 'title', label: 'title', tooltip: 'title_tooltip' },
                         {
                             name: 'instance',
@@ -300,6 +317,15 @@ export default class PhoneWidget extends (window.visRxWidget as typeof VisRxWidg
         };
     }
 
+    /** In the editor: the view is not rendered while another one is open, so the phone would be offline there */
+    private getHint(): string {
+        if (!this.props.editMode) {
+            return '';
+        }
+        const view = this.props.context.views?.[this.props.view];
+        return view?.settings?.alwaysRender ? '' : PhoneWidget.t('always_render_hint');
+    }
+
     renderWidgetBody(props: RxRenderWidgetProps): React.JSX.Element {
         super.renderWidgetBody(props);
         return (
@@ -310,6 +336,7 @@ export default class PhoneWidget extends (window.visRxWidget as typeof VisRxWidg
                     options={this.getOptions()}
                     t={(key: string) => PhoneWidget.t(key)}
                     problem={this.state.problem}
+                    hint={this.getHint()}
                     certUrl={this.state.certUrl}
                     onAction={this.onAction}
                 />

@@ -64,5 +64,6 @@
     "signed_in_as": "Connesso come",
     "connected": "Connesso",
     "mic_denied": "Microfono non consentito. Consentilo per questa pagina nel browser - in un'app (ad es. ioBroker.visu, Fully Kiosk) anche l'app ha bisogno del permesso per il microfono.",
-    "mic_missing": "Nessun microfono trovato"
+    "mic_missing": "Nessun microfono trovato",
+    "always_render_hint": "Affinché le chiamate squillino anche mentre è aperta un'altra vista: attivare \"Rendi sempre\" nelle impostazioni di questa vista (Opzioni)"
 }

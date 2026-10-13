@@ -64,5 +64,6 @@
     "signed_in_as": "Conectado como",
     "connected": "Conectado",
     "mic_denied": "Micrófono no permitido. Permítelo para esta página en el navegador - en una app (p. ej. ioBroker.visu, Fully Kiosk) la app también necesita el permiso del micrófono.",
-    "mic_missing": "No se encontró ningún micrófono"
+    "mic_missing": "No se encontró ningún micrófono",
+    "always_render_hint": "Para que las llamadas también suenen mientras otra vista está abierta: active \"renderizar siempre\" en los ajustes de esta vista (Opciones)"
 }

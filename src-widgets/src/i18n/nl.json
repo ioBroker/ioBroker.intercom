@@ -64,5 +64,6 @@
     "signed_in_as": "Aangemeld als",
     "connected": "Verbonden",
     "mic_denied": "Microfoon niet toegestaan. Sta het toe voor deze pagina in de browser - in een app (bijv. ioBroker.visu, Fully Kiosk) heeft ook de app de microfoonrechten nodig.",
-    "mic_missing": "Geen microfoon gevonden"
+    "mic_missing": "Geen microfoon gevonden",
+    "always_render_hint": "Zodat oproepen ook overgaan terwijl een andere view open is: schakel \"Altijd renderen\" in bij de instellingen van deze view (Opties)"
 }

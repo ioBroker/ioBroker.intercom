@@ -68,6 +68,8 @@ export interface PhoneViewProps {
     t: (key: string) => string;
     /** Problem that prevents the phone from starting */
     problem: string;
+    /** Note for the editor, e.g. a missing option of the view */
+    hint?: string;
     /** Page to accept the self-signed certificate of Asterisk */
     certUrl: string;
     onAction: () => void;
@@ -450,6 +452,14 @@ function PhoneBody(
                         sx={{ py: 0 }}
                     >
                         {props.problem}
+                    </Alert>
+                ) : null}
+                {props.hint ? (
+                    <Alert
+                        severity="info"
+                        sx={{ py: 0 }}
+                    >
+                        {props.hint}
                     </Alert>
                 ) : null}
                 {snap.mediaError ? (

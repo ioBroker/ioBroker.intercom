@@ -64,5 +64,6 @@
     "signed_in_as": "已登录为",
     "connected": "已接通",
     "mic_denied": "麦克风未被允许。请在浏览器中为此页面允许麦克风——在应用中（例如 ioBroker.visu、Fully Kiosk），该应用本身也需要麦克风权限。",
-    "mic_missing": "未找到麦克风"
+    "mic_missing": "未找到麦克风",
+    "always_render_hint": "为了在打开其他视图时也能响铃：请在此视图的设置中启用\"始终渲染\"（选项）"
 }

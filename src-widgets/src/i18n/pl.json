@@ -64,5 +64,6 @@
     "signed_in_as": "Zalogowano jako",
     "connected": "Połączono",
     "mic_denied": "Mikrofon niedozwolony. Zezwól na niego dla tej strony w przeglądarce - w aplikacji (np. ioBroker.visu, Fully Kiosk) także aplikacja potrzebuje uprawnienia do mikrofonu.",
-    "mic_missing": "Nie znaleziono mikrofonu"
+    "mic_missing": "Nie znaleziono mikrofonu",
+    "always_render_hint": "Aby połączenia dzwoniły także przy otwartym innym widoku: włącz „Renderuj zawsze” w ustawieniach tego widoku (Opcje)"
 }

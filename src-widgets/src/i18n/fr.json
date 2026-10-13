@@ -64,5 +64,6 @@
     "signed_in_as": "Connecté en tant que",
     "connected": "Connecté",
     "mic_denied": "Microphone non autorisé. Autorisez-le pour cette page dans le navigateur - dans une application (p. ex. ioBroker.visu, Fully Kiosk), l'application doit aussi avoir l'autorisation du microphone.",
-    "mic_missing": "Aucun microphone trouvé"
+    "mic_missing": "Aucun microphone trouvé",
+    "always_render_hint": "Pour que les appels sonnent aussi lorsqu'une autre vue est ouverte : activez « Toujours rendre » dans les paramètres de cette vue (Choix)"
 }

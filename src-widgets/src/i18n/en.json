@@ -64,5 +64,6 @@
     "signed_in_as": "Signed in as",
     "connected": "Connected",
     "mic_denied": "Microphone not allowed. Allow it for this page in the browser - in an app (e.g. ioBroker.visu, Fully Kiosk) the app also needs the microphone permission.",
-    "mic_missing": "No microphone found"
+    "mic_missing": "No microphone found",
+    "always_render_hint": "So that calls also ring while another view is open: enable \"Render always\" in the settings of this view (Options)"
 }
