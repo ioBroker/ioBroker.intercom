@@ -16,3 +16,7 @@ src-www/build/
 # vis-2 widgets: built by npm run build:widgets into widgets/ (committed like build/ for installs from GitHub)
 src-widgets/build/
 src-widgets/.__mf__temp/
+
+# plugin of the devices app: built by npm run build:devices into admin/dm-widgets/ (committed as well)
+src-devices/build/
+src-devices/.__mf__temp/

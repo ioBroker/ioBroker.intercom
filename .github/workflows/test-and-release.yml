@@ -22,7 +22,7 @@ jobs:
             - uses: ioBroker/testing-action-check@v2
               with:
                   node-version: '24.x'
-                  # src-www (the phone of the test page) has its own dependencies
+                  # src-www, src-widgets and src-devices have their own dependencies
                   install-command: 'npm run npm'
                   type-checking: true
                   lint: true

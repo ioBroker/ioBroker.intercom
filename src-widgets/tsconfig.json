@@ -14,9 +14,19 @@
         "isolatedModules": true,
         "noEmit": true,
         "jsx": "react-jsx",
-        "types": ["@iobroker/types"]
+        "types": ["@iobroker/types"],
+        // the phone in ../src-shared has no node_modules of its own: it is compiled with the packages of this set
+        "paths": {
+            "react": ["./node_modules/@types/react"],
+            "react/*": ["./node_modules/@types/react/*"],
+            "@mui/material": ["./node_modules/@mui/material"],
+            "@mui/material/*": ["./node_modules/@mui/material/*"],
+            "@mui/icons-material": ["./node_modules/@mui/icons-material"],
+            "@mui/icons-material/*": ["./node_modules/@mui/icons-material/*"],
+            "@iobroker/gui-components": ["./node_modules/@iobroker/gui-components"]
+        }
     },
-    "include": ["src"],
+    "include": ["src", "../src-shared/src"],
     "references": [
         {
             "path": "./tsconfig.node.json"

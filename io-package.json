@@ -89,8 +89,46 @@
                 "bundlerType": "module",
                 "components": [
                     "Phone"
+                ],
+                "services": [
+                    "PhoneService"
                 ]
             }
+        },
+        "deviceWidgets": {
+            "url": "customDevices.js",
+            "components": [
+                {
+                    "name": "IntercomPhoneComponent",
+                    "label": {
+                        "en": "Phone",
+                        "de": "Telefon",
+                        "ru": "Телефон",
+                        "pt": "Telefone",
+                        "nl": "Telefoon",
+                        "fr": "Téléphone",
+                        "it": "Telefono",
+                        "es": "Teléfono",
+                        "pl": "Telefon",
+                        "uk": "Телефон",
+                        "zh-cn": "电话"
+                    },
+                    "description": {
+                        "en": "Phone and door intercom over WebRTC; a small tile opens the whole phone",
+                        "de": "Telefon und Türsprechanlage über WebRTC; eine kleine Kachel öffnet das ganze Telefon",
+                        "ru": "Телефон и домофон через WebRTC; маленькая плитка открывает весь телефон",
+                        "pt": "Telefone e intercomunicador via WebRTC; um mosaico pequeno abre o telefone completo",
+                        "nl": "Telefoon en deurintercom via WebRTC; een kleine tegel opent de hele telefoon",
+                        "fr": "Téléphone et interphone via WebRTC ; une petite tuile ouvre le téléphone complet",
+                        "it": "Telefono e citofono tramite WebRTC; una piccola piastrella apre il telefono intero",
+                        "es": "Teléfono e interfono por WebRTC; un mosaico pequeño abre el teléfono completo",
+                        "pl": "Telefon i domofon przez WebRTC; mały kafelek otwiera cały telefon",
+                        "uk": "Телефон і домофон через WebRTC; маленька плитка відкриває весь телефон",
+                        "zh-cn": "通过 WebRTC 的电话和门禁对讲；小磁贴可打开完整电话"
+                    },
+                    "icon": "intercom.svg"
+                }
+            ]
         },
         "plugins": {
             "docker": {

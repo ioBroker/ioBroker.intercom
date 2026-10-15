@@ -94,6 +94,19 @@ the editor as long as the option is off.
 The own camera is **off by default**: the picture of the other party is shown, but the widget opens the camera
 only when "Use own camera" is enabled. Then video call buttons and the camera button in a call appear.
 
+### Tile "Phone" for the devices app
+
+The same phone is available as a tile in the [devices](https://github.com/ioBroker/ioBroker.devices) app (add a
+widget to a category, "Phone"), with the same settings as the vis-2 widget. A tile of 1×1, 2×½ or 2×1 shows
+whether the phone is ready or who is calling (2×1 also the camera picture), a click opens the whole phone in a
+dialog. A 2×2 tile carries the phone itself. As in vis-2, the phone is online while its category is shown.
+
+Several widgets or tiles with the same extension on one page share one phone and one registration, and a call
+opens one dialog. Both bundles also bring a **background service** (`PhoneService` for vis-2, `IntercomService`
+for devices) that keeps the phones of all widgets of a project registered on every view or category and shows the
+dialog of a call there - without "Render always". It runs as soon as vis-2 and devices support such services
+(in preparation); until then the widgets behave as described above.
+
 ### Camera pictures (snapshot proxy)
 
 Many cameras deliver a snapshot only with a password, an API key or a token - which a browser cannot send in an
@@ -182,13 +195,16 @@ dropped (never errors) and counted in a warning.
 ### Development
 
 ```bash
-npm run npm         # install the root, src-www (phone) and src-widgets (vis-2 widgets) dependencies
-npm run build       # TypeScript -> build/, phone -> build/static, widgets -> widgets/intercom
+npm run npm         # install the root, src-www (test page), src-widgets (vis-2) and src-devices (devices) dependencies
+npm run build       # TypeScript -> build/, test page -> build/static, widgets -> widgets/intercom, tile -> admin/dm-widgets
 npm run lint
 npm test            # build + unit tests + package tests
 npm run test:integration   # starts js-controller and the adapter (without Asterisk)
 UPDATE_SNAPSHOTS=1 npm run test:unit   # accept intended changes of the generated configuration
 ```
+
+The phone core (`SipPhone`, without UI) is in `src-www`, the phone UI and the registry of the running phones in
+`src-shared`; `src-widgets` and `src-devices` only adapt them to vis-2 and to the devices app.
 
 ---
 
@@ -275,6 +291,21 @@ Die eigene Kamera ist **standardmäßig aus**: Das Bild der Gegenseite wird ange
 Kamera nur, wenn „Eigene Kamera benutzen“ eingeschaltet ist. Erst dann erscheinen die Videoanruf-Tasten und die
 Kamerataste im Gespräch.
 
+### Kachel „Telefon“ für die devices-App
+
+Dasselbe Telefon gibt es als Kachel in der [devices](https://github.com/ioBroker/ioBroker.devices)-App (in einer
+Kategorie ein Widget hinzufügen, „Telefon“), mit denselben Einstellungen wie das vis-2-Widget. Eine Kachel in
+1×1, 2×½ oder 2×1 zeigt, ob das Telefon bereit ist oder wer anruft (2×1 auch das Kamerabild); ein Klick öffnet das
+ganze Telefon in einem Dialog. Eine 2×2-Kachel trägt das Telefon selbst. Wie in vis-2 ist das Telefon online,
+solange seine Kategorie angezeigt wird.
+
+Mehrere Widgets oder Kacheln mit derselben Nebenstelle auf einer Seite teilen sich ein Telefon und eine
+Registrierung, und ein Anruf öffnet einen Dialog. Beide Bundles bringen außerdem einen **Hintergrunddienst** mit
+(`PhoneService` für vis-2, `IntercomService` für devices), der die Telefone aller Widgets eines Projekts auf jeder
+View bzw. Kategorie angemeldet hält und dort den Dialog eines Anrufs zeigt - ohne „Immer rendern“. Er läuft, sobald
+vis-2 und devices solche Dienste unterstützen (in Vorbereitung); bis dahin verhalten sich die Widgets wie oben
+beschrieben.
+
 ### Kamerabilder (Snapshot-Proxy)
 
 Viele Kameras liefern ein Standbild nur mit Passwort, API-Schlüssel oder Token - das kann ein Browser in einem
@@ -325,6 +356,13 @@ SIP-Nachricht mit auf - nur zur Fehlersuche.
 -->
 
 ## Changelog
+<!--
+	### **WORK IN PROGRESS**
+-->
+### **WORK IN PROGRESS**
+- (@GermanBluefox) Tile "Phone" for the devices app
+- (@GermanBluefox) Widgets with the same extension share one phone; background services for vis-2 and devices
+
 ### 0.0.1 (2026-10-08)
 - (@GermanBluefox) Initial release
 

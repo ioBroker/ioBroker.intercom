@@ -14,6 +14,8 @@ const config = {
             filename: 'customWidgets.js',
             exposes: {
                 './Phone': './src/PhoneWidget',
+                // background service, see common.visWidgets.<set>.services in io-package.json
+                './PhoneService': './src/PhoneService',
                 './translations': './src/translations',
             },
             remotes: {},
@@ -35,12 +37,27 @@ const config = {
             '/web': 'http://localhost:8082',
             '/state': 'http://localhost:8082',
         },
+        fs: {
+            // the phone lives in ../src-shared and ../src-www
+            allow: ['..'],
+        },
     },
     base: './',
     resolve: {
         tsconfigPaths: true,
-        // the phone core (../src-www/src/SipPhone.ts) is shared with the test page
-        dedupe: ['react', 'react-dom'],
+        // The phone core (../src-www/src/SipPhone.ts) is shared with the test page, the phone itself
+        // (../src-shared) with the plugin of the devices app. Their packages come from here, not from a folder
+        // next to them.
+        dedupe: [
+            'react',
+            'react-dom',
+            '@emotion/react',
+            '@emotion/styled',
+            '@mui/material',
+            '@mui/system',
+            '@mui/icons-material',
+            '@iobroker/gui-components',
+        ],
     },
     build: {
         target: 'chrome89',

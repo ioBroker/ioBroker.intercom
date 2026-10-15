@@ -1,0 +1,30 @@
+{
+    // The shared phone has no packages of its own: it is compiled as part of ../src-widgets and ../src-devices,
+    // each with its own copy of React and MUI. This file exists so that an editor - and the type-aware eslint rules -
+    // see these files as a TypeScript project; it takes the packages of the widget set.
+    "compilerOptions": {
+        "target": "ESNext",
+        "lib": ["DOM", "DOM.Iterable", "ESNext"],
+        "allowJs": false,
+        "skipLibCheck": true,
+        "allowSyntheticDefaultImports": true,
+        "strict": true,
+        "forceConsistentCasingInFileNames": true,
+        "module": "ESNext",
+        "moduleResolution": "Bundler",
+        "resolveJsonModule": true,
+        "isolatedModules": true,
+        "noEmit": true,
+        "jsx": "react-jsx",
+        "types": ["@iobroker/types"],
+        "paths": {
+            "react": ["../src-widgets/node_modules/@types/react"],
+            "react/*": ["../src-widgets/node_modules/@types/react/*"],
+            "@mui/material": ["../src-widgets/node_modules/@mui/material"],
+            "@mui/material/*": ["../src-widgets/node_modules/@mui/material/*"],
+            "@mui/icons-material": ["../src-widgets/node_modules/@mui/icons-material"],
+            "@mui/icons-material/*": ["../src-widgets/node_modules/@mui/icons-material/*"]
+        }
+    },
+    "include": ["src"]
+}

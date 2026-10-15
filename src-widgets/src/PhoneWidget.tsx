@@ -1,12 +1,12 @@
 import React from 'react';
 
-import type { RxRenderWidgetProps, RxWidgetInfo, VisRxWidgetProps, VisRxWidgetState } from '@iobroker/types-vis-2';
+import type { RxRenderWidgetProps, RxWidgetInfo, VisRxWidgetProps } from '@iobroker/types-vis-2';
 import type VisRxWidget from '@iobroker/types-vis-2/visRxWidget';
 
-import { SipPhone } from '../../src-www/src/SipPhone';
-import { PhoneView, type PhoneViewOptions } from './PhoneView';
-
-const ADAPTER = 'intercom';
+import { PhoneView } from '../../src-shared/src/PhoneView';
+import { ADAPTER, getViewOptions, runAction, stateId, type PhoneHost } from '../../src-shared/src/phoneSettings';
+import { usePhone, useStateValue } from '../../src-shared/src/usePhone';
+import { createHost, PHONE_TPL } from './visHost';
 
 interface PhoneRxData {
     title: string;
@@ -32,17 +32,6 @@ interface PhoneRxData {
     actionOid: string;
 }
 
-interface PhoneWidgetState extends VisRxWidgetState {
-    phone: SipPhone | null;
-    /** Problem that prevents the phone from starting */
-    problem: string;
-    certUrl: string;
-}
-
-function bool(value: unknown): boolean {
-    return value === true || value === 'true';
-}
-
 /**
  * Has the view open in the editor the option "Render always"? A `hidden` predicate gets only the data of the
  * widget, but vis-2 keeps the project and the view open in the editor (that is the view of the selected widget)
@@ -53,29 +42,50 @@ function viewAlwaysRendered(): boolean {
     return !!vis?.views?.[vis.activeView]?.settings?.alwaysRender;
 }
 
+interface PhoneWidgetBodyProps {
+    host: PhoneHost;
+    settings: PhoneRxData;
+    editMode: boolean;
+    hint: string;
+    t: (key: string) => string;
+}
+
+/** The phone comes from the registry: the background service of vis-2 may hold it already */
+function PhoneWidgetBody({ host, settings, editMode, hint, t }: PhoneWidgetBodyProps): React.JSX.Element {
+    const { handle, problem, certUrl } = usePhone(host, settings, false, !editMode);
+    const cameraValue = useStateValue(host, stateId(settings.cameraOid));
+
+    return (
+        <PhoneView
+            handle={handle}
+            preview={editMode}
+            extension={String(settings.extension || '')}
+            options={getViewOptions(settings, cameraValue)}
+            t={t}
+            problem={problem ? t(problem) : ''}
+            hint={hint}
+            certUrl={certUrl}
+            onAction={() => runAction(host, handle?.phone || null, settings)}
+        />
+    );
+}
+
 /**
  * Phone of the Asterisk adapter: audio and video calls over WebRTC, picture of a door camera,
  * and a dialog that pops up for incoming calls.
  */
-export default class PhoneWidget extends (window.visRxWidget as typeof VisRxWidget)<PhoneRxData, PhoneWidgetState> {
-    /**
-     * The running phone. this.state.phone is only for rendering: it is updated asynchronously, and a phone
-     * started in between would be overwritten without being stopped - and stay registered in the background.
-     */
-    private phone: SipPhone | null = null;
-    /** Settings the running phone was created with */
-    private phoneKey = '';
-    private starting: Promise<void> | null = null;
-    private unmounted = false;
+export default class PhoneWidget extends (window.visRxWidget as typeof VisRxWidget)<PhoneRxData> {
+    /** For the phone: the states of ioBroker through the socket of vis-2 */
+    private readonly host: PhoneHost;
 
     constructor(props: VisRxWidgetProps) {
         super(props);
-        this.state = { ...this.state, phone: null, problem: '', certUrl: '' };
+        this.host = createHost(props.context.socket);
     }
 
     static getWidgetInfo(): RxWidgetInfo {
         return {
-            id: 'tplAsteriskPhone',
+            id: PHONE_TPL,
             visSet: ADAPTER,
             visSetIcon: `widgets/${ADAPTER}/img/intercom.svg`,
             visSetLabel: 'set_label',
@@ -177,146 +187,6 @@ export default class PhoneWidget extends (window.visRxWidget as typeof VisRxWidg
         return `${ADAPTER}_`;
     }
 
-    componentDidMount(): void {
-        super.componentDidMount();
-        this.unmounted = false;
-        // the browser plays the ring tone only after the first click or key into the page
-        document.addEventListener('pointerdown', this.unlockAudio, true);
-        document.addEventListener('keydown', this.unlockAudio, true);
-        void this.startPhone();
-    }
-
-    componentWillUnmount(): void {
-        super.componentWillUnmount();
-        this.unmounted = true;
-        document.removeEventListener('pointerdown', this.unlockAudio, true);
-        document.removeEventListener('keydown', this.unlockAudio, true);
-        this.stopPhone();
-    }
-
-    onRxDataChanged(): void {
-        void this.startPhone();
-    }
-
-    private unlockAudio = (): void => {
-        this.phone?.unlockAudio();
-    };
-
-    private stopPhone(): void {
-        this.phone?.destroy();
-        this.phone = null;
-        this.phoneKey = '';
-    }
-
-    /** Create, replace or remove the phone according to the settings */
-    private async startPhone(): Promise<void> {
-        // one start at a time; the last change wins
-        while (this.starting) {
-            await this.starting;
-        }
-        this.starting = this.doStartPhone();
-        try {
-            await this.starting;
-        } finally {
-            this.starting = null;
-        }
-        // unmounted while the start was waiting for the server
-        if (this.unmounted) {
-            this.stopPhone();
-        }
-    }
-
-    private async doStartPhone(): Promise<void> {
-        const data = this.state.rxData;
-        if (this.props.editMode || this.unmounted) {
-            this.stopPhone();
-            this.setState({ phone: null, problem: '' });
-            return;
-        }
-        if (!window.isSecureContext || !navigator.mediaDevices) {
-            this.stopPhone();
-            this.setState({ phone: null, problem: PhoneWidget.t('insecure') });
-            return;
-        }
-        const extension = String(data.extension || '').trim();
-        const password = String(data.password || '');
-        if (!extension || !password) {
-            this.stopPhone();
-            this.setState({ phone: null, problem: PhoneWidget.t('no_config') });
-            return;
-        }
-
-        let wssUrl = String(data.wssUrl || '').trim();
-        if (!wssUrl) {
-            const instance = data.instance || `${ADAPTER}.0`;
-            try {
-                const state = await this.props.context.socket.getState(`${instance}.info.wssUrl`);
-                wssUrl = typeof state?.val === 'string' ? state.val : '';
-            } catch {
-                // no access or no such instance
-            }
-        }
-        if (this.unmounted) {
-            return;
-        }
-        let url: URL;
-        try {
-            url = new URL(wssUrl.replace(/^ws/, 'http'));
-        } catch {
-            this.stopPhone();
-            this.setState({ phone: null, problem: PhoneWidget.t('no_wss') });
-            return;
-        }
-
-        const video = bool(data.video);
-        const camera = video && bool(data.useCamera);
-        const key = JSON.stringify([wssUrl, extension, password, video, camera]);
-        if (key === this.phoneKey && this.phone) {
-            return;
-        }
-        this.stopPhone();
-        const phone = new SipPhone({ wssUrl, domain: url.hostname, video, camera });
-        this.phone = phone;
-        this.phoneKey = key;
-        this.setState({ phone, problem: '', certUrl: `https://${url.host}/static/cert.html` });
-        phone.login(extension, password);
-    }
-
-    private onAction = (): void => {
-        const data = this.state.rxData;
-        if (data.actionDtmf) {
-            this.phone?.sendDtmf(String(data.actionDtmf));
-        }
-        if (data.actionOid && data.actionOid !== 'nothing_selected') {
-            void this.props.context.socket.setState(data.actionOid, true);
-        }
-    };
-
-    private getOptions(): PhoneViewOptions {
-        const data = this.state.rxData;
-        let cameraSrc = String(data.cameraUrl || '').trim();
-        if (data.cameraOid && data.cameraOid !== 'nothing_selected') {
-            const value = this.state.values[`${data.cameraOid}.val`];
-            if (typeof value === 'string' && value) {
-                cameraSrc = value;
-            }
-        }
-        return {
-            title: String(data.title || ''),
-            number: String(data.number || '').trim(),
-            numberLabel: String(data.numberLabel || ''),
-            showKeypad: bool(data.showKeypad),
-            video: bool(data.video),
-            useCamera: bool(data.video) && bool(data.useCamera),
-            sendCamera: bool(data.video) && bool(data.useCamera) && bool(data.sendCamera),
-            popup: bool(data.popup),
-            cameraSrc,
-            cameraRefresh: Number(data.cameraRefresh) || 0,
-            cameraAlways: bool(data.cameraAlways),
-            actionLabel: String(data.actionLabel || ''),
-        };
-    }
-
     /** In the editor: the view is not rendered while another one is open, so the phone would be offline there */
     private getHint(): string {
         if (!this.props.editMode) {
@@ -330,15 +200,12 @@ export default class PhoneWidget extends (window.visRxWidget as typeof VisRxWidg
         super.renderWidgetBody(props);
         return (
             <div style={{ width: '100%', height: '100%', overflow: 'hidden' }}>
-                <PhoneView
-                    phone={this.state.phone}
-                    extension={String(this.state.rxData.extension || '')}
-                    options={this.getOptions()}
-                    t={(key: string) => PhoneWidget.t(key)}
-                    problem={this.state.problem}
+                <PhoneWidgetBody
+                    host={this.host}
+                    settings={this.state.rxData}
+                    editMode={!!this.props.editMode}
                     hint={this.getHint()}
-                    certUrl={this.state.certUrl}
-                    onAction={this.onAction}
+                    t={(key: string) => PhoneWidget.t(key)}
                 />
             </div>
         );

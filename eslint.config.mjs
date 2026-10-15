@@ -4,8 +4,8 @@ import config from '@iobroker/eslint-config';
 export default [
     ...config,
     {
-        // specify files to exclude from linting here. src-www and src-widgets have their own configuration
-        ignores: ['test/**/*', '*.config.mjs', 'build/**/*', 'admin/**/*', 'tmp/**/*', 'src-www/**/*', 'src-widgets/**/*', 'widgets/**/*', 'tasks.mts'],
+        // specify files to exclude from linting here. src-www, src-widgets, src-devices and src-shared have their own configuration
+        ignores: ['test/**/*', '*.config.mjs', 'build/**/*', 'admin/**/*', 'tmp/**/*', 'src-www/**/*', 'src-widgets/**/*', 'src-devices/**/*', 'src-shared/**/*', 'widgets/**/*', 'tasks.mts'],
     },
     {
         rules: {
