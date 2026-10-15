@@ -1,6 +1,6 @@
 {
     "common": {
-        "name": "asterisk-docker",
+        "name": "intercom",
         "version": "0.0.1",
         "news": {
             "0.0.1": {
@@ -62,9 +62,9 @@
         "platform": "Javascript/Node.js",
         "mode": "daemon",
         "loglevel": "info",
-        "icon": "asterisk-docker.svg",
-        "extIcon": "https://raw.githubusercontent.com/ioBroker/ioBroker.asterisk-docker/main/admin/asterisk-docker.svg",
-        "readme": "https://github.com/ioBroker/ioBroker.asterisk-docker/blob/main/README.md",
+        "icon": "intercom.svg",
+        "extIcon": "https://raw.githubusercontent.com/ioBroker/ioBroker.intercom/main/admin/intercom.svg",
+        "readme": "https://github.com/ioBroker/ioBroker.intercom/blob/main/README.md",
         "enabled": true,
         "compact": true,
         "messagebox": true,
@@ -82,10 +82,10 @@
             "vis-2"
         ],
         "visWidgets": {
-            "vis2AsteriskWidgets": {
+            "vis2IntercomWidgets": {
                 "i18n": "component",
-                "name": "vis2AsteriskWidgets",
-                "url": "asterisk-docker/customWidgets.js",
+                "name": "vis2IntercomWidgets",
+                "url": "intercom/customWidgets.js",
                 "bundlerType": "module",
                 "components": [
                     "Phone"

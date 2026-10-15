@@ -68,7 +68,7 @@ function toNumber(value: number | string | undefined, def: number): number {
     return Number.isFinite(n) && n > 0 ? n : def;
 }
 
-export class AsteriskDockerAdapter extends utils.Adapter {
+export class IntercomAdapter extends utils.Adapter {
     private ami: AmiClient | null = null;
     private readonly contacts = new ContactTracker();
     private subscribers: GeneratorSubscriber[] = [];
@@ -86,7 +86,7 @@ export class AsteriskDockerAdapter extends utils.Adapter {
     public constructor(options: Partial<utils.AdapterOptions> = {}) {
         super({
             ...options,
-            name: 'asterisk-docker',
+            name: 'intercom',
             ready: () => this.main(),
             unload: callback => this.onUnload(callback),
             message: obj => this.onMessage(obj),
@@ -804,8 +804,8 @@ export class AsteriskDockerAdapter extends utils.Adapter {
 
 if (require.main !== module) {
     // Export the constructor in compact mode
-    module.exports = (options: Partial<utils.AdapterOptions> | undefined) => new AsteriskDockerAdapter(options);
+    module.exports = (options: Partial<utils.AdapterOptions> | undefined) => new IntercomAdapter(options);
 } else {
     // otherwise start the instance directly
-    (() => new AsteriskDockerAdapter())();
+    (() => new IntercomAdapter())();
 }

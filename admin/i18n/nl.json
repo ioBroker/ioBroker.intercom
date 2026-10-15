@@ -66,7 +66,7 @@
     "Log SIP messages": "SIP-berichten loggen",
     "help_sip_trace": "Alleen voor het oplossen van problemen met registratie en gesprekken: elk SIP-bericht verschijnt als debug. Vereist \"Plus gespreksverloop\" of \"Alles\"",
     "Cameras": "Camera's",
-    "hint_cameras": "De adapter haalt de beelden van deze camera's op - ook met wachtwoord of API-sleutel, wat een browser in vis niet kan - en schrijft ze naar asterisk-docker.X.cameras.<name>.image. Selecteer dit datapunt in de telefoonwidget onder \"Camerabeeld uit datapunt\". Tijdens een gesprek wordt het beeld snel bijgewerkt, anders langzaam. UniFi Protect: https://<console-IP>/proxy/protect/integration/v1/cameras/<camera-ID>/snapshot met een API-sleutel (UniFi OS → Instellingen → Control Plane → Integraties).",
+    "hint_cameras": "De adapter haalt de beelden van deze camera's op - ook met wachtwoord of API-sleutel, wat een browser in vis niet kan - en schrijft ze naar intercom.X.cameras.<name>.image. Selecteer dit datapunt in de telefoonwidget onder \"Camerabeeld uit datapunt\". Tijdens een gesprek wordt het beeld snel bijgewerkt, anders langzaam. UniFi Protect: https://<console-IP>/proxy/protect/integration/v1/cameras/<camera-ID>/snapshot met een API-sleutel (UniFi OS → Instellingen → Control Plane → Integraties).",
     "Snapshot URL": "Snapshot-URL",
     "Authentication": "Authenticatie",
     "None": "Geen",

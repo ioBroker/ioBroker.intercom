@@ -66,7 +66,7 @@
     "Log SIP messages": "Registra i messaggi SIP",
     "help_sip_trace": "Solo per diagnosticare registrazione e chiamate: ogni messaggio SIP appare come debug. Richiede \"Più flusso delle chiamate\" o \"Tutto\"",
     "Cameras": "Videocamere",
-    "hint_cameras": "L'adattatore recupera le immagini di queste videocamere - anche con password o chiave API, cosa che un browser in vis non può fare - e le scrive in asterisk-docker.X.cameras.<name>.image. Seleziona questo stato nel widget telefono in \"Immagine della videocamera da stato\". Durante una chiamata l'immagine viene aggiornata rapidamente, altrimenti lentamente. UniFi Protect: https://<IP console>/proxy/protect/integration/v1/cameras/<ID videocamera>/snapshot con una chiave API (UniFi OS → Impostazioni → Control Plane → Integrazioni).",
+    "hint_cameras": "L'adattatore recupera le immagini di queste videocamere - anche con password o chiave API, cosa che un browser in vis non può fare - e le scrive in intercom.X.cameras.<name>.image. Seleziona questo stato nel widget telefono in \"Immagine della videocamera da stato\". Durante una chiamata l'immagine viene aggiornata rapidamente, altrimenti lentamente. UniFi Protect: https://<IP console>/proxy/protect/integration/v1/cameras/<ID videocamera>/snapshot con una chiave API (UniFi OS → Impostazioni → Control Plane → Integrazioni).",
     "Snapshot URL": "URL snapshot",
     "Authentication": "Autenticazione",
     "None": "Nessuna",

@@ -9,7 +9,7 @@ tests.integration(path.join(__dirname, '..'), {
             it('runs and writes the configuration', async function () {
                 this.timeout(60000);
                 const harness = getHarness();
-                await harness.changeAdapterConfig('asterisk-docker', {
+                await harness.changeAdapterConfig('intercom', {
                     native: { dockerEnabled: false, amiPort: 15038 },
                 });
                 await harness.startAdapterAndWait();
@@ -17,7 +17,7 @@ tests.integration(path.join(__dirname, '..'), {
                 if (!harness.isAdapterRunning()) {
                     throw new Error('Adapter is not running');
                 }
-                const connection = await harness.states.getStateAsync('asterisk-docker.0.info.connection');
+                const connection = await harness.states.getStateAsync('intercom.0.info.connection');
                 if (connection && connection.val !== false) {
                     throw new Error('info.connection must be false without Asterisk');
                 }

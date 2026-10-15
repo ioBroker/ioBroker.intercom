@@ -10,7 +10,7 @@ const config = {
         federation({
             manifest: true,
             // must be equal to the key in common.visWidgets of io-package.json
-            name: 'vis2AsteriskWidgets',
+            name: 'vis2IntercomWidgets',
             filename: 'customWidgets.js',
             exposes: {
                 './Phone': './src/PhoneWidget',

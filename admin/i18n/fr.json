@@ -66,7 +66,7 @@
     "Log SIP messages": "Journaliser les messages SIP",
     "help_sip_trace": "Uniquement pour diagnostiquer l'enregistrement et les appels : chaque message SIP apparaît en debug. Nécessite « Plus le déroulement des appels » ou « Tout »",
     "Cameras": "Caméras",
-    "hint_cameras": "L'adaptateur récupère les images de ces caméras - aussi avec mot de passe ou clé API, ce qu'un navigateur dans vis ne peut pas faire - et les écrit dans asterisk-docker.X.cameras.<name>.image. Sélectionnez cet état dans le widget téléphone sous « Image de la caméra depuis l'état ». Pendant un appel l'image est actualisée rapidement, sinon lentement. UniFi Protect : https://<IP de la console>/proxy/protect/integration/v1/cameras/<ID caméra>/snapshot avec une clé API (UniFi OS → Paramètres → Control Plane → Intégrations).",
+    "hint_cameras": "L'adaptateur récupère les images de ces caméras - aussi avec mot de passe ou clé API, ce qu'un navigateur dans vis ne peut pas faire - et les écrit dans intercom.X.cameras.<name>.image. Sélectionnez cet état dans le widget téléphone sous « Image de la caméra depuis l'état ». Pendant un appel l'image est actualisée rapidement, sinon lentement. UniFi Protect : https://<IP de la console>/proxy/protect/integration/v1/cameras/<ID caméra>/snapshot avec une clé API (UniFi OS → Paramètres → Control Plane → Intégrations).",
     "Snapshot URL": "URL de l'instantané",
     "Authentication": "Authentification",
     "None": "Aucune",

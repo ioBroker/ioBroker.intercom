@@ -1,9 +1,9 @@
-![Logo](admin/asterisk-docker.svg)
+![Logo](admin/intercom.svg)
 
-# ioBroker.asterisk-docker
+# ioBroker.intercom
 
-[![NPM version](https://img.shields.io/npm/v/iobroker.asterisk-docker.svg)](https://www.npmjs.com/package/iobroker.asterisk-docker)
-[![Test and Release](https://github.com/ioBroker/ioBroker.asterisk-docker/workflows/Test%20and%20Release/badge.svg)](https://github.com/ioBroker/ioBroker.asterisk-docker/actions/workflows/test-and-release.yml)
+[![NPM version](https://img.shields.io/npm/v/iobroker.intercom.svg)](https://www.npmjs.com/package/iobroker.intercom)
+[![Test and Release](https://github.com/ioBroker/ioBroker.intercom/workflows/Test%20and%20Release/badge.svg)](https://github.com/ioBroker/ioBroker.intercom/actions/workflows/test-and-release.yml)
 
 **[Deutsch](#deutsch) | [English](#english)**
 
@@ -45,7 +45,7 @@ Classic SIP phones and door intercoms (UDP) are supported as well.
    (SIP, password `0101`) for a SIP app on a phone, e.g. Linphone. **Change these passwords** in the tab
    **Subscribers** - the adapter warns in the log as long as they are in use. Leave a password empty to get a
    random one.
-3. The adapter writes the configuration and starts the container `iob_asterisk_docker_0_asterisk`
+3. The adapter writes the configuration and starts the container `iob_intercom_0_asterisk`
    (image `ubuntu:24.04`). On the first start Asterisk is installed with `apt` - **this takes a few minutes**.
    `info.connection` becomes `true` once the adapter is connected to Asterisk.
 4. Open the test page `https://<ip>:8089/static/test.html` (button in the subscribers tab) and accept the
@@ -99,7 +99,7 @@ only when "Use own camera" is enabled. Then video call buttons and the camera bu
 Many cameras deliver a snapshot only with a password, an API key or a token - which a browser cannot send in an
 `<img>` of vis. Enter such cameras in the tab **Cameras**: the adapter fetches the pictures (Basic and Digest
 authentication, API key header, Bearer token, self-signed certificates) and writes them as data URL into
-`asterisk-docker.0.cameras.<name>.image`. In the phone widget select this state under "Camera picture from state".
+`intercom.0.cameras.<name>.image`. In the phone widget select this state under "Camera picture from state".
 During a call (a subscriber rings or talks) the picture is updated fast (default every second), otherwise slowly
 (default every 10 seconds, 0 = off). Errors are logged once and written to `cameras.<name>.error`.
 
@@ -145,7 +145,7 @@ services:
         network_mode: host
         restart: unless-stopped
         volumes:
-            - /opt/iobroker/iobroker-data/asterisk-docker.0/asterisk:/etc/asterisk/iobroker:ro
+            - /opt/iobroker/iobroker-data/intercom.0/asterisk:/etc/asterisk/iobroker:ro
 ```
 
 Any other Asterisk (20 or newer, with `res_srtp`, `res_http_websocket` and `res_pjsip_transport_websocket`) works
@@ -173,7 +173,7 @@ dropped (never errors) and counted in a warning.
 ### Troubleshooting
 
 - **The test page does not open**: Asterisk is still being installed. Look at the container log
-  (`docker logs iob_asterisk_docker_0_asterisk`).
+  (`docker logs iob_intercom_0_asterisk`).
 - **Registration fails with code 1006 / WebSocket error**: the browser has not accepted the certificate yet,
   or the address is not in the certificate.
 - **Call connects but no audio**: UDP `10000-20000` is blocked by a firewall, or the network of the clients is
@@ -183,7 +183,7 @@ dropped (never errors) and counted in a warning.
 
 ```bash
 npm run npm         # install the root, src-www (phone) and src-widgets (vis-2 widgets) dependencies
-npm run build       # TypeScript -> build/, phone -> build/static, widgets -> widgets/asterisk-docker
+npm run build       # TypeScript -> build/, phone -> build/static, widgets -> widgets/intercom
 npm run lint
 npm test            # build + unit tests + package tests
 npm run test:integration   # starts js-controller and the adapter (without Asterisk)
@@ -225,7 +225,7 @@ zwischen Client und Asterisk. Klassische SIP-Telefone und Türsprechanlagen (UDP
    (SIP, Passwort `0101`) für eine SIP-App auf dem Handy, z. B. Linphone. **Diese Passwörter ändern** im Reiter
    **Teilnehmer** - solange sie aktiv sind, warnt der Adapter im Log. Bleibt ein Passwort leer, wird ein
    zufälliges erzeugt.
-3. Der Adapter schreibt die Konfiguration und startet den Container `iob_asterisk_docker_0_asterisk`
+3. Der Adapter schreibt die Konfiguration und startet den Container `iob_intercom_0_asterisk`
    (Image `ubuntu:24.04`). Beim ersten Start wird Asterisk per `apt` installiert - **das dauert einige Minuten**.
    `info.connection` wird `true`, sobald der Adapter mit Asterisk verbunden ist.
 4. Testseite `https://<ip>:8089/static/test.html` öffnen (Button im Reiter Teilnehmer) und die
@@ -280,7 +280,7 @@ Kamerataste im Gespräch.
 Viele Kameras liefern ein Standbild nur mit Passwort, API-Schlüssel oder Token - das kann ein Browser in einem
 `<img>` von vis nicht mitschicken. Solche Kameras im Reiter **Kameras** eintragen: Der Adapter holt die Bilder
 (Basic- und Digest-Anmeldung, API-Schlüssel, Bearer-Token, selbst signierte Zertifikate) und schreibt sie als
-Data-URL nach `asterisk-docker.0.cameras.<name>.image`. Im Telefon-Widget diesen Datenpunkt unter „Kamerabild aus
+Data-URL nach `intercom.0.cameras.<name>.image`. Im Telefon-Widget diesen Datenpunkt unter „Kamerabild aus
 Datenpunkt“ auswählen. Während eines Anrufs (ein Teilnehmer klingelt oder spricht) wird das Bild schnell
 aktualisiert (Standard jede Sekunde), sonst langsam (Standard alle 10 Sekunden, 0 = aus). Fehler landen einmal im
 Log und in `cameras.<name>.error`.
@@ -313,7 +313,7 @@ SIP-Nachricht mit auf - nur zur Fehlersuche.
 ### Fehlersuche
 
 - **Testseite öffnet nicht**: Asterisk wird noch installiert. Container-Log ansehen
-  (`docker logs iob_asterisk_docker_0_asterisk`).
+  (`docker logs iob_intercom_0_asterisk`).
 - **Registrierung schlägt fehl (Code 1006 / WebSocket-Fehler)**: Der Browser hat das Zertifikat noch nicht
   akzeptiert, oder die Adresse steht nicht im Zertifikat.
 - **Verbindung steht, aber kein Ton**: UDP `10000-20000` wird von einer Firewall blockiert, oder das Netz der

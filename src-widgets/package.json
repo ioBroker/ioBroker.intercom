@@ -1,5 +1,5 @@
 {
-    "name": "iobroker.asterisk-docker-widgets",
+    "name": "iobroker.intercom-widgets",
     "private": true,
     "version": "0.0.1",
     "type": "module",

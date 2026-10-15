@@ -1,5 +1,5 @@
 {
-    "name": "iobroker-asterisk-docker-phone",
+    "name": "iobroker-intercom-phone",
     "private": true,
     "version": "0.0.1",
     "description": "WebRTC phone (React + MUI + JsSIP) served by Asterisk as test page",

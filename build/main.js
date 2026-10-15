@@ -33,7 +33,7 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.AsteriskDockerAdapter = void 0;
+exports.IntercomAdapter = void 0;
 const node_crypto_1 = require("node:crypto");
 const promises_1 = require("node:fs/promises");
 const node_path_1 = require("node:path");
@@ -73,7 +73,7 @@ function toNumber(value, def) {
     const n = parseInt(String(value ?? ''), 10);
     return Number.isFinite(n) && n > 0 ? n : def;
 }
-class AsteriskDockerAdapter extends utils.Adapter {
+class IntercomAdapter extends utils.Adapter {
     ami = null;
     contacts = new subscriberStatus_1.ContactTracker();
     subscribers = [];
@@ -90,7 +90,7 @@ class AsteriskDockerAdapter extends utils.Adapter {
     constructor(options = {}) {
         super({
             ...options,
-            name: 'asterisk-docker',
+            name: 'intercom',
             ready: () => this.main(),
             unload: callback => this.onUnload(callback),
             message: obj => this.onMessage(obj),
@@ -753,13 +753,13 @@ class AsteriskDockerAdapter extends utils.Adapter {
         }
     }
 }
-exports.AsteriskDockerAdapter = AsteriskDockerAdapter;
+exports.IntercomAdapter = IntercomAdapter;
 if (require.main !== module) {
     // Export the constructor in compact mode
-    module.exports = (options) => new AsteriskDockerAdapter(options);
+    module.exports = (options) => new IntercomAdapter(options);
 }
 else {
     // otherwise start the instance directly
-    (() => new AsteriskDockerAdapter())();
+    (() => new IntercomAdapter())();
 }
 //# sourceMappingURL=main.js.map

@@ -1,7 +1,7 @@
 // Copies the browser bundles into the adapter:
 // - the phone of the test page (src-www) into the adapter build, from where the adapter writes it next
 //   to the test page of Asterisk
-// - the vis-2 widgets (src-widgets) into widgets/asterisk-docker, from where vis-2 loads them
+// - the vis-2 widgets (src-widgets) into widgets/intercom, from where vis-2 loads them
 // Runs directly with `node tasks.mts` (type stripping of Node.js >= 22.18, no build step).
 //   node tasks.mts            both
 //   node tasks.mts --www      only the phone
@@ -32,7 +32,7 @@ if (!onlyWidgets) {
 
 if (!onlyWww) {
     const source: string = join(root, 'src-widgets', 'build');
-    const target: string = join(root, 'widgets', 'asterisk-docker');
+    const target: string = join(root, 'widgets', 'intercom');
     if (!existsSync(join(source, 'customWidgets.js'))) {
         fail(`${source}/customWidgets.js does not exist. Run "npm run build:widgets" (and "npm run npm" once before)`);
     }

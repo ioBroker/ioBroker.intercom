@@ -6,7 +6,7 @@ import type VisRxWidget from '@iobroker/types-vis-2/visRxWidget';
 import { SipPhone } from '../../src-www/src/SipPhone';
 import { PhoneView, type PhoneViewOptions } from './PhoneView';
 
-const ADAPTER = 'asterisk-docker';
+const ADAPTER = 'intercom';
 
 interface PhoneRxData {
     title: string;
@@ -77,7 +77,7 @@ export default class PhoneWidget extends (window.visRxWidget as typeof VisRxWidg
         return {
             id: 'tplAsteriskPhone',
             visSet: ADAPTER,
-            visSetIcon: `widgets/${ADAPTER}/img/asterisk-docker.svg`,
+            visSetIcon: `widgets/${ADAPTER}/img/intercom.svg`,
             visSetLabel: 'set_label',
             visSetColor: '#f57c00',
             visName: 'Phone',
@@ -164,7 +164,7 @@ export default class PhoneWidget extends (window.visRxWidget as typeof VisRxWidg
                 width: 320,
                 height: 420,
             },
-            visPrev: `widgets/${ADAPTER}/img/asterisk-docker.svg`,
+            visPrev: `widgets/${ADAPTER}/img/intercom.svg`,
         };
     }
 

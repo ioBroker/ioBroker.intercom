@@ -1,15 +1,15 @@
 {
-    "name": "iobroker.asterisk-docker",
+    "name": "iobroker.intercom",
     "version": "0.0.1",
     "description": "Asterisk PBX with WebRTC in Docker, configured completely from ioBroker admin",
     "author": "bluefox <dogafox@gmail.com>",
     "contributors": [
         "bluefox <dogafox@gmail.com>"
     ],
-    "homepage": "https://github.com/ioBroker/ioBroker.asterisk-docker",
+    "homepage": "https://github.com/ioBroker/ioBroker.intercom",
     "repository": {
         "type": "git",
-        "url": "https://github.com/ioBroker/ioBroker.asterisk-docker"
+        "url": "https://github.com/ioBroker/ioBroker.intercom"
     },
     "engines": {
         "node": ">=22.19.0"
@@ -40,7 +40,7 @@
         "typescript": "~6.0.3"
     },
     "bugs": {
-        "url": "https://github.com/ioBroker/ioBroker.asterisk-docker/issues"
+        "url": "https://github.com/ioBroker/ioBroker.intercom/issues"
     },
     "main": "build/main.js",
     "files": [
