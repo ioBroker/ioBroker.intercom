@@ -86,10 +86,12 @@ Settings: instance, extension and password of a WebRTC subscriber. The password 
 so use a subscriber of its own for vis. Microphone and camera require that **vis is opened via HTTPS**, and the
 browser must have accepted the certificate of Asterisk once (the widget shows a link).
 
-vis-2 renders only the open view, so the phone is offline - and the door intercom reports a SIP error - while
-another view is shown. Enable **"Render always"** in the settings of the view with the phone (Options): it stays
-registered in the background, and the dialog of an incoming call opens on every view. The widget shows this hint in
-the editor as long as the option is off.
+A vis-2 with **background services** keeps the phone registered on every view by itself and opens the dialog of an
+incoming call over whichever view is shown (see below). An older vis-2 renders only the open view, so the phone is
+offline - and the door intercom reports a SIP error - while another view is shown. There enable **"Render always"**
+in the settings of the view with the phone (Options): it stays registered in the background, and the dialog of an
+incoming call opens on every view. On such a vis-2 the widget shows this hint in the editor as long as the option is
+off.
 
 The own camera is **off by default**: the picture of the other party is shown, but the widget opens the camera
 only when "Use own camera" is enabled. Then video call buttons and the camera button in a call appear.
@@ -104,8 +106,8 @@ dialog. A 2×2 tile carries the phone itself. As in vis-2, the phone is online w
 Several widgets or tiles with the same extension on one page share one phone and one registration, and a call
 opens one dialog. Both bundles also bring a **background service** (`PhoneService` for vis-2, `IntercomService`
 for devices) that keeps the phones of all widgets of a project registered on every view or category and shows the
-dialog of a call there - without "Render always". It runs as soon as vis-2 and devices support such services
-(in preparation); until then the widgets behave as described above.
+dialog of a call there - without "Render always". It runs in a vis-2 or devices that supports such services; with
+an older version the widgets behave as described above.
 
 ### Camera pictures (snapshot proxy)
 
@@ -282,10 +284,12 @@ Einstellungen: Instanz, Nebenstelle und Passwort eines WebRTC-Teilnehmers. Das P
 deshalb für vis einen eigenen Teilnehmer anlegen. Mikrofon und Kamera funktionieren nur, wenn **vis über HTTPS**
 geöffnet wird, und der Browser muss das Zertifikat von Asterisk einmal akzeptiert haben (das Widget zeigt einen Link).
 
-vis-2 rendert nur die geöffnete View: Solange eine andere View angezeigt wird, ist das Telefon offline - und die
-Türsprechstelle meldet einen SIP-Fehler. Deshalb in den Einstellungen der View mit dem Telefon **„Immer rendern“**
-aktivieren (Optionen): Dann bleibt es im Hintergrund angemeldet, und der Dialog eines eingehenden Anrufs öffnet sich
-auf jeder View. Solange die Option aus ist, zeigt das Widget diesen Hinweis im Editor.
+Ein vis-2 mit **Hintergrunddiensten** hält das Telefon von selbst auf jeder View angemeldet und öffnet den Dialog
+eines eingehenden Anrufs über der gerade angezeigten View (siehe unten). Ein älteres vis-2 rendert nur die geöffnete
+View: Solange eine andere View angezeigt wird, ist das Telefon offline - und die Türsprechstelle meldet einen
+SIP-Fehler. Dort in den Einstellungen der View mit dem Telefon **„Immer rendern“** aktivieren (Optionen): Dann bleibt
+es im Hintergrund angemeldet, und der Dialog eines eingehenden Anrufs öffnet sich auf jeder View. Auf so einem vis-2
+zeigt das Widget diesen Hinweis im Editor, solange die Option aus ist.
 
 Die eigene Kamera ist **standardmäßig aus**: Das Bild der Gegenseite wird angezeigt, aber das Widget öffnet die
 Kamera nur, wenn „Eigene Kamera benutzen“ eingeschaltet ist. Erst dann erscheinen die Videoanruf-Tasten und die
@@ -302,9 +306,9 @@ solange seine Kategorie angezeigt wird.
 Mehrere Widgets oder Kacheln mit derselben Nebenstelle auf einer Seite teilen sich ein Telefon und eine
 Registrierung, und ein Anruf öffnet einen Dialog. Beide Bundles bringen außerdem einen **Hintergrunddienst** mit
 (`PhoneService` für vis-2, `IntercomService` für devices), der die Telefone aller Widgets eines Projekts auf jeder
-View bzw. Kategorie angemeldet hält und dort den Dialog eines Anrufs zeigt - ohne „Immer rendern“. Er läuft, sobald
-vis-2 und devices solche Dienste unterstützen (in Vorbereitung); bis dahin verhalten sich die Widgets wie oben
-beschrieben.
+View bzw. Kategorie angemeldet hält und dort den Dialog eines Anrufs zeigt - ohne „Immer rendern“. Er läuft in
+einem vis-2 oder devices, das solche Dienste unterstützt; mit einer älteren Version verhalten sich die Widgets wie
+oben beschrieben.
 
 ### Kamerabilder (Snapshot-Proxy)
 

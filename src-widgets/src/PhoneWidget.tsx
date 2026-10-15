@@ -33,13 +33,22 @@ interface PhoneRxData {
 }
 
 /**
- * Has the view open in the editor the option "Render always"? A `hidden` predicate gets only the data of the
- * widget, but vis-2 keeps the project and the view open in the editor (that is the view of the selected widget)
- * in `window.vis`.
+ * Does the running vis-2 render the background service of the set (PhoneService.tsx)? Then the phone stays registered
+ * on every view anyway. An older vis-2 has no `FEATURES` at all - and does not know the field in the typings either.
  */
-function viewAlwaysRendered(): boolean {
+function visRendersServices(): boolean {
+    const base = window.visRxWidget as { FEATURES?: string[] } | undefined;
+    return !!base?.FEATURES?.includes('services');
+}
+
+/**
+ * Is the hint about "Render always" superfluous: vis-2 renders the service, or the view open in the editor has the
+ * option? A `hidden` predicate gets only the data of the widget, but vis-2 keeps the project and the view open in the
+ * editor (that is the view of the selected widget) in `window.vis`.
+ */
+function alwaysRenderNotNeeded(): boolean {
     const vis = window.vis as typeof window.vis | undefined;
-    return !!vis?.views?.[vis.activeView]?.settings?.alwaysRender;
+    return visRendersServices() || !!vis?.views?.[vis.activeView]?.settings?.alwaysRender;
 }
 
 interface PhoneWidgetBodyProps {
@@ -96,12 +105,13 @@ export default class PhoneWidget extends (window.visRxWidget as typeof VisRxWidg
                 {
                     name: 'common',
                     fields: [
-                        // vis-2 renders only the active view: the phone rings on other views only with this option
+                        // an older vis-2 renders only the active view: the phone rings on other views only with this
+                        // option. A vis-2 with services keeps it registered anyway, then the hint is hidden.
                         {
                             name: 'alwaysRenderHelp',
                             type: 'help',
                             text: 'always_render_hint',
-                            hidden: viewAlwaysRendered,
+                            hidden: alwaysRenderNotNeeded,
                         },
                         { name: 'title', label: 'title', tooltip: 'title_tooltip' },
                         {
@@ -187,9 +197,12 @@ export default class PhoneWidget extends (window.visRxWidget as typeof VisRxWidg
         return `${ADAPTER}_`;
     }
 
-    /** In the editor: the view is not rendered while another one is open, so the phone would be offline there */
+    /**
+     * In the editor: an older vis-2 does not render the view while another one is open, so the phone would be offline
+     * there. A vis-2 with services keeps it registered anyway.
+     */
     private getHint(): string {
-        if (!this.props.editMode) {
+        if (!this.props.editMode || visRendersServices()) {
             return '';
         }
         const view = this.props.context.views?.[this.props.view];
