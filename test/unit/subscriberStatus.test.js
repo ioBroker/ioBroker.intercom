@@ -43,3 +43,32 @@ describe('subscriber status', () => {
         assert.equal(t.applyContactStatus({ ContactStatus: 'Reachable' }), null);
     });
 });
+
+describe('subscriber status in the admin', () => {
+    const { describeSubscriber } = require('../../build/lib/subscriberStatus');
+
+    it('shows a registered subscriber with its state and device', () => {
+        const status = describeSubscriber(
+            { registered: true, contacts: 2, userAgent: 'DoorBird D2101V' },
+            'ringing',
+            'de',
+        );
+        assert.equal(status.text, 'verbunden (2) · klingelt · DoorBird D2101V');
+        assert.equal(status.icon, 'connection');
+    });
+
+    it('leaves out the idle state', () => {
+        const status = describeSubscriber({ registered: true, contacts: 1, userAgent: '' }, 'idle', 'en');
+        assert.equal(status.text, 'connected');
+    });
+
+    it('shows a subscriber without contacts as not connected', () => {
+        const status = describeSubscriber({ registered: false, contacts: 0, userAgent: '' }, 'unavailable', 'fr');
+        assert.equal(status.text, 'not connected');
+        assert.equal(status.icon, 'no-connection');
+    });
+
+    it('shows a row the adapter does not know yet', () => {
+        assert.equal(describeSubscriber(null, undefined, 'de').text, 'noch nicht gespeichert');
+    });
+});

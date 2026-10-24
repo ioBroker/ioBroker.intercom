@@ -79,5 +79,12 @@
     "During calls (s)": "Durante llamadas (s)",
     "Without call (s)": "Sin llamada (s)",
     "Only a-z, 0-9, _ and -": "Solo a-z, 0-9, _ y -",
-    "http:// or https:// URL": "URL http:// o https://"
+    "http:// or https:// URL": "URL http:// o https://",
+    "Status": "Estado",
+    "Groups": "Grupos",
+    "Members": "Miembros",
+    "Ring time (s)": "Tiempo de timbre (s)",
+    "2 to 6 digits, not the number of a subscriber or of the echo test": "De 2 a 6 dígitos, no el número de un abonado ni de la prueba de eco",
+    "Select at least one subscriber": "Seleccione al menos un abonado",
+    "hint_groups": "Un número de grupo hace sonar a todos sus miembros a la vez, p. ej. los widgets de teléfono y una FRITZ!Box: el portero llama al número del grupo. Quien conteste primero se queda con la llamada, los demás teléfonos dejan de sonar. Los miembros que no están registrados en ese momento se omiten."
 }

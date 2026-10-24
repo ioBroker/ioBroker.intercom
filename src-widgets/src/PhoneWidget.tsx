@@ -1,11 +1,25 @@
 import React from 'react';
 
-import type { RxRenderWidgetProps, RxWidgetInfo, VisRxWidgetProps } from '@iobroker/types-vis-2';
+import type {
+    RxRenderWidgetProps,
+    RxWidgetInfo,
+    RxWidgetInfoAttributesField,
+    VisRxWidgetProps,
+} from '@iobroker/types-vis-2';
 import type VisRxWidget from '@iobroker/types-vis-2/visRxWidget';
 
 import { PhoneView } from '../../src-shared/src/PhoneView';
-import { ADAPTER, getViewOptions, runAction, stateId, type PhoneHost } from '../../src-shared/src/phoneSettings';
+import {
+    ADAPTER,
+    getViewOptions,
+    runAction,
+    stateId,
+    type CameraSourceKind,
+    type FrigateMode,
+    type PhoneHost,
+} from '../../src-shared/src/phoneSettings';
 import { usePhone, useStateValue } from '../../src-shared/src/usePhone';
+import { FrigateCameraSelect } from './FrigateCameraSelect';
 import { createHost, PHONE_TPL } from './visHost';
 
 interface PhoneRxData {
@@ -23,10 +37,21 @@ interface PhoneRxData {
     useCamera: boolean;
     sendCamera: boolean;
     popup: boolean;
+    cameraSource: CameraSourceKind;
     cameraOid: string;
     cameraUrl: string;
+    cameraFrigateInstance: string;
+    cameraFrigateCamera: string;
+    cameraFrigateMode: FrigateMode;
     cameraRefresh: number | string;
     cameraAlways: boolean;
+    camera2Source: CameraSourceKind;
+    camera2Oid: string;
+    camera2Url: string;
+    camera2FrigateInstance: string;
+    camera2FrigateCamera: string;
+    camera2FrigateMode: FrigateMode;
+    camera2Refresh: number | string;
     actionLabel: string;
     actionDtmf: string;
     actionOid: string;
@@ -42,6 +67,78 @@ function viewAlwaysRendered(): boolean {
     return !!vis?.views?.[vis.activeView]?.settings?.alwaysRender;
 }
 
+/**
+ * The fields of a camera: a URL or a state, or a camera of the frigate adapter
+ *
+ * @param prefix - `camera` or `camera2`
+ * @param urlTooltip - tooltip of the URL
+ */
+function cameraFields(prefix: 'camera' | 'camera2', urlTooltip: string): RxWidgetInfoAttributesField[] {
+    const notUrl = `data.${prefix}Source === 'frigate'`;
+    const notFrigate = `data.${prefix}Source !== 'frigate'`;
+    return [
+        {
+            name: `${prefix}Source`,
+            label: 'camera_source',
+            type: 'select',
+            options: [
+                { value: 'url', label: 'camera_source_url' },
+                { value: 'frigate', label: 'camera_source_frigate' },
+            ],
+            default: 'url',
+            noBinding: true,
+        },
+        { name: `${prefix}Url`, label: 'camera_url', tooltip: urlTooltip, hidden: notUrl },
+        { name: `${prefix}Oid`, label: 'camera_oid', type: 'id', tooltip: 'camera_oid_tooltip', hidden: notUrl },
+        {
+            name: `${prefix}FrigateInstance`,
+            label: 'frigate_instance',
+            type: 'instance',
+            adapter: 'frigate',
+            default: 'frigate.0',
+            hidden: notFrigate,
+        },
+        {
+            name: `${prefix}FrigateCamera`,
+            label: 'frigate_camera',
+            type: 'custom',
+            hidden: notFrigate,
+            component: (_field, data, onDataChange, props) => (
+                <FrigateCameraSelect
+                    socket={props.context.socket}
+                    instance={String(data[`${prefix}FrigateInstance`] || 'frigate.0')}
+                    value={String(data[`${prefix}FrigateCamera`] || '')}
+                    onChange={value => onDataChange({ [`${prefix}FrigateCamera`]: value })}
+                />
+            ),
+        },
+        {
+            name: `${prefix}FrigateMode`,
+            label: 'frigate_mode',
+            type: 'select',
+            options: [
+                { value: 'snapshot', label: 'frigate_snapshot' },
+                { value: 'stream', label: 'frigate_stream' },
+            ],
+            default: 'snapshot',
+            tooltip: 'frigate_mode_tooltip',
+            noBinding: true,
+            hidden: notFrigate,
+        },
+        {
+            name: `${prefix}Refresh`,
+            label: 'camera_refresh',
+            type: 'number',
+            min: 0,
+            max: 60,
+            default: 1,
+            tooltip: 'camera_refresh_tooltip',
+            // the stream moves by itself
+            hidden: `${notUrl} && data.${prefix}FrigateMode === 'stream'`,
+        },
+    ];
+}
+
 interface PhoneWidgetBodyProps {
     host: PhoneHost;
     settings: PhoneRxData;
@@ -54,13 +151,15 @@ interface PhoneWidgetBodyProps {
 function PhoneWidgetBody({ host, settings, editMode, hint, t }: PhoneWidgetBodyProps): React.JSX.Element {
     const { handle, problem, certUrl } = usePhone(host, settings, false, !editMode);
     const cameraValue = useStateValue(host, stateId(settings.cameraOid));
+    const camera2Value = useStateValue(host, stateId(settings.camera2Oid));
 
     return (
         <PhoneView
             handle={handle}
             preview={editMode}
             extension={String(settings.extension || '')}
-            options={getViewOptions(settings, cameraValue)}
+            options={getViewOptions(settings, cameraValue, camera2Value)}
+            host={host}
             t={t}
             problem={problem ? t(problem) : ''}
             hint={hint}
@@ -146,19 +245,14 @@ export default class PhoneWidget extends (window.visRxWidget as typeof VisRxWidg
                     name: 'camera',
                     label: 'group_camera',
                     fields: [
-                        { name: 'cameraUrl', label: 'camera_url', tooltip: 'camera_url_tooltip' },
-                        { name: 'cameraOid', label: 'camera_oid', type: 'id', tooltip: 'camera_oid_tooltip' },
-                        {
-                            name: 'cameraRefresh',
-                            label: 'camera_refresh',
-                            type: 'number',
-                            min: 0,
-                            max: 60,
-                            default: 1,
-                            tooltip: 'camera_refresh_tooltip',
-                        },
+                        ...cameraFields('camera', 'camera_url_tooltip'),
                         { name: 'cameraAlways', label: 'camera_always', type: 'checkbox', default: false },
                     ],
+                },
+                {
+                    name: 'camera2',
+                    label: 'group_camera2',
+                    fields: cameraFields('camera2', 'camera2_url_tooltip'),
                 },
                 {
                     name: 'action',

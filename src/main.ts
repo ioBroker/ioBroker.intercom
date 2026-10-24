@@ -21,6 +21,7 @@ import {
     type AsteriskLogLevel,
     generateConfig,
     getReloadCommands,
+    isValidExtension,
     RESTART_FILES,
     type GeneratorConfig,
     type GeneratorResult,
@@ -28,7 +29,13 @@ import {
 } from './lib/configGenerator';
 import { writeConfigFiles } from './lib/configWriter';
 import { classifyMessage, LogTail, TlsFailureMonitor } from './lib/logTail';
-import { ContactTracker, extensionOfDevice, mapDeviceState } from './lib/subscriberStatus';
+import {
+    ContactTracker,
+    describeSubscriber,
+    extensionOfDevice,
+    mapDeviceState,
+    type SubscriberState,
+} from './lib/subscriberStatus';
 import { describeUrl, fetchSnapshot } from './lib/snapshot';
 import { PHONE_FILE } from './lib/testPage';
 import type { Codec } from './types';
@@ -81,7 +88,7 @@ export class IntercomAdapter extends utils.Adapter {
     private reloading: Promise<void> | null = null;
     private cameraPoller: CameraPoller | null = null;
     /** Device state of every subscriber, to know whether a call is going on */
-    private readonly deviceStates = new Map<string, string>();
+    private readonly deviceStates = new Map<string, SubscriberState>();
 
     public constructor(options: Partial<utils.AdapterOptions> = {}) {
         super({
@@ -263,6 +270,15 @@ export class IntercomAdapter extends utils.Adapter {
                 name: s?.name || '',
                 kind: s?.kind === 'sip' ? 'sip' : 'webrtc',
                 enabled: !!s?.enabled,
+            })),
+            groups: (Array.isArray(this.config.groups) ? this.config.groups : []).map(g => ({
+                extension: String(g?.extension ?? '').trim(),
+                name: g?.name || '',
+                members: (Array.isArray(g?.members) ? g.members : String(g?.members ?? '').split(/[\s,;]+/))
+                    .map(m => String(m).trim())
+                    .filter(Boolean),
+                ringTime: toNumber(g?.ringTime, 30),
+                enabled: !!g?.enabled,
             })),
         };
     }
@@ -628,6 +644,39 @@ export class IntercomAdapter extends utils.Adapter {
                 } catch (e) {
                     reply({ text: (e as Error).message, style: { color: 'red' } });
                 }
+                break;
+            }
+
+            case 'getSubscriberStatus': {
+                // a cell of the subscribers table in the admin
+                const extension = typeof message.extension === 'string' ? message.extension.trim() : '';
+                const known = this.subscribers.some(s => s.extension === extension);
+                const config = await this.getForeignObjectAsync('system.config');
+                reply(
+                    describeSubscriber(
+                        known ? this.contacts.summary(extension) : null,
+                        this.deviceStates.get(extension),
+                        config?.common?.language || 'en',
+                    ),
+                );
+                break;
+            }
+
+            case 'getSubscriberOptions': {
+                // the members of a group in the admin: the subscribers of the form, also the ones not saved yet
+                const rows = Array.isArray(message.subscribers)
+                    ? (message.subscribers as unknown[])
+                    : (this.config.subscribers || []).filter(s => s?.enabled).map(s => [s.extension, s.name]);
+                const options: { value: string; label: string }[] = [];
+                for (const row of rows) {
+                    const [extension, name] = Array.isArray(row)
+                        ? row.map(v => (typeof v === 'string' ? v.trim() : ''))
+                        : [];
+                    if (extension && isValidExtension(extension) && !options.some(o => o.value === extension)) {
+                        options.push({ value: extension, label: name ? `${extension} – ${name}` : extension });
+                    }
+                }
+                reply(options);
                 break;
             }
 

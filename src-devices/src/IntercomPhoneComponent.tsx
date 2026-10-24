@@ -57,6 +57,79 @@ type HugeStyle = (theme: Theme) => React.CSSProperties;
 /** Key of the translations, as the devices app gets them (see translations.ts) */
 const label = (key: string): string => `${ADAPTER}_${key}`;
 
+/**
+ * The settings of a camera: a URL or a state, or a camera of the frigate adapter, chosen like in its own widgets
+ *
+ * @param prefix - `camera` or `camera2`
+ * @param urlHelp - help of the URL
+ */
+function cameraItems(prefix: 'camera' | 'camera2', urlHelp: string): ConfigItemPanel['items'] {
+    const notUrl = `data.${prefix}Source === 'frigate'`;
+    const notFrigate = `data.${prefix}Source !== 'frigate'`;
+    return {
+        [`${prefix}Source`]: {
+            type: 'select',
+            label: label('camera_source'),
+            options: [
+                { value: 'url', label: label('camera_source_url') },
+                { value: 'frigate', label: label('camera_source_frigate') },
+            ],
+            default: 'url',
+            sm: 12,
+        },
+        [`${prefix}Url`]: { type: 'text', label: label('camera_url'), help: label(urlHelp), hidden: notUrl, sm: 12 },
+        [`${prefix}Oid`]: {
+            type: 'objectId',
+            label: label('camera_oid'),
+            help: label('camera_oid_tooltip'),
+            hidden: notUrl,
+            sm: 12,
+        },
+        [`${prefix}FrigateInstance`]: {
+            type: 'instance',
+            label: label('frigate_instance'),
+            adapter: 'frigate',
+            default: 'frigate.0',
+            hidden: notFrigate,
+            sm: 6,
+        },
+        // the cameras of the chosen instance, see `frigate:getCameras` of the frigate adapter
+        [`${prefix}FrigateCamera`]: {
+            type: 'selectSendTo',
+            label: label('frigate_camera'),
+            command: 'frigate:getCameras',
+            instance: `\${data.${prefix}FrigateInstance}`,
+            alsoDependsOn: [`${prefix}FrigateInstance`],
+            noTranslation: true,
+            hidden: notFrigate,
+            sm: 6,
+        },
+        [`${prefix}FrigateMode`]: {
+            type: 'select',
+            label: label('frigate_mode'),
+            help: label('frigate_mode_tooltip'),
+            options: [
+                { value: 'snapshot', label: label('frigate_snapshot') },
+                { value: 'stream', label: label('frigate_stream') },
+            ],
+            default: 'snapshot',
+            hidden: notFrigate,
+            sm: 6,
+        },
+        [`${prefix}Refresh`]: {
+            type: 'number',
+            label: label('camera_refresh'),
+            help: label('camera_refresh_tooltip'),
+            min: 0,
+            max: 60,
+            default: 1,
+            // the stream moves by itself
+            hidden: `${notUrl} && data.${prefix}FrigateMode === 'stream'`,
+            sm: 6,
+        },
+    };
+}
+
 /** The frame of the app for this size */
 function frameStyle(size: TileSize, theme: Theme): React.CSSProperties {
     if (size === '2x2') {
@@ -138,28 +211,11 @@ export class IntercomPhoneComponent extends WidgetGeneric<IntercomComponentState
                     },
 
                     _camera: { type: 'header', text: label('group_camera'), size: 5, sm: 12 },
-                    cameraUrl: {
-                        type: 'text',
-                        label: label('camera_url'),
-                        help: label('camera_url_tooltip'),
-                        sm: 12,
-                    },
-                    cameraOid: {
-                        type: 'objectId',
-                        label: label('camera_oid'),
-                        help: label('camera_oid_tooltip'),
-                        sm: 12,
-                    },
-                    cameraRefresh: {
-                        type: 'number',
-                        label: label('camera_refresh'),
-                        help: label('camera_refresh_tooltip'),
-                        min: 0,
-                        max: 60,
-                        default: 1,
-                        sm: 6,
-                    },
+                    ...cameraItems('camera', 'camera_url_tooltip'),
                     cameraAlways: { type: 'checkbox', label: label('camera_always'), default: false, sm: 6 },
+
+                    _camera2: { type: 'header', text: label('group_camera2'), size: 5, sm: 12 },
+                    ...cameraItems('camera2', 'camera2_url_tooltip'),
 
                     _action: { type: 'header', text: label('group_action'), size: 5, sm: 12 },
                     actionLabel: {
@@ -259,6 +315,7 @@ function TileBody({ host, settings, size, onActiveChange }: TileBodyProps): Reac
     const { handle, problem, certUrl } = usePhone(host, settings, false);
     const snap = usePhoneSnapshot(handle?.phone);
     const cameraValue = useStateValue(host, stateId(settings.cameraOid));
+    const camera2Value = useStateValue(host, stateId(settings.camera2Oid));
 
     const active = snap.call !== 'none';
     useEffect(() => onActiveChange(active), [active, onActiveChange]);
@@ -267,7 +324,8 @@ function TileBody({ host, settings, size, onActiveChange }: TileBodyProps): Reac
     const viewProps = {
         handle,
         extension: String(settings.extension || ''),
-        options: getViewOptions({ ...settings, title }, cameraValue),
+        options: getViewOptions({ ...settings, title }, cameraValue, camera2Value),
+        host,
         t,
         problem: problem ? t(problem) : '',
         certUrl,
@@ -290,6 +348,7 @@ function TileBody({ host, settings, size, onActiveChange }: TileBodyProps): Reac
             <PhoneTile
                 snap={snap}
                 options={viewProps.options}
+                host={host}
                 title={title}
                 problem={viewProps.problem}
                 size={size}

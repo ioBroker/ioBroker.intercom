@@ -79,5 +79,12 @@
     "During calls (s)": "During calls (s)",
     "Without call (s)": "Without call (s)",
     "Only a-z, 0-9, _ and -": "Only a-z, 0-9, _ and -",
-    "http:// or https:// URL": "http:// or https:// URL"
+    "http:// or https:// URL": "http:// or https:// URL",
+    "Status": "Status",
+    "Groups": "Groups",
+    "Members": "Members",
+    "Ring time (s)": "Ring time (s)",
+    "2 to 6 digits, not the number of a subscriber or of the echo test": "2 to 6 digits, not the number of a subscriber or of the echo test",
+    "Select at least one subscriber": "Select at least one subscriber",
+    "hint_groups": "A group number rings all its members at once, e.g. the phone widgets and a FRITZ!Box: let the door intercom call the number of the group. The first one who answers takes the call, the other phones stop ringing. Members that are not registered at the moment are left out."
 }

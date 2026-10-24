@@ -79,5 +79,12 @@
     "During calls (s)": "通话中（秒）",
     "Without call (s)": "无通话（秒）",
     "Only a-z, 0-9, _ and -": "仅限 a-z、0-9、_ 和 -",
-    "http:// or https:// URL": "http:// 或 https:// 地址"
+    "http:// or https:// URL": "http:// 或 https:// 地址",
+    "Status": "状态",
+    "Groups": "群组",
+    "Members": "成员",
+    "Ring time (s)": "振铃时间（秒）",
+    "2 to 6 digits, not the number of a subscriber or of the echo test": "2 到 6 位数字，不能是用户或回声测试的号码",
+    "Select at least one subscriber": "请至少选择一个用户",
+    "hint_groups": "群组号码会同时呼叫所有成员，例如电话小部件和 FRITZ!Box：让门禁对讲机呼叫群组号码。最先接听的人接通电话，其他电话停止振铃。当前未注册的成员会被跳过。"
 }

@@ -22,6 +22,7 @@ import {
     BackspaceOutlined as BackspaceIcon,
     Call as CallIcon,
     CallEnd as CallEndIcon,
+    Cameraswitch as SwitchPictureIcon,
     CloseFullscreen as MinimizeIcon,
     Dialpad as DialpadIcon,
     MeetingRoom as ActionIcon,
@@ -32,8 +33,8 @@ import {
 } from '@mui/icons-material';
 
 import type { PhoneSnapshot, SipPhone } from '../../src-www/src/SipPhone';
-import { CameraImage } from './CameraImage';
-import type { PhoneViewOptions } from './phoneSettings';
+import { CameraPicture } from './CameraPicture';
+import type { PhoneHost, PhoneViewOptions } from './phoneSettings';
 import { StreamVideo } from './StreamVideo';
 import { usePhoneDialog, usePhoneSnapshot, type SipPhoneHandle } from './usePhone';
 
@@ -49,6 +50,8 @@ export interface PhoneViewProps {
     /** Extension of the settings, shown in the preview of the editor */
     extension: string;
     options: PhoneViewOptions;
+    /** The states and adapters of ioBroker, for the cameras of the frigate adapter */
+    host?: PhoneHost | null;
     t: (key: string) => string;
     /** Problem that prevents the phone from starting */
     problem: string;
@@ -119,6 +122,9 @@ function Panel({ children, sx }: { children: React.ReactNode; sx?: object }): Re
     );
 }
 
+/** What the picture area shows: the video of the other party or one of the cameras (`camera0`, `camera1`) */
+type PictureSource = 'remote' | `camera${number}`;
+
 type FabColor = 'default' | 'primary' | 'success' | 'error';
 
 /** Round button of the test page, the main ones with a glow */
@@ -165,13 +171,29 @@ function PhoneBody(
     const { phone, snap, options, t, large } = props;
     const [number, setNumber] = useState('');
     const [keypadInCall, setKeypadInCall] = useState(false);
+    /** Chosen by hand, `null`: the first one available */
+    const [chosenSource, setChosenSource] = useState<PictureSource | null>(null);
 
     const preview = !!props.preview;
     const target = (options.showKeypad ? number : '') || options.number;
     const inCall = snap.call === 'incall';
     const registered = snap.registration === 'registered';
-    const showRemoteVideo = snap.remoteVideo && snap.call !== 'none';
-    const showCamera = !showRemoteVideo && !!options.cameraSrc && (snap.call !== 'none' || options.cameraAlways);
+    const showCameras = snap.call !== 'none' || options.cameraAlways;
+    const sources: PictureSource[] = [];
+    if (snap.remoteVideo && snap.call !== 'none') {
+        sources.push('remote');
+    }
+    if (showCameras) {
+        options.cameras.forEach((_camera, i) => sources.push(`camera${i}`));
+    }
+    const source = chosenSource && sources.includes(chosenSource) ? chosenSource : sources[0] || null;
+
+    // every call starts with the first picture again
+    useEffect(() => {
+        if (snap.call === 'incoming' || snap.call === 'calling') {
+            setChosenSource(null);
+        }
+    }, [snap.call]);
     const fabBig = large ? 72 : 56;
     const fabSmall = large ? 60 : 46;
     const keyHeight = large ? 60 : 46;
@@ -213,7 +235,7 @@ function PhoneBody(
     }
 
     let picture: React.ReactNode = null;
-    if (showRemoteVideo) {
+    if (source === 'remote') {
         picture = (
             <StreamVideo
                 stream={snap.remoteStream}
@@ -221,11 +243,13 @@ function PhoneBody(
                 style={{ objectFit: 'contain' }}
             />
         );
-    } else if (showCamera) {
+    } else if (source) {
         picture = (
-            <CameraImage
-                src={options.cameraSrc}
-                refresh={options.cameraRefresh}
+            <CameraPicture
+                key={source}
+                source={options.cameras[Number(source.substring('camera'.length))]}
+                host={props.host}
+                large={large}
                 alt={t('camera')}
             />
         );
@@ -252,7 +276,7 @@ function PhoneBody(
             </Box>
         );
     }
-    const dark = showRemoteVideo || showCamera;
+    const dark = !!source;
 
     const keypad = (
         <Box
@@ -525,6 +549,26 @@ function PhoneBody(
                         }}
                     >
                         {picture}
+                        {source && sources.length > 1 ? (
+                            <Tooltip title={t('switch_picture')}>
+                                <IconButton
+                                    aria-label={t('switch_picture')}
+                                    onClick={() =>
+                                        setChosenSource(sources[(sources.indexOf(source) + 1) % sources.length])
+                                    }
+                                    sx={{
+                                        position: 'absolute',
+                                        top: 8,
+                                        right: 8,
+                                        color: '#fff',
+                                        bgcolor: 'rgba(0, 0, 0, 0.45)',
+                                        '&:hover': { bgcolor: 'rgba(0, 0, 0, 0.65)' },
+                                    }}
+                                >
+                                    <SwitchPictureIcon />
+                                </IconButton>
+                            </Tooltip>
+                        ) : null}
                         {snap.cameraOn && snap.call !== 'none' ? (
                             <Box
                                 sx={{

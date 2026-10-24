@@ -73,6 +73,18 @@
                             "validator": "!data.password || data.password.length >= 4",
                             "validatorErrorText": "At least 4 characters. Leave empty to generate one",
                             "validatorNoSaveOnError": true
+                        },
+                        {
+                            "type": "textSendTo",
+                            "attr": "_status",
+                            "title": "Status",
+                            "width": 240,
+                            "container": "text",
+                            "command": "getSubscriberStatus",
+                            "jsonData": "{\"extension\": \"${data.extension}\"}",
+                            "alsoDependsOn": [
+                                "extension"
+                            ]
                         }
                     ]
                 },
@@ -111,6 +123,75 @@
                     "button": true,
                     "variant": "outlined",
                     "icon": "web"
+                }
+            }
+        },
+        "_groups": {
+            "type": "panel",
+            "label": "Groups",
+            "items": {
+                "_hintGroups": {
+                    "type": "staticText",
+                    "xs": 12,
+                    "text": "hint_groups"
+                },
+                "groups": {
+                    "type": "table",
+                    "newLine": true,
+                    "xs": 12,
+                    "uniqueColumns": [
+                        "extension"
+                    ],
+                    "export": true,
+                    "items": [
+                        {
+                            "type": "checkbox",
+                            "attr": "enabled",
+                            "title": "Active",
+                            "width": 60,
+                            "default": true
+                        },
+                        {
+                            "type": "text",
+                            "attr": "extension",
+                            "title": "Number",
+                            "width": 120,
+                            "default": "",
+                            "validator": "/^[0-9]{2,6}$/.test(data.extension) && !(globalData.echoTest && data.extension === '600') && !(globalData.subscribers || []).some(s => s && s.extension === data.extension)",
+                            "validatorErrorText": "2 to 6 digits, not the number of a subscriber or of the echo test",
+                            "validatorNoSaveOnError": true
+                        },
+                        {
+                            "type": "text",
+                            "attr": "name",
+                            "title": "Name",
+                            "width": 160,
+                            "default": "",
+                            "maxLength": 64
+                        },
+                        {
+                            "type": "selectSendTo",
+                            "attr": "members",
+                            "title": "Members",
+                            "multiple": true,
+                            "noTranslation": true,
+                            "default": [],
+                            "command": "getSubscriberOptions",
+                            "jsonData": "{\"subscribers\": ${JSON.stringify((globalData.subscribers || []).filter(s => s && s.enabled && s.extension).map(s => [s.extension, s.name || '']))}}",
+                            "validator": "Array.isArray(data.members) ? data.members.length > 0 : !!data.members",
+                            "validatorErrorText": "Select at least one subscriber",
+                            "validatorNoSaveOnError": true
+                        },
+                        {
+                            "type": "number",
+                            "attr": "ringTime",
+                            "title": "Ring time (s)",
+                            "width": 110,
+                            "min": 5,
+                            "max": 300,
+                            "default": 30
+                        }
+                    ]
                 }
             }
         },

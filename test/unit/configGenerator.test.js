@@ -63,7 +63,10 @@ describe('generateConfig', () => {
     });
 
     it('1 WebRTC subscriber', () => {
-        const r = generateConfig(config([{ extension: '101', name: 'Kitchen', kind: 'webrtc', enabled: true }]), secrets);
+        const r = generateConfig(
+            config([{ extension: '101', name: 'Kitchen', kind: 'webrtc', enabled: true }]),
+            secrets,
+        );
         assert.deepEqual(
             r.subscribers.map(s => s.extension),
             ['101'],
@@ -170,6 +173,74 @@ describe('generateConfig', () => {
         assert.equal(r.warnings.length, 6);
     });
 
+    describe('ring groups', () => {
+        const members = [
+            { extension: '101', name: 'Widget', kind: 'webrtc', enabled: true },
+            { extension: '102', name: 'FRITZ!Box', kind: 'sip', enabled: true },
+            { extension: '201', name: 'off', kind: 'sip', enabled: false },
+        ];
+
+        it('rings only the registered contacts of all members', () => {
+            const r = generateConfig(
+                config(members, {
+                    groups: [{ extension: '200', name: 'Door', members: ['101', '102'], ringTime: 45, enabled: true }],
+                }),
+                secrets,
+            );
+            assert.deepEqual(r.warnings, []);
+            assert.deepEqual(r.groups, [
+                { extension: '200', name: 'Door', members: ['101', '102'], ringTime: 45, enabled: true },
+            ]);
+            const group = r.files['extensions.conf'].split('; ---- group 200 (Door): 101, 102 ----\n')[1];
+            assert.equal(
+                group.split('\n#tryinclude')[0],
+                [
+                    'exten => 200,1,Set(RING=)',
+                    ' same => n,Set(CONTACTS=${PJSIP_DIAL_CONTACTS(101)})',
+                    ' same => n,GotoIf($[${LEN(${CONTACTS})} = 0]?m1)',
+                    ' same => n,Set(RING=${RING}&${CONTACTS})',
+                    ' same => n(m1),Set(CONTACTS=${PJSIP_DIAL_CONTACTS(102)})',
+                    ' same => n,GotoIf($[${LEN(${CONTACTS})} = 0]?m2)',
+                    ' same => n,Set(RING=${RING}&${CONTACTS})',
+                    ' same => n(m2),GotoIf($[${LEN(${RING})} = 0]?end)',
+                    ' same => n,Dial(${RING:1},45)',
+                    ' same => n(end),Hangup()',
+                    '',
+                ].join('\n'),
+            );
+        });
+
+        it('drops unknown members, duplicates and groups that collide or stay empty', () => {
+            const r = generateConfig(
+                config(members, {
+                    groups: [
+                        {
+                            extension: '300',
+                            name: 'ok',
+                            members: ['101', '101', '201', '999'],
+                            ringTime: 0,
+                            enabled: true,
+                        },
+                        { extension: '101', name: 'subscriber', members: ['102'], ringTime: 30, enabled: true },
+                        { extension: '600', name: 'echo', members: ['102'], ringTime: 30, enabled: true },
+                        { extension: '300', name: 'duplicate', members: ['102'], ringTime: 30, enabled: true },
+                        { extension: '301', name: 'empty', members: ['201'], ringTime: 30, enabled: true },
+                        { extension: '3a', name: 'invalid', members: ['102'], ringTime: 30, enabled: true },
+                        { extension: '302', name: 'disabled', members: ['102'], ringTime: 30, enabled: false },
+                        null,
+                    ],
+                }),
+                secrets,
+            );
+            assert.deepEqual(r.groups, [
+                { extension: '300', name: 'ok', members: ['101'], ringTime: 30, enabled: true },
+            ]);
+            // 201 and 999 of 300; 101, 600, 300 (duplicate); 201 of 301 and 301 itself; 3a
+            assert.equal(r.warnings.length, 8);
+            assert.doesNotMatch(r.files['extensions.conf'], /exten => (301|302),/);
+        });
+    });
+
     it('serves the phone bundle next to the test page, without any CDN', () => {
         const r = generateConfig(config(), secrets, { phone: 'console.log(1);' });
         assert.equal(r.files['static-http/phone.min.js'], 'console.log(1);');
@@ -189,12 +260,17 @@ describe('generateConfig', () => {
         assert.ok(existsSync(file), 'run npm run build first');
         const code = readFileSync(file, 'utf8');
         assert.ok(code.length > 200000);
-        assert.ok(code.includes(`"${require('../../src-www/node_modules/jssip/package.json').version}"`), 'JsSIP version is bundled');
+        assert.ok(
+            code.includes(`"${require('../../src-www/node_modules/jssip/package.json').version}"`),
+            'JsSIP version is bundled',
+        );
         assert.ok(code.includes('iobroker-phone'), 'the phone UI is bundled');
     });
 
     it('adds the video codecs to both kinds of endpoints', () => {
-        const pjsip = generateConfig(config([], { videoCodecs: ['vp8', 'h264', 'mpeg4'] }), secrets).files['pjsip.conf'];
+        const pjsip = generateConfig(config([], { videoCodecs: ['vp8', 'h264', 'mpeg4'] }), secrets).files[
+            'pjsip.conf'
+        ];
         assert.match(pjsip, /\[webrtc-endpoint\][^[]*allow=opus,ulaw,alaw,vp8,h264\n/);
         assert.match(pjsip, /\[sip-endpoint\][^[]*allow=ulaw,alaw,vp8,h264\n/);
         // without video codecs: audio only

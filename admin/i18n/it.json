@@ -79,5 +79,12 @@
     "During calls (s)": "Durante le chiamate (s)",
     "Without call (s)": "Senza chiamata (s)",
     "Only a-z, 0-9, _ and -": "Solo a-z, 0-9, _ e -",
-    "http:// or https:// URL": "URL http:// o https://"
+    "http:// or https:// URL": "URL http:// o https://",
+    "Status": "Stato",
+    "Groups": "Gruppi",
+    "Members": "Membri",
+    "Ring time (s)": "Durata squillo (s)",
+    "2 to 6 digits, not the number of a subscriber or of the echo test": "Da 2 a 6 cifre, non il numero di un utente o del test eco",
+    "Select at least one subscriber": "Seleziona almeno un utente",
+    "hint_groups": "Un numero di gruppo fa squillare tutti i membri contemporaneamente, ad es. i widget telefono e una FRITZ!Box: il citofono chiama il numero del gruppo. Chi risponde per primo prende la chiamata, gli altri telefoni smettono di squillare. I membri non registrati in quel momento vengono saltati."
 }

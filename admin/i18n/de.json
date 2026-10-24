@@ -79,5 +79,12 @@
     "During calls (s)": "Bei Anrufen (s)",
     "Without call (s)": "Ohne Anruf (s)",
     "Only a-z, 0-9, _ and -": "Nur a-z, 0-9, _ und -",
-    "http:// or https:// URL": "http://- oder https://-URL"
+    "http:// or https:// URL": "http://- oder https://-URL",
+    "Status": "Status",
+    "Groups": "Gruppen",
+    "Members": "Mitglieder",
+    "Ring time (s)": "Klingeldauer (s)",
+    "2 to 6 digits, not the number of a subscriber or of the echo test": "2 bis 6 Ziffern, nicht die Nummer eines Teilnehmers oder des Echotests",
+    "Select at least one subscriber": "Mindestens einen Teilnehmer auswählen",
+    "hint_groups": "Eine Gruppennummer lässt alle ihre Mitglieder gleichzeitig klingeln, z.B. die Telefon-Widgets und eine FRITZ!Box: Die Türsprechanlage ruft dazu die Nummer der Gruppe an. Wer zuerst abhebt, übernimmt das Gespräch, die anderen Telefone hören auf zu klingeln. Mitglieder, die gerade nicht angemeldet sind, werden ausgelassen."
 }

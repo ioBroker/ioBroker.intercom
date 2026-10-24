@@ -11,6 +11,18 @@ export interface Subscriber {
     enabled: boolean;
 }
 
+/** Ring group (table "Groups"): one number that rings several subscribers at once */
+export interface RingGroup {
+    enabled: boolean;
+    /** Number of the group, `^[0-9]{2,6}$`, not used by a subscriber */
+    extension: string;
+    name: string;
+    /** Extensions of the members, selected from the subscribers (a string with commas is also accepted) */
+    members: string[] | string;
+    /** Seconds until the call is given up */
+    ringTime: number | string;
+}
+
 /** Camera of the snapshot proxy (table "Cameras") */
 export interface CameraEntry {
     enabled: boolean;
@@ -77,6 +89,7 @@ export interface AsteriskAdapterConfig {
     certIobChained: string;
 
     subscribers: Subscriber[];
+    groups: RingGroup[];
     /** Snapshot proxy */
     cameras: CameraEntry[];
     /** The passwords of `subscribers` are still clear text (default subscribers of io-package.json) */

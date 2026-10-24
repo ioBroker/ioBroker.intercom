@@ -207,6 +207,7 @@
         "subscribersPlain": true,
         "asteriskLogLevel": "errors",
         "sipTrace": false,
+        "groups": [],
         "cameras": []
     },
     "objects": [],

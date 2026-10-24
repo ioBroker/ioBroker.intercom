@@ -6,6 +6,7 @@ exports.sanitizeHost = sanitizeHost;
 exports.isValidExtension = isValidExtension;
 exports.md5Credential = md5Credential;
 exports.validateSubscribers = validateSubscribers;
+exports.validateGroups = validateGroups;
 exports.getLogCommands = getLogCommands;
 exports.genStartScript = genStartScript;
 exports.generateConfig = generateConfig;
@@ -102,6 +103,54 @@ function validateSubscribers(config, secrets) {
     }
     return { subscribers, warnings };
 }
+/** Validate the ring groups: invalid, duplicate, disabled and empty groups and unknown members are dropped */
+function validateGroups(config, subscribers) {
+    const warnings = [];
+    const known = new Set(subscribers.map(s => s.extension));
+    const used = new Set(known);
+    if (config.echoTest) {
+        used.add(exports.ECHO_EXTENSION);
+    }
+    const groups = [];
+    for (const group of config.groups || []) {
+        const extension = String(group?.extension ?? '').trim();
+        if (!group || !group.enabled) {
+            continue;
+        }
+        if (!isValidExtension(extension)) {
+            warnings.push(`Group "${sanitizeName(extension)}" skipped: invalid number (2-6 digits)`);
+            continue;
+        }
+        if (used.has(extension)) {
+            warnings.push(`Group ${extension} skipped: the number is already used by a subscriber or another group`);
+            continue;
+        }
+        const members = [];
+        for (const member of group.members || []) {
+            const ext = String(member ?? '').trim();
+            if (!known.has(ext)) {
+                warnings.push(`Group ${extension}: member "${sanitizeName(ext)}" is no active subscriber`);
+            }
+            else if (!members.includes(ext)) {
+                members.push(ext);
+            }
+        }
+        if (!members.length) {
+            warnings.push(`Group ${extension} skipped: no active subscriber in it`);
+            continue;
+        }
+        used.add(extension);
+        const ringTime = Math.round(Number(group.ringTime));
+        groups.push({
+            extension,
+            name: sanitizeName(group.name) || extension,
+            members,
+            ringTime: ringTime >= 5 && ringTime <= 300 ? ringTime : 30,
+            enabled: true,
+        });
+    }
+    return { groups, warnings };
+}
 function codecList(codecs, kind, videoCodecs = []) {
     let list = (codecs || []).filter(c => exports.ALL_CODECS.includes(c));
     if (kind === 'sip') {
@@ -184,7 +233,19 @@ function genRtp(config) {
     lines.push('');
     return lines.join('\n');
 }
-function genExtensions(config, subscribers) {
+/**
+ * A ring group in the dialplan. `PJSIP_DIAL_CONTACTS` is empty for a subscriber without registration, and one empty
+ * part of `Dial(a&&b)` ends the whole Dial - so only the registered devices are collected.
+ */
+function genGroup(group) {
+    const lines = [`exten => ${group.extension},1,Set(RING=)`];
+    group.members.forEach((member, i) => {
+        lines.push(` same => n${i ? `(m${i})` : ''},Set(CONTACTS=\${PJSIP_DIAL_CONTACTS(${member})})`, ` same => n,GotoIf($[\${LEN(\${CONTACTS})} = 0]?m${i + 1})`, ' same => n,Set(RING=${RING}&${CONTACTS})');
+    });
+    lines.push(` same => n(m${group.members.length}),GotoIf($[\${LEN(\${RING})} = 0]?end)`, ` same => n,Dial(\${RING:1},${group.ringTime})`, ' same => n(end),Hangup()', '');
+    return lines;
+}
+function genExtensions(config, subscribers, groups = []) {
     const lines = [exports.HEADER, '[general]', 'static=yes', 'writeprotect=yes', 'clearglobalvars=no', '', `[${exports.CONTEXT}]`];
     if (config.echoTest) {
         lines.push(`exten => ${exports.ECHO_EXTENSION},1,Answer()`, ' same => n,Wait(1)', ' same => n,Playback(hello-world)', ' same => n,Echo()', ' same => n,Hangup()', '');
@@ -192,6 +253,9 @@ function genExtensions(config, subscribers) {
     for (const sub of subscribers) {
         // Ring all registered devices of the subscriber, not only the first contact
         lines.push(`exten => ${sub.extension},1,Dial(\${PJSIP_DIAL_CONTACTS(${sub.extension})},30)`, ' same => n,Hangup()', '');
+    }
+    for (const group of groups) {
+        lines.push(`; ---- group ${group.extension} (${group.name}): ${group.members.join(', ')} ----`, ...genGroup(group));
     }
     lines.push('#tryinclude iobroker/extensions_custom.conf', '');
     return lines.join('\n');
@@ -366,11 +430,13 @@ exec asterisk -f -vvv
  */
 function generateConfig(config, secrets, assets = {}) {
     const { subscribers, warnings } = validateSubscribers(config, secrets);
+    const { groups, warnings: groupWarnings } = validateGroups(config, subscribers);
+    warnings.push(...groupWarnings);
     const files = {
         'http.conf': genHttp(config),
         'pjsip.conf': genPjsip(config, secrets, subscribers),
         'rtp.conf': genRtp(config),
-        'extensions.conf': genExtensions(config, subscribers),
+        'extensions.conf': genExtensions(config, subscribers, groups),
         'manager.conf': genManager(config, secrets),
         'modules.conf': genModules(),
         'logger.conf': genLogger(config),
@@ -387,7 +453,7 @@ function generateConfig(config, secrets, assets = {}) {
             files[`static-http/${testPage_1.PHONE_FILE}`] = assets.phone;
         }
     }
-    return { files, warnings, subscribers };
+    return { files, warnings, subscribers, groups };
 }
 /** Which Asterisk modules must be reloaded for the changed files */
 function getReloadCommands(changedFiles) {

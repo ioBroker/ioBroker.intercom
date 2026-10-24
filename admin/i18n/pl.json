@@ -79,5 +79,12 @@
     "During calls (s)": "Podczas połączeń (s)",
     "Without call (s)": "Bez połączenia (s)",
     "Only a-z, 0-9, _ and -": "Tylko a-z, 0-9, _ i -",
-    "http:// or https:// URL": "Adres URL http:// lub https://"
+    "http:// or https:// URL": "Adres URL http:// lub https://",
+    "Status": "Status",
+    "Groups": "Grupy",
+    "Members": "Członkowie",
+    "Ring time (s)": "Czas dzwonienia (s)",
+    "2 to 6 digits, not the number of a subscriber or of the echo test": "Od 2 do 6 cyfr, nie numer abonenta ani testu echa",
+    "Select at least one subscriber": "Wybierz co najmniej jednego abonenta",
+    "hint_groups": "Numer grupy uruchamia dzwonienie u wszystkich jej członków jednocześnie, np. widżetów telefonu i FRITZ!Box: domofon dzwoni na numer grupy. Kto odbierze pierwszy, przejmuje rozmowę, pozostałe telefony przestają dzwonić. Członkowie, którzy nie są w danej chwili zarejestrowani, są pomijani."
 }

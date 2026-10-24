@@ -119,3 +119,60 @@ export class ContactTracker {
         contacts.set(uri, info);
     }
 }
+
+/** What the table of the subscribers in the admin shows (`textSendTo`) */
+export interface StatusText {
+    text: string;
+    style: Record<string, string>;
+    icon: string;
+}
+
+const STATUS_WORDS: Record<'en' | 'de', Record<'connected' | 'disconnected' | 'unknown' | SubscriberState, string>> = {
+    en: {
+        connected: 'connected',
+        disconnected: 'not connected',
+        unknown: 'not saved yet',
+        idle: '',
+        ringing: 'ringing',
+        inuse: 'in a call',
+        unavailable: '',
+    },
+    de: {
+        connected: 'verbunden',
+        disconnected: 'nicht verbunden',
+        unknown: 'noch nicht gespeichert',
+        idle: '',
+        ringing: 'klingelt',
+        inuse: 'im Gespräch',
+        unavailable: '',
+    },
+};
+
+/**
+ * The status of a subscriber as one line: "connected (2) · ringing · DoorBird D2101V"
+ *
+ * @param summary contacts of the subscriber, null if the adapter does not know it (new row, disabled)
+ * @param state device state from Asterisk
+ * @param language of the system
+ */
+export function describeSubscriber(
+    summary: SubscriberSummary | null,
+    state: SubscriberState | undefined,
+    language: string,
+): StatusText {
+    const words = STATUS_WORDS[language === 'de' ? 'de' : 'en'];
+    if (!summary) {
+        return { text: words.unknown, style: { color: 'grey' }, icon: 'no-connection' };
+    }
+    if (!summary.registered) {
+        return { text: words.disconnected, style: { color: '#d32f2f' }, icon: 'no-connection' };
+    }
+    const parts = [summary.contacts > 1 ? `${words.connected} (${summary.contacts})` : words.connected];
+    if (state && words[state]) {
+        parts.push(words[state]);
+    }
+    if (summary.userAgent) {
+        parts.push(summary.userAgent.length > 40 ? `${summary.userAgent.substring(0, 39)}…` : summary.userAgent);
+    }
+    return { text: parts.join(' · '), style: { color: '#2e7d32' }, icon: 'connection' };
+}

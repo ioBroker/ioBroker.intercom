@@ -79,5 +79,12 @@
     "During calls (s)": "Pendant les appels (s)",
     "Without call (s)": "Sans appel (s)",
     "Only a-z, 0-9, _ and -": "Uniquement a-z, 0-9, _ et -",
-    "http:// or https:// URL": "URL http:// ou https://"
+    "http:// or https:// URL": "URL http:// ou https://",
+    "Status": "État",
+    "Groups": "Groupes",
+    "Members": "Membres",
+    "Ring time (s)": "Durée de sonnerie (s)",
+    "2 to 6 digits, not the number of a subscriber or of the echo test": "2 à 6 chiffres, pas le numéro d'un abonné ni du test d'écho",
+    "Select at least one subscriber": "Sélectionnez au moins un abonné",
+    "hint_groups": "Un numéro de groupe fait sonner tous ses membres en même temps, p. ex. les widgets téléphone et une FRITZ!Box : l'interphone appelle le numéro du groupe. Le premier qui décroche prend l'appel, les autres téléphones arrêtent de sonner. Les membres qui ne sont pas enregistrés à ce moment sont ignorés."
 }

@@ -70,6 +70,18 @@ Apps should pin the certificate by the SHA-256 fingerprint shown in the settings
 The certificate is **never regenerated automatically** - not even when IP addresses change (the adapter only
 writes a warning to the log), because a new fingerprint breaks the pinning in all apps.
 
+### Ring groups
+
+A group number in the tab **Groups** rings several subscribers at once - e.g. the phone widgets and a FRITZ!Box,
+so the door intercom calls one number and every phone in the house rings. The first one who answers takes the call,
+the other phones stop ringing. Members that are not registered at the moment are left out; if none is registered,
+the call ends at once. A group number must not be the number of a subscriber.
+
+A FRITZ!Box (and with it its DECT phones) joins as a subscriber of type SIP: in the FRITZ!Box add a phone number of
+"another provider" with the extension as number, user and authentication name, the address of Asterisk as registrar
+and proxy and the transport UDP; disable "Insert area code for outgoing calls". Then let the FRITZ!Fon react to this
+number.
+
 ### vis-2 widget "Phone"
 
 The adapter brings a widget set for vis-2 (restart vis-2 after the installation if the set does not appear).
@@ -80,6 +92,11 @@ The widget **Phone** registers as a WebRTC subscriber and offers:
 - a dialog that pops up for incoming calls (answer, answer with video, decline),
 - the **picture of a door camera** (snapshot/MJPEG URL or a state with an image URL, e.g. of the cameras adapter)
   during calls without video, optionally also without a call,
+- a **second camera** (e.g. the driveway): during a call a button in the picture switches between the video of the
+  other party and the two cameras,
+- **cameras of the frigate adapter** as picture source, selected from the list of the instance: as snapshots over
+  ioBroker (works everywhere, also through the cloud) or as live MJPEG stream of its web extension (needs a web
+  instance with HTTPS, because the phone page is HTTPS; otherwise the snapshots are used),
 - an action button during a call, e.g. "Open door": sends DTMF tones and/or sets a state to `true`.
 
 Settings: instance, extension and password of a WebRTC subscriber. The password is stored in the vis project,
@@ -139,6 +156,7 @@ UniFi Protect: create an API key in UniFi OS (Settings → Control Plane → Int
 |--------------------|-----------------|---------------------------------------------------------|
 | `generateCert`     | `{ certHosts }` | `{ native: { certPublic, certPrivate, certFingerprint, certHosts } }` |
 | `getHostAddresses` | -               | `{ native: { certHosts: [...] } }`                      |
+| `getSubscriberStatus` | `{ extension }` | `{ text, style, icon }` for the table of the subscribers |
 | `reload`           | -               | `{ result: 'ok' }` or `{ error }`                       |
 
 ### Own extensions
@@ -266,6 +284,19 @@ Apps sollten das Zertifikat über den SHA-256-Fingerprint aus den Einstellungen 
 pinnen. Das Zertifikat wird **nie automatisch neu erzeugt** - auch nicht bei geänderten IP-Adressen (dann gibt es
 nur eine Warnung im Log), weil ein neuer Fingerprint das Pinning in allen Apps bricht.
 
+### Gruppen
+
+Eine Gruppennummer im Reiter **Gruppen** lässt mehrere Teilnehmer gleichzeitig klingeln - z.B. die Telefon-Widgets
+und eine FRITZ!Box, sodass die Türsprechanlage eine Nummer anruft und alle Telefone im Haus klingeln. Wer zuerst
+abhebt, übernimmt das Gespräch, die anderen hören auf zu klingeln. Mitglieder, die gerade nicht angemeldet sind,
+werden ausgelassen; ist keines angemeldet, endet der Anruf sofort. Eine Gruppennummer darf nicht die Nummer eines
+Teilnehmers sein.
+
+Eine FRITZ!Box (und damit ihre DECT-Telefone) wird als Teilnehmer vom Typ SIP eingebunden: In der FRITZ!Box eine
+Rufnummer „Anderer Anbieter“ anlegen, mit der Nummer als Rufnummer, Benutzername und Authentifizierungsname, der
+Adresse von Asterisk als Registrar und Proxy und dem Transportprotokoll UDP; „Ortsvorwahl für ausgehende Gespräche
+einfügen“ ausschalten. Danach das FRITZ!Fon auf diese Rufnummer reagieren lassen.
+
 ### vis-2-Widget „Telefon“
 
 Der Adapter bringt einen Widget-Satz für vis-2 mit (vis-2 nach der Installation neu starten, falls er nicht
@@ -276,6 +307,11 @@ erscheint). Das Widget **Telefon** meldet sich als WebRTC-Teilnehmer an und biet
 - einen Dialog, der bei Anrufen aufgeht (annehmen, mit Video annehmen, ablehnen),
 - das **Bild einer Türkamera** (Snapshot-/MJPEG-URL oder Datenpunkt mit Bild-URL, z.B. vom cameras-Adapter) bei
   Gesprächen ohne Video, wahlweise auch ohne Anruf,
+- eine **zweite Kamera** (z.B. die Einfahrt): Im Gespräch schaltet eine Taste im Bild zwischen dem Video der
+  Gegenseite und den beiden Kameras um,
+- **Kameras des frigate-Adapters** als Bildquelle, ausgewählt aus der Liste der Instanz: als Snapshots über
+  ioBroker (funktioniert überall, auch über die Cloud) oder als Live-MJPEG-Stream seiner Web-Erweiterung (braucht
+  eine Web-Instanz mit HTTPS, weil die Telefonseite HTTPS ist; sonst werden Snapshots verwendet),
 - eine Aktionstaste im Gespräch, z.B. „Tür öffnen“: sendet DTMF-Töne und/oder setzt einen Datenpunkt auf `true`.
 
 Einstellungen: Instanz, Nebenstelle und Passwort eines WebRTC-Teilnehmers. Das Passwort steht im vis-Projekt,
@@ -362,6 +398,11 @@ SIP-Nachricht mit auf - nur zur Fehlersuche.
 ### **WORK IN PROGRESS**
 - (@GermanBluefox) Tile "Phone" for the devices app
 - (@GermanBluefox) Widgets with the same extension share one phone; background services for vis-2 and devices
+- (@GermanBluefox) Second camera picture in the phone widget and tile, switchable during a call
+- (@GermanBluefox) Ring groups: one number rings several subscribers at once
+- (@GermanBluefox) Cameras of the frigate adapter in the phone widget and tile, as snapshot or stream
+- (@GermanBluefox) Status of the subscribers in the settings
+- (@GermanBluefox) Shorter SDP of the browser: Asterisk rejected video calls of Chrome (PJ_ETOOMANY)
 
 ### 0.0.1 (2026-10-08)
 - (@GermanBluefox) Initial release

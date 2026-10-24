@@ -79,5 +79,12 @@
     "During calls (s)": "Tijdens gesprekken (s)",
     "Without call (s)": "Zonder gesprek (s)",
     "Only a-z, 0-9, _ and -": "Alleen a-z, 0-9, _ en -",
-    "http:// or https:// URL": "http://- of https://-URL"
+    "http:// or https:// URL": "http://- of https://-URL",
+    "Status": "Status",
+    "Groups": "Groepen",
+    "Members": "Leden",
+    "Ring time (s)": "Beltijd (s)",
+    "2 to 6 digits, not the number of a subscriber or of the echo test": "2 tot 6 cijfers, niet het nummer van een abonnee of van de echotest",
+    "Select at least one subscriber": "Selecteer minstens één abonnee",
+    "hint_groups": "Een groepsnummer laat alle leden tegelijk rinkelen, bijv. de telefoonwidgets en een FRITZ!Box: de deurintercom belt het nummer van de groep. Wie het eerst opneemt, krijgt het gesprek, de andere telefoons stoppen met rinkelen. Leden die op dat moment niet zijn aangemeld, worden overgeslagen."
 }

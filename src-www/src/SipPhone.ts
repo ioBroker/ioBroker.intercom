@@ -10,6 +10,8 @@ import * as JsSIP from 'jssip';
 import type { RTCSession } from 'jssip/lib/RTCSession';
 import type { RTCSessionEvent } from 'jssip/lib/UA';
 
+import { filterSdp } from './sdpFilter';
+
 export type Registration = 'offline' | 'connecting' | 'registered' | 'error';
 export type CallState = 'none' | 'calling' | 'incoming' | 'incall';
 export type MediaWarning = '' | 'noSend' | 'noReceive' | 'micSilent';
@@ -634,6 +636,12 @@ export class SipPhone {
         this.#session = s;
         this.#hookConnection(s.connection);
         s.on('peerconnection', ev => this.#hookConnection(ev.peerconnection));
+        // Asterisk rejects the long offers of Chrome with video (see sdpFilter.ts)
+        s.on('sdp', ev => {
+            if (ev.originator === 'local') {
+                ev.sdp = filterSdp(ev.sdp);
+            }
+        });
         s.on('progress', (ev: unknown) => {
             if (s.direction !== 'outgoing') {
                 return;
