@@ -53,6 +53,7 @@
   ],
   "scripts": {
     "build": "tsc -p tsconfig.build.json && npm run build:www && npm run build:widgets && npm run build:devices",
+    "check": "npm run check:ts",
     "check:ts": "tsc -p tsconfig.json --noEmit && cd src-www && npm run check:ts && cd ../src-widgets && npm run check:ts && cd ../src-devices && npm run check:ts",
     "lint": "eslint -c eslint.config.mjs && cd src-www && npm run lint && cd ../src-widgets && npm run lint && cd ../src-devices && npm run lint && cd ../src-shared && eslint -c eslint.config.mjs",
     "test:unit": "mocha --config test/mocharc.custom.json \"test/unit/*.test.js\" --exit",
