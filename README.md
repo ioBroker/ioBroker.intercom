@@ -464,7 +464,7 @@ SIP-Nachricht mit auf - nur zur Fehlersuche.
 - (@GermanBluefox) "Decline" in the widget ends the ringing on all devices of the subscriber
 - (@GermanBluefox) Number of devices per subscriber is configurable (column "Devices")
 
-### 0.0.1 (2026-10-08)
+### 0.1.0 (2026-10-08)
 - (@GermanBluefox) Initial release
 
 ## License
