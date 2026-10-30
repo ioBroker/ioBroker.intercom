@@ -12,6 +12,7 @@ import { PhoneView } from '../../src-shared/src/PhoneView';
 import {
     ADAPTER,
     getViewOptions,
+    declineEverywhere,
     runAction,
     stateId,
     type CameraSourceKind,
@@ -165,6 +166,7 @@ function PhoneWidgetBody({ host, settings, editMode, hint, t }: PhoneWidgetBodyP
             hint={hint}
             certUrl={certUrl}
             onAction={() => runAction(host, handle?.phone || null, settings)}
+            onDecline={() => declineEverywhere(host, settings)}
         />
     );
 }

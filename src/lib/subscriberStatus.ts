@@ -46,6 +46,26 @@ export function extensionOfDevice(device: string): string | null {
     return m ? m[1] : null;
 }
 
+/**
+ * The lines that still ring a subscriber, from the events of `CoreShowChannels`. `Dial` calls every registered
+ * device of the subscriber on an outgoing line of its own (application `AppDial`); answered ones are `Up`.
+ *
+ * @param channels events `CoreShowChannel`
+ * @param extension the subscriber
+ */
+export function ringingChannels(channels: AmiMessage[], extension: string): string[] {
+    const prefix = `PJSIP/${extension}-`;
+    return channels
+        .filter(
+            c =>
+                String(c.Channel || '').startsWith(prefix) &&
+                c.Application === 'AppDial' &&
+                c.ChannelState !== '6' &&
+                c.ChannelStateDesc !== 'Up',
+        )
+        .map(c => c.Channel);
+}
+
 /** Keeps the contacts of all AORs, fed by `PJSIPShowContacts` and the `ContactStatus` events */
 export class ContactTracker {
     readonly #aors = new Map<string, Map<string, ContactInfo>>();

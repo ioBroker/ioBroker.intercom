@@ -60,6 +60,8 @@ export interface PhoneViewProps {
     /** Page to accept the self-signed certificate of Asterisk */
     certUrl: string;
     onAction: () => void;
+    /** After "Decline": the other devices of the subscriber stop ringing, too */
+    onDecline?: () => void;
 }
 
 /** Keys with the letters of a phone keypad, as on the test page */
@@ -640,7 +642,10 @@ function PhoneBody(
                                 title={t('decline')}
                                 color="error"
                                 size={fabBig}
-                                onClick={() => phone?.decline()}
+                                onClick={() => {
+                                    phone?.decline();
+                                    props.onDecline?.();
+                                }}
                             >
                                 <CallEndIcon />
                             </RoundFab>

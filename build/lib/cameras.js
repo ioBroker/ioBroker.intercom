@@ -1,14 +1,30 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.CameraPoller = void 0;
+exports.CameraPoller = exports.WATCH_TTL = void 0;
+exports.parseWatch = parseWatch;
 exports.cameraId = cameraId;
 exports.validateCameras = validateCameras;
 /**
  * Snapshot proxy: fetches the pictures of the configured cameras and hands them over as data URLs.
- * During a call (a subscriber is ringing or talking) fast, otherwise slowly or not at all.
+ * During a call (a subscriber is ringing or talking) or while a browser shows the picture fast, otherwise slowly or
+ * not at all.
  */
 const node_crypto_1 = require("node:crypto");
 const AUTHS = ['none', 'basic', 'apikey', 'bearer'];
+/** A viewer that did not renew its lease for this long is gone (the browsers renew every 10 s) */
+exports.WATCH_TTL = 30_000;
+/** More viewers of one camera are ignored: the IDs come from the browsers */
+const MAX_VIEWERS = 100;
+/**
+ * What a browser writes into `cameras.<id>.watch`: its viewer ID to start or renew the lease, `-<viewer ID>` to end
+ * it. `null` for anything else.
+ */
+function parseWatch(value) {
+    const text = typeof value === 'string' ? value.trim() : '';
+    const watching = !text.startsWith('-');
+    const viewer = watching ? text : text.substring(1);
+    return /^[\w-]{1,64}$/.test(viewer) ? { viewer, watching } : null;
+}
 /** Object ID part of a camera name: `Haustür 1` → `haust_r_1` */
 function cameraId(name) {
     return String(name ?? '')
@@ -62,7 +78,7 @@ function validateCameras(rows) {
             insecure: row.insecure !== false,
             // at least 0.5 s: faster only loads the camera and the states database
             interval: seconds(row.interval, 1, 0.5) || 1,
-            idleInterval: seconds(row.idleInterval, 10, 1),
+            idleInterval: seconds(row.idleInterval, 0, 1),
         });
     }
     return { cameras, warnings };
@@ -72,10 +88,11 @@ class CameraPoller {
     #state = new Map();
     #active = false;
     #running = false;
+    #sweepTimer = null;
     constructor(options) {
         this.#options = options;
         for (const camera of options.cameras) {
-            this.#state.set(camera.id, { timer: null, busy: false, hash: '', error: null });
+            this.#state.set(camera.id, { timer: null, busy: false, hash: '', error: null, viewers: new Map() });
         }
     }
     get active() {
@@ -88,6 +105,10 @@ class CameraPoller {
     }
     stop() {
         this.#running = false;
+        if (this.#sweepTimer) {
+            clearTimeout(this.#sweepTimer);
+            this.#sweepTimer = null;
+        }
         for (const state of this.#state.values()) {
             if (state.timer) {
                 clearTimeout(state.timer);
@@ -109,12 +130,89 @@ class CameraPoller {
             return;
         }
         for (const camera of this.#options.cameras) {
-            this.#schedule(camera, active ? 0 : this.#delay(camera));
+            // a camera that is shown anyway keeps its pace
+            if (!this.#state.get(camera.id).viewers.size) {
+                this.#schedule(camera, active ? 0 : this.#delay(camera));
+            }
         }
+    }
+    /**
+     * A browser starts showing the picture of a camera, renews its lease or stops. Every browser has its own ID, so
+     * any number of browsers can show the picture: it is fetched fast as long as at least one lease is valid. A
+     * browser that is closed without saying so drops out after `WATCH_TTL`.
+     *
+     * @param cameraId ID of the camera
+     * @param viewer ID of the browser
+     * @param watching false: the browser does not show the picture any more
+     * @returns false for an unknown camera
+     */
+    watch(cameraId, viewer, watching) {
+        const camera = this.#options.cameras.find(c => c.id === cameraId);
+        if (!camera) {
+            return false;
+        }
+        const { viewers } = this.#state.get(camera.id);
+        const before = viewers.size;
+        if (!watching) {
+            viewers.delete(viewer);
+        }
+        else if (viewers.has(viewer) || viewers.size < MAX_VIEWERS) {
+            viewers.set(viewer, Date.now() + (this.#options.watchTtl ?? exports.WATCH_TTL));
+        }
+        this.#viewersChanged(camera, before);
+        this.#scheduleSweep();
+        return true;
+    }
+    /** Number of browsers that show the picture of a camera */
+    viewers(cameraId) {
+        return this.#state.get(cameraId)?.viewers.size ?? 0;
+    }
+    #viewersChanged(camera, before) {
+        const after = this.#state.get(camera.id).viewers.size;
+        if (after === before) {
+            return;
+        }
+        this.#options.onViewers?.(camera, after);
+        // the first viewer gets a picture at once; with a call going on nothing changes
+        if (this.#running && !this.#active && before > 0 !== after > 0) {
+            this.#schedule(camera, after ? 0 : this.#delay(camera));
+        }
+    }
+    /** Drop the viewers whose lease ran out, at the time the next one runs out */
+    #scheduleSweep() {
+        if (this.#sweepTimer) {
+            clearTimeout(this.#sweepTimer);
+            this.#sweepTimer = null;
+        }
+        let next = Infinity;
+        for (const state of this.#state.values()) {
+            for (const end of state.viewers.values()) {
+                next = Math.min(next, end);
+            }
+        }
+        if (next === Infinity) {
+            return;
+        }
+        this.#sweepTimer = setTimeout(() => {
+            this.#sweepTimer = null;
+            const now = Date.now();
+            for (const camera of this.#options.cameras) {
+                const { viewers } = this.#state.get(camera.id);
+                const before = viewers.size;
+                for (const [viewer, end] of viewers) {
+                    if (end <= now) {
+                        viewers.delete(viewer);
+                    }
+                }
+                this.#viewersChanged(camera, before);
+            }
+            this.#scheduleSweep();
+        }, Math.max(0, next - Date.now()));
     }
     /** Delay until the next picture in ms, -1 = none */
     #delay(camera) {
-        const s = this.#active ? camera.interval : camera.idleInterval;
+        const fast = this.#active || !!this.#state.get(camera.id)?.viewers.size;
+        const s = fast ? camera.interval : camera.idleInterval;
         return s > 0 ? s * 1000 : -1;
     }
     #schedule(camera, delay) {

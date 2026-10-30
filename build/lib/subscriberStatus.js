@@ -3,6 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.ContactTracker = void 0;
 exports.mapDeviceState = mapDeviceState;
 exports.extensionOfDevice = extensionOfDevice;
+exports.ringingChannels = ringingChannels;
 exports.describeSubscriber = describeSubscriber;
 /**
  * Map an Asterisk device state - the constant of `DeviceStateChange` (`NOT_INUSE`) as well as the
@@ -34,6 +35,22 @@ function mapDeviceState(state) {
 function extensionOfDevice(device) {
     const m = /^PJSIP\/([0-9]{2,6})$/i.exec(String(device || ''));
     return m ? m[1] : null;
+}
+/**
+ * The lines that still ring a subscriber, from the events of `CoreShowChannels`. `Dial` calls every registered
+ * device of the subscriber on an outgoing line of its own (application `AppDial`); answered ones are `Up`.
+ *
+ * @param channels events `CoreShowChannel`
+ * @param extension the subscriber
+ */
+function ringingChannels(channels, extension) {
+    const prefix = `PJSIP/${extension}-`;
+    return channels
+        .filter(c => String(c.Channel || '').startsWith(prefix) &&
+        c.Application === 'AppDial' &&
+        c.ChannelState !== '6' &&
+        c.ChannelStateDesc !== 'Up')
+        .map(c => c.Channel);
 }
 /** Keeps the contacts of all AORs, fed by `PJSIPShowContacts` and the `ContactStatus` events */
 class ContactTracker {

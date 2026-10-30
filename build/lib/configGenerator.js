@@ -1,6 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.LOG_FILE = exports.CONTAINER_LOG_DIR = exports.ASTERISK_LOG_LEVELS = exports.ALL_VIDEO_CODECS = exports.ALL_CODECS = exports.RESTART_FILES = exports.SECRET_FILES = exports.CONTAINER_DIR = exports.MIN_PASSWORD_LENGTH = exports.ECHO_EXTENSION = exports.AMI_USER = exports.CONTEXT = exports.REALM = exports.HEADER = void 0;
+exports.DEFAULT_MAX_CONTACTS = exports.LOG_FILE = exports.CONTAINER_LOG_DIR = exports.ASTERISK_LOG_LEVELS = exports.ALL_VIDEO_CODECS = exports.ALL_CODECS = exports.RESTART_FILES = exports.SECRET_FILES = exports.CONTAINER_DIR = exports.MIN_PASSWORD_LENGTH = exports.ECHO_EXTENSION = exports.AMI_USER = exports.CONTEXT = exports.REALM = exports.HEADER = void 0;
+exports.toMaxContacts = toMaxContacts;
 exports.sanitizeName = sanitizeName;
 exports.sanitizeHost = sanitizeHost;
 exports.isValidExtension = isValidExtension;
@@ -39,6 +40,16 @@ exports.ASTERISK_LOG_LEVELS = ['none', 'errors', 'notice', 'verbose', 'debug'];
 exports.CONTAINER_LOG_DIR = '/var/log/asterisk';
 /** Log file read by the adapter, relative to the configuration directory */
 exports.LOG_FILE = 'logs/iobroker.log';
+/** Registrations of one subscriber at the same time, if nothing else is set */
+exports.DEFAULT_MAX_CONTACTS = 5;
+/** Number of devices of a subscriber: 1-20, default 5 */
+function toMaxContacts(value) {
+    const n = Math.round(Number(value));
+    if (value === '' || value === null || value === undefined || !Number.isFinite(n) || n < 1) {
+        return exports.DEFAULT_MAX_CONTACTS;
+    }
+    return Math.min(20, n);
+}
 /**
  * Remove everything that could break out of a value in an Asterisk config file:
  * line breaks, comments (`;`), section headers (`[` `]`), quotes and the angle brackets of a CallerID.
@@ -99,6 +110,7 @@ function validateSubscribers(config, secrets) {
             name: sanitizeName(sub.name) || extension,
             kind: sub.kind === 'sip' ? 'sip' : 'webrtc',
             enabled: true,
+            maxContacts: toMaxContacts(sub.maxContacts),
         });
     }
     return { subscribers, warnings };
@@ -202,12 +214,15 @@ function genPjsip(config, secrets, subscribers) {
     lines.push('; ---- templates ----', '[webrtc-endpoint](!)', 'type=endpoint', `context=${exports.CONTEXT}`, 'transport=transport-wss', 'disallow=all', `allow=${codecList(config.codecs, 'webrtc', config.videoCodecs)}`, 
     // webrtc=yes implies use_avpf, media_encryption=dtls, dtls_verify=fingerprint,
     // dtls_setup=actpass, ice_support, media_use_received_transport and rtcp_mux
-    'webrtc=yes', 'dtls_auto_generate_cert=yes', 'direct_media=no', 'allow_subscribe=no', '', '[sip-endpoint](!)', 'type=endpoint', `context=${exports.CONTEXT}`, 'transport=transport-udp', 'disallow=all', `allow=${codecList(config.codecs, 'sip', config.videoCodecs)}`, 'direct_media=no', 'rtp_symmetric=yes', 'force_rport=yes', 'rewrite_contact=yes', 'allow_subscribe=no', '', '[aor-template](!)', 'type=aor', 'max_contacts=5', 'remove_existing=yes', 
+    'webrtc=yes', 'dtls_auto_generate_cert=yes', 'direct_media=no', 'allow_subscribe=no', '', '[sip-endpoint](!)', 'type=endpoint', `context=${exports.CONTEXT}`, 'transport=transport-udp', 'disallow=all', `allow=${codecList(config.codecs, 'sip', config.videoCodecs)}`, 'direct_media=no', 'rtp_symmetric=yes', 'force_rport=yes', 'rewrite_contact=yes', 'allow_subscribe=no', '', '[aor-template](!)', 'type=aor', `max_contacts=${exports.DEFAULT_MAX_CONTACTS}`, 
+    // the oldest registration makes room for a new one
+    'remove_existing=yes', 
     // a new registration replaces contacts that do not answer, e.g. of a closed WebSocket
     'remove_unavailable=yes', 'qualify_frequency=30', '', '[auth-template](!)', 'type=auth', 'auth_type=md5', `realm=${exports.REALM}`, '');
     for (const sub of subscribers) {
         const password = secrets.passwords[sub.extension];
-        lines.push(`; ---- ${sub.extension} (${sub.kind}) ----`, `[${sub.extension}](${sub.kind === 'sip' ? 'sip-endpoint' : 'webrtc-endpoint'})`, `auth=${sub.extension}`, `aors=${sub.extension}`, `callerid="${sub.name}" <${sub.extension}>`, '', `[${sub.extension}](aor-template)`, '', `[${sub.extension}](auth-template)`, `username=${sub.extension}`, `md5_cred=${md5Credential(sub.extension, password)}`, '');
+        const maxContacts = toMaxContacts(sub.maxContacts);
+        lines.push(`; ---- ${sub.extension} (${sub.kind}) ----`, `[${sub.extension}](${sub.kind === 'sip' ? 'sip-endpoint' : 'webrtc-endpoint'})`, `auth=${sub.extension}`, `aors=${sub.extension}`, `callerid="${sub.name}" <${sub.extension}>`, '', `[${sub.extension}](aor-template)`, ...(maxContacts !== exports.DEFAULT_MAX_CONTACTS ? [`max_contacts=${maxContacts}`] : []), '', `[${sub.extension}](auth-template)`, `username=${sub.extension}`, `md5_cred=${md5Credential(sub.extension, password)}`, '');
     }
     lines.push('#tryinclude iobroker/pjsip_custom.conf', '');
     return lines.join('\n');

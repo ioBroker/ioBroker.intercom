@@ -1,5 +1,10 @@
 const assert = require('node:assert/strict');
-const { ContactTracker, mapDeviceState, extensionOfDevice } = require('../../build/lib/subscriberStatus');
+const {
+    ContactTracker,
+    mapDeviceState,
+    extensionOfDevice,
+    ringingChannels,
+} = require('../../build/lib/subscriberStatus');
 
 describe('subscriber status', () => {
     it('maps device states', () => {
@@ -19,6 +24,30 @@ describe('subscriber status', () => {
         assert.equal(extensionOfDevice('PJSIP/101'), '101');
         assert.equal(extensionOfDevice('SIP/101'), null);
         assert.equal(extensionOfDevice('PJSIP/abc'), null);
+    });
+
+    it('finds the lines that still ring a subscriber', () => {
+        const channel = (name, state, desc, application) => ({
+            Event: 'CoreShowChannel',
+            Channel: name,
+            ChannelState: state,
+            ChannelStateDesc: desc,
+            Application: application,
+        });
+        const channels = [
+            // the door calls, Dial rings two browsers of 100 and one of 101
+            channel('PJSIP/200-00000001', '4', 'Ring', 'Dial'),
+            channel('PJSIP/100-00000002', '5', 'Ringing', 'AppDial'),
+            channel('PJSIP/100-00000003', '0', 'Down', 'AppDial'),
+            channel('PJSIP/101-00000004', '5', 'Ringing', 'AppDial'),
+            // 100 talks in another call: not touched
+            channel('PJSIP/100-00000005', '6', 'Up', 'AppDial'),
+            // 100 calls somebody itself
+            channel('PJSIP/100-00000006', '4', 'Ring', 'Dial'),
+            channel('PJSIP/1000-00000007', '5', 'Ringing', 'AppDial'),
+        ];
+        assert.deepEqual(ringingChannels(channels, '100'), ['PJSIP/100-00000002', 'PJSIP/100-00000003']);
+        assert.deepEqual(ringingChannels(channels, '102'), []);
     });
 
     it('tracks contacts from the list and from events', () => {

@@ -39,6 +39,20 @@ export interface GeneratorSubscriber {
     name: string;
     kind: SubscriberKind;
     enabled: boolean;
+    /** How many devices (browsers, apps, phones) may be registered at once, default 5 */
+    maxContacts?: number | string;
+}
+
+/** Registrations of one subscriber at the same time, if nothing else is set */
+export const DEFAULT_MAX_CONTACTS = 5;
+
+/** Number of devices of a subscriber: 1-20, default 5 */
+export function toMaxContacts(value: unknown): number {
+    const n = Math.round(Number(value));
+    if (value === '' || value === null || value === undefined || !Number.isFinite(n) || n < 1) {
+        return DEFAULT_MAX_CONTACTS;
+    }
+    return Math.min(20, n);
 }
 
 /** Ring group: one number that rings several subscribers at once, e.g. for the door intercom */
@@ -161,6 +175,7 @@ export function validateSubscribers(
             name: sanitizeName(sub.name) || extension,
             kind: sub.kind === 'sip' ? 'sip' : 'webrtc',
             enabled: true,
+            maxContacts: toMaxContacts(sub.maxContacts),
         });
     }
     return { subscribers, warnings };
@@ -302,7 +317,8 @@ function genPjsip(config: GeneratorConfig, secrets: GeneratorSecrets, subscriber
         '',
         '[aor-template](!)',
         'type=aor',
-        'max_contacts=5',
+        `max_contacts=${DEFAULT_MAX_CONTACTS}`,
+        // the oldest registration makes room for a new one
         'remove_existing=yes',
         // a new registration replaces contacts that do not answer, e.g. of a closed WebSocket
         'remove_unavailable=yes',
@@ -317,6 +333,7 @@ function genPjsip(config: GeneratorConfig, secrets: GeneratorSecrets, subscriber
 
     for (const sub of subscribers) {
         const password = secrets.passwords[sub.extension];
+        const maxContacts = toMaxContacts(sub.maxContacts);
         lines.push(
             `; ---- ${sub.extension} (${sub.kind}) ----`,
             `[${sub.extension}](${sub.kind === 'sip' ? 'sip-endpoint' : 'webrtc-endpoint'})`,
@@ -325,6 +342,7 @@ function genPjsip(config: GeneratorConfig, secrets: GeneratorSecrets, subscriber
             `callerid="${sub.name}" <${sub.extension}>`,
             '',
             `[${sub.extension}](aor-template)`,
+            ...(maxContacts !== DEFAULT_MAX_CONTACTS ? [`max_contacts=${maxContacts}`] : []),
             '',
             `[${sub.extension}](auth-template)`,
             `username=${sub.extension}`,

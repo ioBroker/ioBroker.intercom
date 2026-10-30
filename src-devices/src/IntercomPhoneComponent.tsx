@@ -27,6 +27,7 @@ import { PhoneDialog, PhoneView } from '../../src-shared/src/PhoneView';
 import {
     ADAPTER,
     getViewOptions,
+    declineEverywhere,
     runAction,
     stateId,
     type PhoneHost,
@@ -330,6 +331,7 @@ function TileBody({ host, settings, size, onActiveChange }: TileBodyProps): Reac
         problem: problem ? t(problem) : '',
         certUrl,
         onAction: () => runAction(host, handle?.phone || null, settings),
+        onDecline: () => declineEverywhere(host, settings),
     };
 
     if (size === '2x2') {

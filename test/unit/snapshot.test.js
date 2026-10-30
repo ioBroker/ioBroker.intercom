@@ -2,7 +2,7 @@ const assert = require('node:assert/strict');
 const { createHash } = require('node:crypto');
 const http = require('node:http');
 const { describeUrl, digestAuthorization, fetchSnapshot, parseDigestChallenge } = require('../../build/lib/snapshot');
-const { CameraPoller, cameraId, validateCameras } = require('../../build/lib/cameras');
+const { CameraPoller, cameraId, parseWatch, validateCameras } = require('../../build/lib/cameras');
 
 const JPEG = Buffer.from([0xff, 0xd8, 0xff, 0xe0, 1, 2, 3, 4]);
 const md5 = text => createHash('md5').update(text).digest('hex');
@@ -135,7 +135,7 @@ describe('Cameras', () => {
             { enabled: true, name: '', url: 'http://x/y.jpg' },
             { enabled: true, name: 'ftp', url: 'ftp://x/y.jpg' },
             { enabled: false, name: 'off', url: 'http://x/y.jpg' },
-            { enabled: true, name: 'Garten 2', url: 'http://x/y.jpg', interval: 0.1, idleInterval: 0 },
+            { enabled: true, name: 'Garten 2', url: 'http://x/y.jpg', interval: 0.1, idleInterval: 0.2 },
             null,
         ]);
         assert.deepEqual(
@@ -144,9 +144,10 @@ describe('Cameras', () => {
         );
         assert.equal(cameras[0].insecure, true);
         assert.equal(cameras[0].interval, 1);
-        assert.equal(cameras[0].idleInterval, 10);
+        // only on demand by default
+        assert.equal(cameras[0].idleInterval, 0);
         assert.equal(cameras[1].interval, 0.5);
-        assert.equal(cameras[1].idleInterval, 0);
+        assert.equal(cameras[1].idleInterval, 1);
         assert.equal(warnings.length, 3);
         assert.equal(cameraId('Haustür'), 'haust_r');
     });
@@ -195,5 +196,61 @@ describe('Cameras', () => {
         poller.stop();
         assert.deepEqual(errors, ['', 'HTTP 401', '']);
         assert.equal(images.length, 2);
+    });
+
+    it('parses what the browsers write into watch', () => {
+        assert.deepEqual(parseWatch('abc-1'), { viewer: 'abc-1', watching: true });
+        assert.deepEqual(parseWatch('-abc-1'), { viewer: 'abc-1', watching: false });
+        assert.equal(parseWatch(''), null);
+        assert.equal(parseWatch('-'), null);
+        assert.equal(parseWatch(true), null);
+        assert.equal(parseWatch('a.b'), null);
+        assert.equal(parseWatch('x'.repeat(65)), null);
+    });
+
+    it('fetches fast as long as any browser shows the picture', async () => {
+        const [camera] = validateCameras([{ enabled: true, name: 'door', url: 'http://x/y.jpg', interval: 0.5 }])
+            .cameras;
+        let fetches = 0;
+        const viewers = [];
+        const poller = new CameraPoller({
+            cameras: [camera],
+            fetch: async () => {
+                fetches++;
+                return { data: Buffer.from(String(fetches)), contentType: 'image/jpeg' };
+            },
+            onImage: () => {},
+            onError: () => {},
+            onViewers: (_c, count) => viewers.push(count),
+            watchTtl: 800,
+        });
+        const wait = ms => new Promise(r => setTimeout(r, ms));
+        poller.start();
+        await wait(30);
+        assert.equal(fetches, 1);
+        assert.equal(poller.watch('unknown', 'a', true), false);
+
+        // the first browser: a picture at once
+        assert.equal(poller.watch('door', 'a', true), true);
+        await wait(30);
+        assert.equal(fetches, 2);
+        // a second browser changes nothing but the number
+        poller.watch('door', 'b', true);
+        await wait(30);
+        assert.equal(fetches, 2);
+        assert.equal(poller.viewers('door'), 2);
+
+        // the first one stops, the second one is still there: the next picture after 0.5 s
+        poller.watch('door', 'a', false);
+        await wait(500);
+        assert.equal(fetches, 3);
+        await wait(400);
+        // the second one did not renew: its lease ran out, no more pictures
+        assert.equal(poller.viewers('door'), 0);
+        const after = fetches;
+        await wait(600);
+        poller.stop();
+        assert.equal(fetches, after);
+        assert.deepEqual(viewers, [1, 2, 1, 0]);
     });
 });

@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 
 import { CameraImage } from './CameraImage';
+import { acquireCameraWatch } from './cameraWatch';
 import { frigateStreamUrl, isCloud, type FrigateWebUrl } from './frigate';
 import type { CameraSource, FrigateMode, PhoneHost } from './phoneSettings';
 
@@ -173,6 +174,10 @@ export interface CameraPictureProps {
 
 /** Picture of a camera: a URL, a state with a URL or data URL, or a camera of the frigate adapter */
 export function CameraPicture({ source, host, large, alt }: CameraPictureProps): React.JSX.Element | null {
+    // the snapshot proxy of the adapter fetches the picture only as long as some browser shows it
+    const watchId = source.kind === 'url' ? source.watch || '' : '';
+    useEffect(() => (host && watchId ? acquireCameraWatch(host, watchId) : undefined), [host, watchId]);
+
     if (source.kind === 'url') {
         return (
             <CameraImage

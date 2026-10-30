@@ -1,6 +1,7 @@
 /**
  * Settings of a phone, the same for a widget of vis-2, a tile of the devices app and the background service.
  */
+import { watchStateOf } from './cameraWatch';
 import type { PhoneConfig } from './phoneRegistry';
 
 export const ADAPTER = 'intercom';
@@ -64,10 +65,12 @@ export type FrigateMode = 'snapshot' | 'stream';
 export type CameraSource =
     | {
           kind: 'url';
-          /** URL of a snapshot or of an MJPEG stream, or a data URL */
+          /** URL of a snapshot or of an MJPEG stream, or a data URL; '' while the adapter has no picture yet */
           src: string;
           /** Seconds between two snapshots, 0: load once */
           refresh: number;
+          /** A picture of the snapshot proxy of the adapter: tell it while the picture is shown */
+          watch?: string;
       }
     | {
           kind: 'frigate';
@@ -170,7 +173,13 @@ function getCameraSource(camera: CameraSettings, value: unknown): CameraSource |
         };
     }
     // the value of the state wins over the URL
-    const src = stateId(camera.oid) && typeof value === 'string' && value ? value : String(camera.url || '').trim();
+    const oid = stateId(camera.oid);
+    const src = oid && typeof value === 'string' && value ? value : String(camera.url || '').trim();
+    // the snapshot proxy fetches the picture only while it is shown, so its state may still be empty
+    const watch = watchStateOf(oid);
+    if (watch) {
+        return { kind: 'url', src, refresh, watch };
+    }
     return src ? { kind: 'url', src, refresh } : null;
 }
 
@@ -259,6 +268,21 @@ export async function resolvePhone(host: PhoneHost, settings: PhoneSettings): Pr
         problem: '',
         certUrl: `https://${url.host}/static/cert.html`,
     };
+}
+
+/**
+ * "Decline" ends the ringing on all devices of the subscriber, e.g. in the other browsers, not only here
+ *
+ * @param host - the adapters of ioBroker
+ * @param settings - of the widget
+ */
+export function declineEverywhere(host: PhoneHost, settings: PhoneSettings): void {
+    const extension = String(settings.extension || '').trim();
+    if (extension) {
+        host.sendTo(String(settings.instance || `${ADAPTER}.0`), 'decline', { extension }).catch(() => {
+            // an adapter too old to know the command: only this device stops ringing
+        });
+    }
 }
 
 /** The action button during a call, e.g. "Open door" */

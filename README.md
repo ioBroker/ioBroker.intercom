@@ -70,6 +70,24 @@ Apps should pin the certificate by the SHA-256 fingerprint shown in the settings
 The certificate is **never regenerated automatically** - not even when IP addresses change (the adapter only
 writes a warning to the log), because a new fingerprint breaks the pinning in all apps.
 
+### One number on several devices
+
+One subscriber can be signed in on several devices at once - e.g. the phone widget on the wall tablet, in the
+browser of the PC and in an app. A call to the number rings all of them, the first one who answers takes the call,
+the others stop ringing. Every device can call out on its own. A device that is already in a call answers a second
+call with "busy", the others still ring.
+
+- **Decline** in a widget or tile ends the ringing on **all** devices of the subscriber (the widget asks the
+  adapter, which ends the remaining lines via AMI). If nobody else rings, the caller hears "busy". In a ring group
+  the other members keep ringing. On the test page and in other apps, decline stops only that device.
+- **How many devices** may be signed in at once is set per subscriber in the column **Devices** (1-20, default 5).
+  When one more signs in, the oldest registration makes room for it. Every open browser tab counts as a device of
+  its own; several widgets or tiles with the same number on one page share one registration. Devices that went away
+  without signing off (closed tab, tablet off) are recognized by the check every 30 seconds and make room first.
+- `subscribers.<ext>.contacts` shows how many devices are signed in at the moment.
+- The camera picture can be shown in all browsers at the same time, see
+  [Camera pictures](#camera-pictures-snapshot-proxy).
+
 ### Ring groups
 
 A group number in the tab **Groups** rings several subscribers at once - e.g. the phone widgets and a FRITZ!Box,
@@ -130,8 +148,15 @@ Many cameras deliver a snapshot only with a password, an API key or a token - wh
 `<img>` of vis. Enter such cameras in the tab **Cameras**: the adapter fetches the pictures (Basic and Digest
 authentication, API key header, Bearer token, self-signed certificates) and writes them as data URL into
 `intercom.0.cameras.<name>.image`. In the phone widget select this state under "Camera picture from state".
-During a call (a subscriber rings or talks) the picture is updated fast (default every second), otherwise slowly
-(default every 10 seconds, 0 = off). Errors are logged once and written to `cameras.<name>.error`.
+The pictures are fetched only when they are needed: during a call (a subscriber rings or talks) and while a
+browser shows the picture they are updated fast (default every second), otherwise only at the interval "Without
+call" (default 0 = never; set it if other visualizations show `cameras.<name>.image`). Errors are logged once and
+written to `cameras.<name>.error`.
+
+Any number of browsers can show the same picture: every page that shows it writes its own ID into
+`cameras.<name>.watch` every 10 seconds, and `-<ID>` when it stops (e.g. the call ends or the tab is hidden). A page
+that is closed without a word drops out after 30 seconds. `cameras.<name>.viewers` shows how many browsers show the
+picture. Several widgets of one page share one entry. A script can keep the picture up to date the same way.
 
 UniFi Protect: create an API key in UniFi OS (Settings → Control Plane → Integrations) and use
 `https://<console IP>/proxy/protect/integration/v1/cameras/<camera ID>/snapshot` with the authentication
@@ -149,6 +174,10 @@ UniFi Protect: create an API key in UniFi OS (Settings → Control Plane → Int
 | `subscribers.<ext>.contacts`          | number of registered contacts                      |
 | `subscribers.<ext>.userAgent`         | user agent of the client                           |
 | `subscribers.<ext>.state`             | `idle`, `ringing`, `inuse`, `unavailable`          |
+| `cameras.<name>.image`                | picture of the camera as data URL                  |
+| `cameras.<name>.error`                | error of the last fetch, empty when it works       |
+| `cameras.<name>.watch`                | `<ID>` / `-<ID>`: a browser shows the picture      |
+| `cameras.<name>.viewers`              | number of browsers that show the picture           |
 
 ### Messages (`sendTo`)
 
@@ -157,6 +186,7 @@ UniFi Protect: create an API key in UniFi OS (Settings → Control Plane → Int
 | `generateCert`     | `{ certHosts }` | `{ native: { certPublic, certPrivate, certFingerprint, certHosts } }` |
 | `getHostAddresses` | -               | `{ native: { certHosts: [...] } }`                      |
 | `getSubscriberStatus` | `{ extension }` | `{ text, style, icon }` for the table of the subscribers |
+| `decline`          | `{ extension }` | ends the ringing on all devices of the subscriber: `{ result: 'ok', channels }` |
 | `reload`           | -               | `{ result: 'ok' }` or `{ error }`                       |
 
 ### Own extensions
@@ -284,6 +314,26 @@ Apps sollten das Zertifikat über den SHA-256-Fingerprint aus den Einstellungen 
 pinnen. Das Zertifikat wird **nie automatisch neu erzeugt** - auch nicht bei geänderten IP-Adressen (dann gibt es
 nur eine Warnung im Log), weil ein neuer Fingerprint das Pinning in allen Apps bricht.
 
+### Ein Teilnehmer auf mehreren Geräten
+
+Ein Teilnehmer kann gleichzeitig auf mehreren Geräten angemeldet sein - z.B. das Telefon-Widget auf dem
+Wandtablet, im Browser des PCs und in einer App. Ein Anruf auf die Nummer lässt alle klingeln, wer zuerst abnimmt,
+hat das Gespräch, bei den anderen hört das Klingeln auf. Jedes Gerät kann für sich selbst anrufen. Ein Gerät, das
+schon telefoniert, beantwortet einen zweiten Anruf mit „besetzt“, die anderen klingeln trotzdem.
+
+- **Ablehnen** in einem Widget oder einer Kachel beendet das Klingeln auf **allen** Geräten des Teilnehmers (das
+  Widget bittet den Adapter, der die übrigen Leitungen per AMI beendet). Klingelt sonst niemand, hört der Anrufer
+  „besetzt“. In einer Gruppe klingeln die anderen Mitglieder weiter. Auf der Testseite und in anderen Apps beendet
+  Ablehnen nur das eigene Gerät.
+- **Wie viele Geräte** gleichzeitig angemeldet sein dürfen, steht pro Teilnehmer in der Spalte **Geräte** (1-20,
+  Standard 5). Meldet sich eines mehr an, macht die älteste Anmeldung Platz. Jeder offene Browser-Tab zählt als
+  eigenes Gerät; mehrere Widgets oder Kacheln mit derselben Nummer auf einer Seite teilen sich eine Anmeldung.
+  Geräte, die ohne Abmeldung verschwunden sind (Tab geschlossen, Tablet aus), erkennt die Prüfung alle 30 Sekunden;
+  sie machen zuerst Platz.
+- `subscribers.<ext>.contacts` zeigt, wie viele Geräte gerade angemeldet sind.
+- Das Kamerabild kann in allen Browsern gleichzeitig angezeigt werden, siehe
+  [Kamerabilder](#kamerabilder-snapshot-proxy).
+
 ### Gruppen
 
 Eine Gruppennummer im Reiter **Gruppen** lässt mehrere Teilnehmer gleichzeitig klingeln - z.B. die Telefon-Widgets
@@ -348,9 +398,16 @@ Viele Kameras liefern ein Standbild nur mit Passwort, API-Schlüssel oder Token 
 `<img>` von vis nicht mitschicken. Solche Kameras im Reiter **Kameras** eintragen: Der Adapter holt die Bilder
 (Basic- und Digest-Anmeldung, API-Schlüssel, Bearer-Token, selbst signierte Zertifikate) und schreibt sie als
 Data-URL nach `intercom.0.cameras.<name>.image`. Im Telefon-Widget diesen Datenpunkt unter „Kamerabild aus
-Datenpunkt“ auswählen. Während eines Anrufs (ein Teilnehmer klingelt oder spricht) wird das Bild schnell
-aktualisiert (Standard jede Sekunde), sonst langsam (Standard alle 10 Sekunden, 0 = aus). Fehler landen einmal im
-Log und in `cameras.<name>.error`.
+Datenpunkt“ auswählen. Die Bilder werden nur geholt, wenn sie gebraucht werden: Während eines Anrufs (ein
+Teilnehmer klingelt oder spricht) und solange ein Browser das Bild anzeigt, wird es schnell aktualisiert (Standard
+jede Sekunde), sonst nur im Intervall „Ohne Anruf“ (Standard 0 = nie; setzen, wenn andere Visualisierungen
+`cameras.<name>.image` anzeigen). Fehler landen einmal im Log und in `cameras.<name>.error`.
+
+Beliebig viele Browser können dasselbe Bild zeigen: Jede Seite, die es anzeigt, schreibt alle 10 Sekunden ihre
+eigene ID nach `cameras.<name>.watch` und `-<ID>`, wenn sie aufhört (z.B. Anruf beendet oder Tab verborgen). Eine
+Seite, die ohne Abmeldung geschlossen wird, fällt nach 30 Sekunden heraus. `cameras.<name>.viewers` zeigt, wie viele
+Browser das Bild anzeigen. Mehrere Widgets einer Seite teilen sich einen Eintrag. Ein Skript kann das Bild auf
+dieselbe Weise aktuell halten.
 
 UniFi Protect: In UniFi OS einen API-Schlüssel anlegen (Einstellungen → Control Plane → Integrationen) und
 `https://<Konsolen-IP>/proxy/protect/integration/v1/cameras/<Kamera-ID>/snapshot` mit der Anmeldung
@@ -403,6 +460,9 @@ SIP-Nachricht mit auf - nur zur Fehlersuche.
 - (@GermanBluefox) Cameras of the frigate adapter in the phone widget and tile, as snapshot or stream
 - (@GermanBluefox) Status of the subscribers in the settings
 - (@GermanBluefox) Shorter SDP of the browser: Asterisk rejected video calls of Chrome (PJ_ETOOMANY)
+- (@GermanBluefox) Snapshot proxy fetches camera pictures only during calls and while a browser shows them
+- (@GermanBluefox) "Decline" in the widget ends the ringing on all devices of the subscriber
+- (@GermanBluefox) Number of devices per subscriber is configurable (column "Devices")
 
 ### 0.0.1 (2026-10-08)
 - (@GermanBluefox) Initial release

@@ -9,6 +9,8 @@ export interface Subscriber {
     /** Encrypted by admin (`encryptedAttributes` of the table) */
     password: string;
     enabled: boolean;
+    /** How many devices (browsers, apps, phones) may be registered at once, default 5 */
+    maxContacts?: number | string;
 }
 
 /** Ring group (table "Groups"): one number that rings several subscribers at once */

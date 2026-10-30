@@ -350,6 +350,24 @@ describe('generateConfig', () => {
         });
     });
 
+    it('limits the devices of a subscriber', () => {
+        const pjsip = generateConfig(
+            config([
+                { extension: '101', name: 'A', kind: 'webrtc', enabled: true },
+                { extension: '102', name: 'B', kind: 'webrtc', enabled: true, maxContacts: '1' },
+                { extension: '201', name: 'C', kind: 'webrtc', enabled: true, maxContacts: 50 },
+                { extension: '300', name: 'D', kind: 'webrtc', enabled: true, maxContacts: 0 },
+            ]),
+            secrets,
+        ).files['pjsip.conf'];
+        assert.match(pjsip, /\[aor-template\]\(!\)\ntype=aor\nmax_contacts=5\n/);
+        // the default comes from the template
+        assert.match(pjsip, /\[101\]\(aor-template\)\n\n/);
+        assert.match(pjsip, /\[102\]\(aor-template\)\nmax_contacts=1\n/);
+        assert.match(pjsip, /\[201\]\(aor-template\)\nmax_contacts=20\n/);
+        assert.match(pjsip, /\[300\]\(aor-template\)\n\n/);
+    });
+
     it('is deterministic', () => {
         const c = config([{ extension: '101', name: 'A', kind: 'webrtc', enabled: true }]);
         assert.deepEqual(generateConfig(c, secrets).files, generateConfig(c, secrets).files);
