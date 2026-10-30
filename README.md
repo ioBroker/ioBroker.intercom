@@ -449,7 +449,7 @@ SIP-Nachricht mit auf - nur zur Fehlersuche.
 -->
 
 ## Changelog
-### **WORK IN PROGRESS**
+### 0.2.1 (2026-10-30)
 - (@GermanBluefox) Tile "Phone" for the devices app
 - (@GermanBluefox) Widgets with the same extension share one phone; background services for vis-2 and devices
 - (@GermanBluefox) Second camera picture in the phone widget and tile, switchable during a call
