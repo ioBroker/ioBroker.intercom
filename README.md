@@ -453,7 +453,7 @@ SIP-Nachricht mit auf - nur zur Fehlersuche.
 -->
 
 ## Changelog
-### **WORK IN PROGRESS**
+### 0.2.2 (2026-11-04)
 - (@GermanBluefox) Added second camera
 
 ### 0.2.1 (2026-10-30)

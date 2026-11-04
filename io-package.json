@@ -1,8 +1,21 @@
 {
   "common": {
     "name": "intercom",
-    "version": "0.2.1",
+    "version": "0.2.2",
     "news": {
+      "0.2.2": {
+        "en": "Added second camera",
+        "de": "Zweite Kamera hinzugefügt",
+        "ru": "Добавлена вторая камера",
+        "pt": "Outra câmera",
+        "nl": "Tweede camera toegevoegd",
+        "fr": "Deuxième caméra ajoutée",
+        "it": "Aggiunta 2a camera",
+        "es": "Añadió una segunda cámara",
+        "pl": "Dodano drugą kamerę",
+        "uk": "Додана друга камера",
+        "zh-cn": "增加了第二台摄像头"
+      },
       "0.2.1": {
         "en": "Tile \"Phone\" for the devices app\nWidgets with the same extension share one phone; background services for vis-2 and devices\nSecond camera picture in the phone widget and tile, switchable during a call\nRing groups: one number rings several subscribers at once\nCameras of the frigate adapter in the phone widget and tile, as snapshot or stream\nStatus of the subscribers in the settings\nShorter SDP of the browser: Asterisk rejected video calls of Chrome (PJ_ETOOMANY)\nSnapshot proxy fetches camera pictures only during calls and while a browser shows them\n\"Decline\" in the widget ends the ringing on all devices of the subscriber\nNumber of devices per subscriber is configurable (column \"Devices\")",
         "de": "Tile „Telefon“ der Geräte-App\nWidgets mit derselben Erweiterung teilen sich ein Handy; Dienste für VIS-2 und Geräte\nZweites Kamerabild im Telefon-Widget und in der Kachel, umschaltbar\nRufgruppen: Eine Nummer ruft mehrere Abonnenten an\nKameras der Fregatte im Telefon-Widget und Kachel, als Snapshot oder Stream\nStatus der Abonnenten in den Einstellungen\nKürzeres SDP des Browsers: Asterisk lehnte Chrome-Videoanrufe ab (PJ_ETOOMANY)\nSnapshot-Proxy ruft Kamerabilder nur bei Anrufen ab und im Browser\n„Ablehnen“ im Widget beendet das Klingeln auf allen Geräten\nAnzahl Geräte pro Abonnent ist konfigurierbar (Spalte „Geräte“)",
