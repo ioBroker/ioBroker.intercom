@@ -1,11 +1,13 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.LOG_FILE = exports.CONTAINER_LOG_DIR = exports.ASTERISK_LOG_LEVELS = exports.ALL_VIDEO_CODECS = exports.ALL_CODECS = exports.RESTART_FILES = exports.SECRET_FILES = exports.CONTAINER_DIR = exports.MIN_PASSWORD_LENGTH = exports.ECHO_EXTENSION = exports.AMI_USER = exports.CONTEXT = exports.REALM = exports.HEADER = void 0;
+exports.DEFAULT_MAX_CONTACTS = exports.LOG_FILE = exports.CONTAINER_LOG_DIR = exports.ASTERISK_LOG_LEVELS = exports.ALL_VIDEO_CODECS = exports.ALL_CODECS = exports.RESTART_FILES = exports.SECRET_FILES = exports.CONTAINER_DIR = exports.MIN_PASSWORD_LENGTH = exports.ECHO_EXTENSION = exports.AMI_USER = exports.CONTEXT = exports.REALM = exports.HEADER = void 0;
+exports.toMaxContacts = toMaxContacts;
 exports.sanitizeName = sanitizeName;
 exports.sanitizeHost = sanitizeHost;
 exports.isValidExtension = isValidExtension;
 exports.md5Credential = md5Credential;
 exports.validateSubscribers = validateSubscribers;
+exports.validateGroups = validateGroups;
 exports.getLogCommands = getLogCommands;
 exports.genStartScript = genStartScript;
 exports.generateConfig = generateConfig;
@@ -38,6 +40,16 @@ exports.ASTERISK_LOG_LEVELS = ['none', 'errors', 'notice', 'verbose', 'debug'];
 exports.CONTAINER_LOG_DIR = '/var/log/asterisk';
 /** Log file read by the adapter, relative to the configuration directory */
 exports.LOG_FILE = 'logs/iobroker.log';
+/** Registrations of one subscriber at the same time, if nothing else is set */
+exports.DEFAULT_MAX_CONTACTS = 5;
+/** Number of devices of a subscriber: 1-20, default 5 */
+function toMaxContacts(value) {
+    const n = Math.round(Number(value));
+    if (value === '' || value === null || value === undefined || !Number.isFinite(n) || n < 1) {
+        return exports.DEFAULT_MAX_CONTACTS;
+    }
+    return Math.min(20, n);
+}
 /**
  * Remove everything that could break out of a value in an Asterisk config file:
  * line breaks, comments (`;`), section headers (`[` `]`), quotes and the angle brackets of a CallerID.
@@ -98,9 +110,58 @@ function validateSubscribers(config, secrets) {
             name: sanitizeName(sub.name) || extension,
             kind: sub.kind === 'sip' ? 'sip' : 'webrtc',
             enabled: true,
+            maxContacts: toMaxContacts(sub.maxContacts),
         });
     }
     return { subscribers, warnings };
+}
+/** Validate the ring groups: invalid, duplicate, disabled and empty groups and unknown members are dropped */
+function validateGroups(config, subscribers) {
+    const warnings = [];
+    const known = new Set(subscribers.map(s => s.extension));
+    const used = new Set(known);
+    if (config.echoTest) {
+        used.add(exports.ECHO_EXTENSION);
+    }
+    const groups = [];
+    for (const group of config.groups || []) {
+        const extension = String(group?.extension ?? '').trim();
+        if (!group || !group.enabled) {
+            continue;
+        }
+        if (!isValidExtension(extension)) {
+            warnings.push(`Group "${sanitizeName(extension)}" skipped: invalid number (2-6 digits)`);
+            continue;
+        }
+        if (used.has(extension)) {
+            warnings.push(`Group ${extension} skipped: the number is already used by a subscriber or another group`);
+            continue;
+        }
+        const members = [];
+        for (const member of group.members || []) {
+            const ext = String(member ?? '').trim();
+            if (!known.has(ext)) {
+                warnings.push(`Group ${extension}: member "${sanitizeName(ext)}" is no active subscriber`);
+            }
+            else if (!members.includes(ext)) {
+                members.push(ext);
+            }
+        }
+        if (!members.length) {
+            warnings.push(`Group ${extension} skipped: no active subscriber in it`);
+            continue;
+        }
+        used.add(extension);
+        const ringTime = Math.round(Number(group.ringTime));
+        groups.push({
+            extension,
+            name: sanitizeName(group.name) || extension,
+            members,
+            ringTime: ringTime >= 5 && ringTime <= 300 ? ringTime : 30,
+            enabled: true,
+        });
+    }
+    return { groups, warnings };
 }
 function codecList(codecs, kind, videoCodecs = []) {
     let list = (codecs || []).filter(c => exports.ALL_CODECS.includes(c));
@@ -153,12 +214,15 @@ function genPjsip(config, secrets, subscribers) {
     lines.push('; ---- templates ----', '[webrtc-endpoint](!)', 'type=endpoint', `context=${exports.CONTEXT}`, 'transport=transport-wss', 'disallow=all', `allow=${codecList(config.codecs, 'webrtc', config.videoCodecs)}`, 
     // webrtc=yes implies use_avpf, media_encryption=dtls, dtls_verify=fingerprint,
     // dtls_setup=actpass, ice_support, media_use_received_transport and rtcp_mux
-    'webrtc=yes', 'dtls_auto_generate_cert=yes', 'direct_media=no', 'allow_subscribe=no', '', '[sip-endpoint](!)', 'type=endpoint', `context=${exports.CONTEXT}`, 'transport=transport-udp', 'disallow=all', `allow=${codecList(config.codecs, 'sip', config.videoCodecs)}`, 'direct_media=no', 'rtp_symmetric=yes', 'force_rport=yes', 'rewrite_contact=yes', 'allow_subscribe=no', '', '[aor-template](!)', 'type=aor', 'max_contacts=5', 'remove_existing=yes', 
+    'webrtc=yes', 'dtls_auto_generate_cert=yes', 'direct_media=no', 'allow_subscribe=no', '', '[sip-endpoint](!)', 'type=endpoint', `context=${exports.CONTEXT}`, 'transport=transport-udp', 'disallow=all', `allow=${codecList(config.codecs, 'sip', config.videoCodecs)}`, 'direct_media=no', 'rtp_symmetric=yes', 'force_rport=yes', 'rewrite_contact=yes', 'allow_subscribe=no', '', '[aor-template](!)', 'type=aor', `max_contacts=${exports.DEFAULT_MAX_CONTACTS}`, 
+    // the oldest registration makes room for a new one
+    'remove_existing=yes', 
     // a new registration replaces contacts that do not answer, e.g. of a closed WebSocket
     'remove_unavailable=yes', 'qualify_frequency=30', '', '[auth-template](!)', 'type=auth', 'auth_type=md5', `realm=${exports.REALM}`, '');
     for (const sub of subscribers) {
         const password = secrets.passwords[sub.extension];
-        lines.push(`; ---- ${sub.extension} (${sub.kind}) ----`, `[${sub.extension}](${sub.kind === 'sip' ? 'sip-endpoint' : 'webrtc-endpoint'})`, `auth=${sub.extension}`, `aors=${sub.extension}`, `callerid="${sub.name}" <${sub.extension}>`, '', `[${sub.extension}](aor-template)`, '', `[${sub.extension}](auth-template)`, `username=${sub.extension}`, `md5_cred=${md5Credential(sub.extension, password)}`, '');
+        const maxContacts = toMaxContacts(sub.maxContacts);
+        lines.push(`; ---- ${sub.extension} (${sub.kind}) ----`, `[${sub.extension}](${sub.kind === 'sip' ? 'sip-endpoint' : 'webrtc-endpoint'})`, `auth=${sub.extension}`, `aors=${sub.extension}`, `callerid="${sub.name}" <${sub.extension}>`, '', `[${sub.extension}](aor-template)`, ...(maxContacts !== exports.DEFAULT_MAX_CONTACTS ? [`max_contacts=${maxContacts}`] : []), '', `[${sub.extension}](auth-template)`, `username=${sub.extension}`, `md5_cred=${md5Credential(sub.extension, password)}`, '');
     }
     lines.push('#tryinclude iobroker/pjsip_custom.conf', '');
     return lines.join('\n');
@@ -184,7 +248,19 @@ function genRtp(config) {
     lines.push('');
     return lines.join('\n');
 }
-function genExtensions(config, subscribers) {
+/**
+ * A ring group in the dialplan. `PJSIP_DIAL_CONTACTS` is empty for a subscriber without registration, and one empty
+ * part of `Dial(a&&b)` ends the whole Dial - so only the registered devices are collected.
+ */
+function genGroup(group) {
+    const lines = [`exten => ${group.extension},1,Set(RING=)`];
+    group.members.forEach((member, i) => {
+        lines.push(` same => n${i ? `(m${i})` : ''},Set(CONTACTS=\${PJSIP_DIAL_CONTACTS(${member})})`, ` same => n,GotoIf($[\${LEN(\${CONTACTS})} = 0]?m${i + 1})`, ' same => n,Set(RING=${RING}&${CONTACTS})');
+    });
+    lines.push(` same => n(m${group.members.length}),GotoIf($[\${LEN(\${RING})} = 0]?end)`, ` same => n,Dial(\${RING:1},${group.ringTime})`, ' same => n(end),Hangup()', '');
+    return lines;
+}
+function genExtensions(config, subscribers, groups = []) {
     const lines = [exports.HEADER, '[general]', 'static=yes', 'writeprotect=yes', 'clearglobalvars=no', '', `[${exports.CONTEXT}]`];
     if (config.echoTest) {
         lines.push(`exten => ${exports.ECHO_EXTENSION},1,Answer()`, ' same => n,Wait(1)', ' same => n,Playback(hello-world)', ' same => n,Echo()', ' same => n,Hangup()', '');
@@ -192,6 +268,9 @@ function genExtensions(config, subscribers) {
     for (const sub of subscribers) {
         // Ring all registered devices of the subscriber, not only the first contact
         lines.push(`exten => ${sub.extension},1,Dial(\${PJSIP_DIAL_CONTACTS(${sub.extension})},30)`, ' same => n,Hangup()', '');
+    }
+    for (const group of groups) {
+        lines.push(`; ---- group ${group.extension} (${group.name}): ${group.members.join(', ')} ----`, ...genGroup(group));
     }
     lines.push('#tryinclude iobroker/extensions_custom.conf', '');
     return lines.join('\n');
@@ -366,11 +445,13 @@ exec asterisk -f -vvv
  */
 function generateConfig(config, secrets, assets = {}) {
     const { subscribers, warnings } = validateSubscribers(config, secrets);
+    const { groups, warnings: groupWarnings } = validateGroups(config, subscribers);
+    warnings.push(...groupWarnings);
     const files = {
         'http.conf': genHttp(config),
         'pjsip.conf': genPjsip(config, secrets, subscribers),
         'rtp.conf': genRtp(config),
-        'extensions.conf': genExtensions(config, subscribers),
+        'extensions.conf': genExtensions(config, subscribers, groups),
         'manager.conf': genManager(config, secrets),
         'modules.conf': genModules(),
         'logger.conf': genLogger(config),
@@ -387,7 +468,7 @@ function generateConfig(config, secrets, assets = {}) {
             files[`static-http/${testPage_1.PHONE_FILE}`] = assets.phone;
         }
     }
-    return { files, warnings, subscribers };
+    return { files, warnings, subscribers, groups };
 }
 /** Which Asterisk modules must be reloaded for the changed files */
 function getReloadCommands(changedFiles) {

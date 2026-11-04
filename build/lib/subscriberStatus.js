@@ -3,6 +3,8 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.ContactTracker = void 0;
 exports.mapDeviceState = mapDeviceState;
 exports.extensionOfDevice = extensionOfDevice;
+exports.ringingChannels = ringingChannels;
+exports.describeSubscriber = describeSubscriber;
 /**
  * Map an Asterisk device state - the constant of `DeviceStateChange` (`NOT_INUSE`) as well as the
  * text of `PJSIPShowEndpoints` (`Not in use`) - to the state of the subscriber.
@@ -33,6 +35,22 @@ function mapDeviceState(state) {
 function extensionOfDevice(device) {
     const m = /^PJSIP\/([0-9]{2,6})$/i.exec(String(device || ''));
     return m ? m[1] : null;
+}
+/**
+ * The lines that still ring a subscriber, from the events of `CoreShowChannels`. `Dial` calls every registered
+ * device of the subscriber on an outgoing line of its own (application `AppDial`); answered ones are `Up`.
+ *
+ * @param channels events `CoreShowChannel`
+ * @param extension the subscriber
+ */
+function ringingChannels(channels, extension) {
+    const prefix = `PJSIP/${extension}-`;
+    return channels
+        .filter(c => String(c.Channel || '').startsWith(prefix) &&
+        c.Application === 'AppDial' &&
+        c.ChannelState !== '6' &&
+        c.ChannelStateDesc !== 'Up')
+        .map(c => c.Channel);
 }
 /** Keeps the contacts of all AORs, fed by `PJSIPShowContacts` and the `ContactStatus` events */
 class ContactTracker {
@@ -104,4 +122,48 @@ class ContactTracker {
     }
 }
 exports.ContactTracker = ContactTracker;
+const STATUS_WORDS = {
+    en: {
+        connected: 'connected',
+        disconnected: 'not connected',
+        unknown: 'not saved yet',
+        idle: '',
+        ringing: 'ringing',
+        inuse: 'in a call',
+        unavailable: '',
+    },
+    de: {
+        connected: 'verbunden',
+        disconnected: 'nicht verbunden',
+        unknown: 'noch nicht gespeichert',
+        idle: '',
+        ringing: 'klingelt',
+        inuse: 'im Gespräch',
+        unavailable: '',
+    },
+};
+/**
+ * The status of a subscriber as one line: "connected (2) · ringing · DoorBird D2101V"
+ *
+ * @param summary contacts of the subscriber, null if the adapter does not know it (new row, disabled)
+ * @param state device state from Asterisk
+ * @param language of the system
+ */
+function describeSubscriber(summary, state, language) {
+    const words = STATUS_WORDS[language === 'de' ? 'de' : 'en'];
+    if (!summary) {
+        return { text: words.unknown, style: { color: 'grey' }, icon: 'no-connection' };
+    }
+    if (!summary.registered) {
+        return { text: words.disconnected, style: { color: '#d32f2f' }, icon: 'no-connection' };
+    }
+    const parts = [summary.contacts > 1 ? `${words.connected} (${summary.contacts})` : words.connected];
+    if (state && words[state]) {
+        parts.push(words[state]);
+    }
+    if (summary.userAgent) {
+        parts.push(summary.userAgent.length > 40 ? `${summary.userAgent.substring(0, 39)}…` : summary.userAgent);
+    }
+    return { text: parts.join(' · '), style: { color: '#2e7d32' }, icon: 'connection' };
+}
 //# sourceMappingURL=subscriberStatus.js.map

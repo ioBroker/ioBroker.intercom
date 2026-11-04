@@ -4,7 +4,7 @@ import { join } from 'node:path';
 import * as utils from '@iobroker/adapter-core';
 
 import { AmiClient, type AmiMessage } from './lib/ami';
-import { CameraPoller, validateCameras, type CameraSettings } from './lib/cameras';
+import { CameraPoller, parseWatch, validateCameras, type CameraSettings } from './lib/cameras';
 import {
     generateCertificate,
     getFingerprint,
@@ -21,6 +21,7 @@ import {
     type AsteriskLogLevel,
     generateConfig,
     getReloadCommands,
+    isValidExtension,
     RESTART_FILES,
     type GeneratorConfig,
     type GeneratorResult,
@@ -28,7 +29,14 @@ import {
 } from './lib/configGenerator';
 import { writeConfigFiles } from './lib/configWriter';
 import { classifyMessage, LogTail, TlsFailureMonitor } from './lib/logTail';
-import { ContactTracker, extensionOfDevice, mapDeviceState } from './lib/subscriberStatus';
+import {
+    ContactTracker,
+    describeSubscriber,
+    extensionOfDevice,
+    mapDeviceState,
+    ringingChannels,
+    type SubscriberState,
+} from './lib/subscriberStatus';
 import { describeUrl, fetchSnapshot } from './lib/snapshot';
 import { PHONE_FILE } from './lib/testPage';
 import type { Codec } from './types';
@@ -81,7 +89,7 @@ export class IntercomAdapter extends utils.Adapter {
     private reloading: Promise<void> | null = null;
     private cameraPoller: CameraPoller | null = null;
     /** Device state of every subscriber, to know whether a call is going on */
-    private readonly deviceStates = new Map<string, string>();
+    private readonly deviceStates = new Map<string, SubscriberState>();
 
     public constructor(options: Partial<utils.AdapterOptions> = {}) {
         super({
@@ -90,6 +98,7 @@ export class IntercomAdapter extends utils.Adapter {
             ready: () => this.main(),
             unload: callback => this.onUnload(callback),
             message: obj => this.onMessage(obj),
+            stateChange: (id, state) => this.onStateChange(id, state),
         });
     }
 
@@ -263,6 +272,16 @@ export class IntercomAdapter extends utils.Adapter {
                 name: s?.name || '',
                 kind: s?.kind === 'sip' ? 'sip' : 'webrtc',
                 enabled: !!s?.enabled,
+                maxContacts: s?.maxContacts,
+            })),
+            groups: (Array.isArray(this.config.groups) ? this.config.groups : []).map(g => ({
+                extension: String(g?.extension ?? '').trim(),
+                name: g?.name || '',
+                members: (Array.isArray(g?.members) ? g.members : String(g?.members ?? '').split(/[\s,;]+/))
+                    .map(m => String(m).trim())
+                    .filter(Boolean),
+                ringTime: toNumber(g?.ringTime, 30),
+                enabled: !!g?.enabled,
             })),
         };
     }
@@ -631,6 +650,54 @@ export class IntercomAdapter extends utils.Adapter {
                 break;
             }
 
+            case 'getSubscriberStatus': {
+                // a cell of the subscribers table in the admin
+                const extension = typeof message.extension === 'string' ? message.extension.trim() : '';
+                const known = this.subscribers.some(s => s.extension === extension);
+                const config = await this.getForeignObjectAsync('system.config');
+                reply(
+                    describeSubscriber(
+                        known ? this.contacts.summary(extension) : null,
+                        this.deviceStates.get(extension),
+                        config?.common?.language || 'en',
+                    ),
+                );
+                break;
+            }
+
+            case 'getSubscriberOptions': {
+                // the members of a group in the admin: the subscribers of the form, also the ones not saved yet
+                const rows = Array.isArray(message.subscribers)
+                    ? (message.subscribers as unknown[])
+                    : (this.config.subscribers || []).filter(s => s?.enabled).map(s => [s.extension, s.name]);
+                const options: { value: string; label: string }[] = [];
+                for (const row of rows) {
+                    const [extension, name] = Array.isArray(row)
+                        ? row.map(v => (typeof v === 'string' ? v.trim() : ''))
+                        : [];
+                    if (extension && isValidExtension(extension) && !options.some(o => o.value === extension)) {
+                        options.push({ value: extension, label: name ? `${extension} – ${name}` : extension });
+                    }
+                }
+                reply(options);
+                break;
+            }
+
+            case 'decline': {
+                // "Decline" in one browser: the other devices of the subscriber stop ringing, too
+                const extension = typeof message.extension === 'string' ? message.extension.trim() : '';
+                if (!this.subscribers.some(s => s.extension === extension)) {
+                    reply({ error: `Unknown subscriber "${extension}"` });
+                    break;
+                }
+                try {
+                    reply({ result: 'ok', channels: await this.declineCall(extension) });
+                } catch (e) {
+                    reply({ error: (e as Error).message });
+                }
+                break;
+            }
+
             case 'reload':
                 try {
                     const result = await this.writeConfiguration(await this.getActiveCertificate());
@@ -647,6 +714,31 @@ export class IntercomAdapter extends utils.Adapter {
                 this.log.warn(`Unknown command: ${obj.command}`);
                 reply({ error: `Unknown command: ${obj.command}` });
         }
+    }
+
+    /**
+     * End the ringing on all devices of a subscriber. The caller hears "busy" if nobody else rings, e.g. no other
+     * member of a ring group.
+     *
+     * @param extension the subscriber
+     * @returns number of the ended lines
+     */
+    private async declineCall(extension: string): Promise<number> {
+        if (!this.ami?.connected) {
+            throw new Error('Not connected to Asterisk');
+        }
+        const { events } = await this.ami.action({ Action: 'CoreShowChannels' });
+        const channels = ringingChannels(events, extension);
+        for (const channel of channels) {
+            // 17: user busy, as the 486 of the declining browser
+            await this.ami.action({ Action: 'Hangup', Channel: channel, Cause: 17 }).catch(() => {
+                // answered or ended in the meantime
+            });
+        }
+        if (channels.length) {
+            this.log.debug(`Call to ${extension} declined, ended ${channels.length} ringing device(s)`);
+        }
+        return channels.length;
     }
 
     private getLogLevel(): AsteriskLogLevel {
@@ -745,6 +837,32 @@ export class IntercomAdapter extends utils.Adapter {
                 common: { name: 'Error', type: 'string', role: 'text', read: true, write: false, def: '' },
                 native: {},
             });
+            await this.extendObjectAsync(`cameras.${camera.id}.watch`, {
+                type: 'state',
+                common: {
+                    name: 'Picture is shown',
+                    desc: 'A browser writes its ID every 10 s while it shows the picture, "-<ID>" when it stops',
+                    type: 'string',
+                    role: 'text',
+                    read: true,
+                    write: true,
+                    def: '',
+                },
+                native: {},
+            });
+            await this.extendObjectAsync(`cameras.${camera.id}.viewers`, {
+                type: 'state',
+                common: {
+                    name: 'Browsers showing the picture',
+                    type: 'number',
+                    role: 'value',
+                    read: true,
+                    write: false,
+                    def: 0,
+                },
+                native: {},
+            });
+            await this.setStateAsync(`cameras.${camera.id}.viewers`, 0, true);
         }
         const channels = await this.getChannelsOfAsync('cameras').catch(() => []);
         for (const channel of channels || []) {
@@ -778,9 +896,26 @@ export class IntercomAdapter extends utils.Adapter {
                 }
                 void this.setState(`cameras.${camera.id}.error`, error, true);
             },
+            onViewers: (camera, viewers) => {
+                this.log.debug(`${describe(camera)}: shown in ${viewers} browser(s)`);
+                void this.setState(`cameras.${camera.id}.viewers`, viewers, true);
+            },
         });
         this.cameraPoller.start();
+        await this.subscribeStatesAsync('cameras.*.watch');
         this.log.info(`Snapshot proxy for ${cameras.length} camera(s) started`);
+    }
+
+    /** A browser starts or stops showing the picture of a camera: `cameras.<id>.watch` */
+    private onStateChange(id: string, state: ioBroker.State | null | undefined): void {
+        if (!state || state.ack || !this.cameraPoller) {
+            return;
+        }
+        const match = id.match(/\.cameras\.([^.]+)\.watch$/);
+        const watch = parseWatch(state.val);
+        if (match && watch && this.cameraPoller.watch(match[1], watch.viewer, watch.watching)) {
+            void this.setState(id, state.val, true);
+        }
     }
 
     private onUnload(callback: () => void): void {

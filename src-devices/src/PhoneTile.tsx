@@ -12,9 +12,9 @@ import {
 } from '@mui/icons-material';
 
 import type { PhoneSnapshot } from '../../src-www/src/SipPhone';
-import { CameraImage } from '../../src-shared/src/CameraImage';
+import { CameraPicture } from '../../src-shared/src/CameraPicture';
 import { CallTimer } from '../../src-shared/src/PhoneView';
-import type { PhoneViewOptions } from '../../src-shared/src/phoneSettings';
+import type { PhoneHost, PhoneViewOptions } from '../../src-shared/src/phoneSettings';
 
 /** The tile sizes of the devices app */
 export type TileSize = '1x1' | '2x0.5' | '2x1' | '2x2';
@@ -27,6 +27,8 @@ const pulse = keyframes`
 interface PhoneTileProps {
     snap: PhoneSnapshot;
     options: PhoneViewOptions;
+    /** For the cameras of the frigate adapter */
+    host: PhoneHost;
     title: string;
     /** Translated problem that prevents the start */
     problem: string;
@@ -35,7 +37,16 @@ interface PhoneTileProps {
     onClick: () => void;
 }
 
-export function PhoneTile({ snap, options, title, problem, size, t, onClick }: PhoneTileProps): React.JSX.Element {
+export function PhoneTile({
+    snap,
+    options,
+    host,
+    title,
+    problem,
+    size,
+    t,
+    onClick,
+}: PhoneTileProps): React.JSX.Element {
     const inCall = snap.call !== 'none';
     const registered = snap.registration === 'registered';
     const row = size === '2x0.5';
@@ -72,7 +83,9 @@ export function PhoneTile({ snap, options, title, problem, size, t, onClick }: P
         color = 'primary.main';
     }
 
-    const showCamera = size === '2x1' && !!options.cameraSrc && (options.cameraAlways || inCall);
+    // no room to switch: the first configured camera
+    const camera = options.cameras[0];
+    const showCamera = size === '2x1' && !!camera && (options.cameraAlways || inCall);
     // a 2x½ tile is a row; the other ones have the icon at the top and the text at the bottom
     const avatarSize = row ? 'max(28px, 7cqi)' : size === '2x1' ? 'max(44px, 15cqi)' : 'max(44px, 30cqi)';
 
@@ -124,7 +137,7 @@ export function PhoneTile({ snap, options, title, problem, size, t, onClick }: P
                     </Typography>
                 </Box>
             </Box>
-            {showCamera ? (
+            {showCamera && camera ? (
                 <Box
                     sx={{
                         flex: 1,
@@ -135,9 +148,9 @@ export function PhoneTile({ snap, options, title, problem, size, t, onClick }: P
                         bgcolor: '#000',
                     }}
                 >
-                    <CameraImage
-                        src={options.cameraSrc}
-                        refresh={options.cameraRefresh}
+                    <CameraPicture
+                        source={camera}
+                        host={host}
                         alt={t('camera')}
                     />
                 </Box>

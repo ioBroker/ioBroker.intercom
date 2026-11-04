@@ -15,5 +15,6 @@ export function createHost(socket: Connection): PhoneHost {
             void socket.subscribeState(id, onChange);
             return () => socket.unsubscribeState(id, onChange);
         },
+        sendTo: (instance, command, data) => socket.sendTo(instance, command, data),
     };
 }

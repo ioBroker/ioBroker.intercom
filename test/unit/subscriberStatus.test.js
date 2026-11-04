@@ -1,5 +1,10 @@
 const assert = require('node:assert/strict');
-const { ContactTracker, mapDeviceState, extensionOfDevice } = require('../../build/lib/subscriberStatus');
+const {
+    ContactTracker,
+    mapDeviceState,
+    extensionOfDevice,
+    ringingChannels,
+} = require('../../build/lib/subscriberStatus');
 
 describe('subscriber status', () => {
     it('maps device states', () => {
@@ -19,6 +24,30 @@ describe('subscriber status', () => {
         assert.equal(extensionOfDevice('PJSIP/101'), '101');
         assert.equal(extensionOfDevice('SIP/101'), null);
         assert.equal(extensionOfDevice('PJSIP/abc'), null);
+    });
+
+    it('finds the lines that still ring a subscriber', () => {
+        const channel = (name, state, desc, application) => ({
+            Event: 'CoreShowChannel',
+            Channel: name,
+            ChannelState: state,
+            ChannelStateDesc: desc,
+            Application: application,
+        });
+        const channels = [
+            // the door calls, Dial rings two browsers of 100 and one of 101
+            channel('PJSIP/200-00000001', '4', 'Ring', 'Dial'),
+            channel('PJSIP/100-00000002', '5', 'Ringing', 'AppDial'),
+            channel('PJSIP/100-00000003', '0', 'Down', 'AppDial'),
+            channel('PJSIP/101-00000004', '5', 'Ringing', 'AppDial'),
+            // 100 talks in another call: not touched
+            channel('PJSIP/100-00000005', '6', 'Up', 'AppDial'),
+            // 100 calls somebody itself
+            channel('PJSIP/100-00000006', '4', 'Ring', 'Dial'),
+            channel('PJSIP/1000-00000007', '5', 'Ringing', 'AppDial'),
+        ];
+        assert.deepEqual(ringingChannels(channels, '100'), ['PJSIP/100-00000002', 'PJSIP/100-00000003']);
+        assert.deepEqual(ringingChannels(channels, '102'), []);
     });
 
     it('tracks contacts from the list and from events', () => {
@@ -41,5 +70,34 @@ describe('subscriber status', () => {
         assert.deepEqual(t.summary('102'), { registered: true, contacts: 1, userAgent: 'X' });
 
         assert.equal(t.applyContactStatus({ ContactStatus: 'Reachable' }), null);
+    });
+});
+
+describe('subscriber status in the admin', () => {
+    const { describeSubscriber } = require('../../build/lib/subscriberStatus');
+
+    it('shows a registered subscriber with its state and device', () => {
+        const status = describeSubscriber(
+            { registered: true, contacts: 2, userAgent: 'DoorBird D2101V' },
+            'ringing',
+            'de',
+        );
+        assert.equal(status.text, 'verbunden (2) · klingelt · DoorBird D2101V');
+        assert.equal(status.icon, 'connection');
+    });
+
+    it('leaves out the idle state', () => {
+        const status = describeSubscriber({ registered: true, contacts: 1, userAgent: '' }, 'idle', 'en');
+        assert.equal(status.text, 'connected');
+    });
+
+    it('shows a subscriber without contacts as not connected', () => {
+        const status = describeSubscriber({ registered: false, contacts: 0, userAgent: '' }, 'unavailable', 'fr');
+        assert.equal(status.text, 'not connected');
+        assert.equal(status.icon, 'no-connection');
+    });
+
+    it('shows a row the adapter does not know yet', () => {
+        assert.equal(describeSubscriber(null, undefined, 'de').text, 'noch nicht gespeichert');
     });
 });

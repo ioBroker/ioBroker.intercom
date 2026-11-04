@@ -16,6 +16,7 @@ export function createHost(stateContext: IStateContext): PhoneHost {
             stateContext.getState(id, onChange);
             return () => stateContext.removeState(id, onChange);
         },
+        sendTo: (instance, command, data) => stateContext.getSocket().sendTo(instance, command, data),
     };
 }
 

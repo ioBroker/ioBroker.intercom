@@ -10,7 +10,14 @@
 import React, { useEffect } from 'react';
 
 import { PhoneDialog } from './PhoneView';
-import { getViewOptions, runAction, stateId, type PhoneHost, type PhoneSettings } from './phoneSettings';
+import {
+    declineEverywhere,
+    getViewOptions,
+    runAction,
+    stateId,
+    type PhoneHost,
+    type PhoneSettings,
+} from './phoneSettings';
 import { usePhone, useStateValue } from './usePhone';
 
 export interface ServicePhone {
@@ -33,6 +40,7 @@ function ServicePhoneDialog(props: {
     const { settings, host, t } = props;
     const { handle, problem, certUrl } = usePhone(host, settings, true);
     const cameraValue = useStateValue(host, stateId(settings.cameraOid));
+    const camera2Value = useStateValue(host, stateId(settings.camera2Oid));
     const extension = String(settings.extension || '');
 
     useEffect(() => {
@@ -46,11 +54,13 @@ function ServicePhoneDialog(props: {
         <PhoneDialog
             handle={handle}
             extension={extension}
-            options={getViewOptions(settings, cameraValue)}
+            options={getViewOptions(settings, cameraValue, camera2Value)}
+            host={host}
             t={t}
             problem=""
             certUrl={certUrl}
             onAction={() => runAction(host, handle?.phone || null, settings)}
+            onDecline={() => declineEverywhere(host, settings)}
         />
     );
 }
