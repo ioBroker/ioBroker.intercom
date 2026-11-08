@@ -144,6 +144,22 @@ for devices) that keeps the phones of all widgets of a project registered on eve
 dialog of a call there - without "Render always". It runs in a vis-2 or devices that supports such services; with
 an older version the widgets behave as described above.
 
+### Web component "Phone" for Aura and other hosts
+
+The phone is also a web component (`common.webComponents`): `<iob-intercom-phone>`, built into
+`admin/webcomponents/intercom-phone.js` with its manifest `intercom-phone.json`. Hosts like Aura and admin show it;
+vis-2 and the devices app offer their own widget "Phone" instead (same name). It is the same phone as the widget
+and the tile - audio and video calls, the two camera pictures (also of the frigate adapter), the action button and
+the dialog of a call - drawn without MUI, in the colors of the host.
+
+- In a box from 240 × 300 px on it shows the whole phone, in a smaller one a tile with the state of the phone (a
+  wide tile also the camera picture); a click on the tile opens the phone in a dialog of the host. The setting
+  "Layout" fixes one of the two.
+- Settings: those of the widget - instance, extension, password, WebSocket URL, number, keypad, dialog for calls,
+  video and own camera, two cameras, action button. The camera of a frigate instance is entered by its name.
+- The password is stored with the settings of the element. As for the widget, the page must be opened via HTTPS.
+- There is no background service: the phone is registered, and rings, while the element is shown.
+
 ### Camera pictures (snapshot proxy)
 
 Many cameras deliver a snapshot only with a password, an API key or a token - which a browser cannot send in an
@@ -245,8 +261,9 @@ dropped (never errors) and counted in a warning.
 ### Development
 
 ```bash
-npm run npm         # install the root, src-www (test page), src-widgets (vis-2) and src-devices (devices) dependencies
-npm run build       # TypeScript -> build/, test page -> build/static, widgets -> widgets/intercom, tile -> admin/dm-widgets
+npm run npm         # install the root, src-www (test page), src-widgets (vis-2), src-devices (devices) and src-webcomponents dependencies
+npm run build       # TypeScript -> build/, test page -> build/static, widgets -> widgets/intercom, tile -> admin/dm-widgets,
+                    # web component -> admin/webcomponents (only that one: npm run build:wc)
 npm run lint
 npm test            # build + unit tests + package tests
 npm run test:integration   # starts js-controller and the adapter (without Asterisk)
@@ -254,7 +271,8 @@ UPDATE_SNAPSHOTS=1 npm run test:unit   # accept intended changes of the generate
 ```
 
 The phone core (`SipPhone`, without UI) is in `src-www`, the phone UI and the registry of the running phones in
-`src-shared`; `src-widgets` and `src-devices` only adapt them to vis-2 and to the devices app.
+`src-shared`; `src-widgets` and `src-devices` only adapt them to vis-2 and to the devices app. `src-webcomponents`
+reuses the phone core, the registry and the camera pictures and draws the phone without MUI.
 
 ---
 
@@ -396,6 +414,24 @@ View bzw. Kategorie angemeldet hält und dort den Dialog eines Anrufs zeigt - oh
 einem vis-2 oder devices, das solche Dienste unterstützt; mit einer älteren Version verhalten sich die Widgets wie
 oben beschrieben.
 
+### Web-Komponente „Telefon“ für Aura und andere Oberflächen
+
+Das Telefon gibt es auch als Web-Komponente (`common.webComponents`): `<iob-intercom-phone>`, gebaut nach
+`admin/webcomponents/intercom-phone.js` mit dem Manifest `intercom-phone.json`. Oberflächen wie Aura und Admin
+zeigen sie; vis-2 und die devices-App bieten stattdessen ihr eigenes Widget „Telefon“ an (gleicher Name). Es ist
+dasselbe Telefon wie Widget und Kachel - Audio- und Videoanrufe, die beiden Kamerabilder (auch vom frigate-Adapter),
+die Aktionstaste und der Dialog eines Anrufs -, gezeichnet ohne MUI, in den Farben der Oberfläche.
+
+- In einem Feld ab 240 × 300 px zeigt sie das ganze Telefon, in einem kleineren eine Kachel mit dem Zustand des
+  Telefons (eine breite Kachel auch das Kamerabild); ein Klick auf die Kachel öffnet das Telefon in einem Dialog der
+  Oberfläche. Die Einstellung „Darstellung“ legt eines von beiden fest.
+- Einstellungen: die des Widgets - Instanz, Nebenstelle, Passwort, WebSocket-URL, Nummer, Wähltastatur, Dialog bei
+  Anrufen, Video und eigene Kamera, zwei Kameras, Aktionstaste. Die Kamera einer frigate-Instanz wird mit ihrem
+  Namen eingetragen.
+- Das Passwort wird mit den Einstellungen des Elements gespeichert. Wie beim Widget muss die Seite über HTTPS
+  geöffnet sein.
+- Es gibt keinen Hintergrunddienst: Das Telefon ist angemeldet und klingelt, solange das Element angezeigt wird.
+
 ### Kamerabilder (Snapshot-Proxy)
 
 Viele Kameras liefern ein Standbild nur mit Passwort, API-Schlüssel oder Token - das kann ein Browser in einem
@@ -453,6 +489,9 @@ SIP-Nachricht mit auf - nur zur Fehlersuche.
 -->
 
 ## Changelog
+### **WORK IN PROGRESS**
+- (@GermanBluefox) Added the web component `iob-intercom-phone` (the phone) for Aura and other hosts (`common.webComponents`)
+
 ### 0.2.2 (2026-11-04)
 - (@GermanBluefox) Added second camera
 

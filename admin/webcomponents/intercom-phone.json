@@ -1,0 +1,1052 @@
+{
+    "$schema": "https://raw.githubusercontent.com/ioBroker/web-components/main/schemas/manifest.json",
+    "manifestVersion": 1,
+    "tag": "iob-intercom-phone",
+    "name": {
+        "en": "Phone",
+        "de": "Telefon",
+        "ru": "Телефон",
+        "pt": "Telefone",
+        "nl": "Telefoon",
+        "fr": "Téléphone",
+        "it": "Telefono",
+        "es": "Teléfono",
+        "pl": "Telefon",
+        "uk": "Телефон",
+        "zh-cn": "电话"
+    },
+    "description": {
+        "en": "Phone and door intercom over WebRTC; a small tile opens the whole phone",
+        "de": "Telefon und Türsprechanlage über WebRTC; eine kleine Kachel öffnet das ganze Telefon",
+        "ru": "Телефон и домофон через WebRTC; маленькая плитка открывает весь телефон",
+        "pt": "Telefone e intercomunicador via WebRTC; um mosaico pequeno abre o telefone completo",
+        "nl": "Telefoon en deurintercom via WebRTC; een kleine tegel opent de hele telefoon",
+        "fr": "Téléphone et interphone via WebRTC ; une petite tuile ouvre le téléphone complet",
+        "it": "Telefono e citofono tramite WebRTC; una piccola piastrella apre il telefono intero",
+        "es": "Teléfono e interfono por WebRTC; un mosaico pequeño abre el teléfono completo",
+        "pl": "Telefon i domofon przez WebRTC; mały kafelek otwiera cały telefon",
+        "uk": "Телефон і домофон через WebRTC; маленька плитка відкриває весь телефон",
+        "zh-cn": "通过 WebRTC 的电话和门禁对讲；小磁贴可打开完整电话"
+    },
+    "icon": "../intercom.svg",
+    "module": "intercom-phone.js",
+    "size": {
+        "width": 320,
+        "height": 160
+    },
+    "settings": {
+        "type": "panel",
+        "items": {
+            "layout": {
+                "type": "select",
+                "label": {
+                    "en": "Layout",
+                    "de": "Darstellung",
+                    "ru": "Вид",
+                    "pt": "Layout",
+                    "nl": "Weergave",
+                    "fr": "Affichage",
+                    "it": "Layout",
+                    "es": "Diseño",
+                    "pl": "Układ",
+                    "uk": "Вигляд",
+                    "zh-cn": "布局"
+                },
+                "help": {
+                    "en": "Automatic: the whole phone in a large box, a tile in a small one. A click on the tile opens the phone",
+                    "de": "Automatisch: das ganze Telefon in einem großen Feld, eine Kachel in einem kleinen. Ein Klick auf die Kachel öffnet das Telefon",
+                    "ru": "Автоматически: весь телефон в большом поле, плитка в маленьком. Нажатие на плитку открывает телефон",
+                    "pt": "Automático: o telefone completo numa caixa grande, um mosaico numa pequena. Um clique no mosaico abre o telefone",
+                    "nl": "Automatisch: de hele telefoon in een groot vak, een tegel in een klein vak. Een klik op de tegel opent de telefoon",
+                    "fr": "Automatique : le téléphone complet dans une grande zone, une tuile dans une petite. Un clic sur la tuile ouvre le téléphone",
+                    "it": "Automatico: il telefono intero in un riquadro grande, una piastrella in uno piccolo. Un clic sulla piastrella apre il telefono",
+                    "es": "Automático: el teléfono completo en un recuadro grande, un mosaico en uno pequeño. Un clic en el mosaico abre el teléfono",
+                    "pl": "Automatycznie: cały telefon w dużym polu, kafelek w małym. Kliknięcie kafelka otwiera telefon",
+                    "uk": "Автоматично: весь телефон у великому полі, плитка в малому. Натискання на плитку відкриває телефон",
+                    "zh-cn": "自动：大区域显示完整电话，小区域显示磁贴。点击磁贴可打开电话"
+                },
+                "options": [
+                    {
+                        "value": "auto",
+                        "label": {
+                            "en": "Automatic",
+                            "de": "Automatisch",
+                            "ru": "Автоматически",
+                            "pt": "Automático",
+                            "nl": "Automatisch",
+                            "fr": "Automatique",
+                            "it": "Automatico",
+                            "es": "Automático",
+                            "pl": "Automatycznie",
+                            "uk": "Автоматично",
+                            "zh-cn": "自动"
+                        }
+                    },
+                    {
+                        "value": "tile",
+                        "label": {
+                            "en": "Tile",
+                            "de": "Kachel",
+                            "ru": "Плитка",
+                            "pt": "Mosaico",
+                            "nl": "Tegel",
+                            "fr": "Tuile",
+                            "it": "Piastrella",
+                            "es": "Mosaico",
+                            "pl": "Kafelek",
+                            "uk": "Плитка",
+                            "zh-cn": "磁贴"
+                        }
+                    },
+                    {
+                        "value": "phone",
+                        "label": {
+                            "en": "Phone",
+                            "de": "Telefon",
+                            "ru": "Телефон",
+                            "pt": "Telefone",
+                            "nl": "Telefoon",
+                            "fr": "Téléphone",
+                            "it": "Telefono",
+                            "es": "Teléfono",
+                            "pl": "Telefon",
+                            "uk": "Телефон",
+                            "zh-cn": "电话"
+                        }
+                    }
+                ],
+                "default": "auto"
+            },
+            "title": {
+                "type": "text",
+                "label": {
+                    "en": "Title",
+                    "de": "Titel",
+                    "ru": "Заголовок",
+                    "pt": "Título",
+                    "nl": "Titel",
+                    "fr": "Titre",
+                    "it": "Titolo",
+                    "es": "Título",
+                    "pl": "Tytuł",
+                    "uk": "Заголовок",
+                    "zh-cn": "标题"
+                },
+                "help": {
+                    "en": "Empty: \"Phone\"",
+                    "de": "Leer: „Telefon“",
+                    "ru": "Пусто: «Телефон»",
+                    "pt": "Vazio: \"Telefone\"",
+                    "nl": "Leeg: \"Telefoon\"",
+                    "fr": "Vide : « Téléphone »",
+                    "it": "Vuoto: \"Telefono\"",
+                    "es": "Vacío: \"Teléfono\"",
+                    "pl": "Puste: „Telefon”",
+                    "uk": "Порожньо: «Телефон»",
+                    "zh-cn": "留空：“电话”"
+                }
+            },
+            "instance": {
+                "type": "instance",
+                "adapter": "intercom",
+                "default": "intercom.0",
+                "label": {
+                    "en": "Instance",
+                    "de": "Instanz",
+                    "ru": "Экземпляр",
+                    "pt": "Instância",
+                    "nl": "Instantie",
+                    "fr": "Instance",
+                    "it": "Istanza",
+                    "es": "Instancia",
+                    "pl": "Instancja",
+                    "uk": "Екземпляр",
+                    "zh-cn": "实例"
+                }
+            },
+            "extension": {
+                "type": "text",
+                "label": {
+                    "en": "Extension",
+                    "de": "Nebenstelle",
+                    "ru": "Внутренний номер",
+                    "pt": "Ramal",
+                    "nl": "Toestel",
+                    "fr": "Poste",
+                    "it": "Interno",
+                    "es": "Extensión",
+                    "pl": "Numer wewnętrzny",
+                    "uk": "Внутрішній номер",
+                    "zh-cn": "分机号"
+                },
+                "default": "100"
+            },
+            "password": {
+                "type": "password",
+                "label": {
+                    "en": "Password",
+                    "de": "Passwort",
+                    "ru": "Пароль",
+                    "pt": "Senha",
+                    "nl": "Wachtwoord",
+                    "fr": "Mot de passe",
+                    "it": "Password",
+                    "es": "Contraseña",
+                    "pl": "Hasło",
+                    "uk": "Пароль",
+                    "zh-cn": "密码"
+                },
+                "help": {
+                    "en": "Password of the subscriber in the adapter settings. Stored with the settings of this element: everybody who can read them can read it",
+                    "de": "Passwort des Teilnehmers aus den Adaptereinstellungen. Wird mit den Einstellungen dieses Elements gespeichert: Wer sie lesen kann, kann es lesen",
+                    "ru": "Пароль абонента из настроек адаптера. Хранится вместе с настройками этого элемента: каждый, кто может их прочитать, может прочитать и его",
+                    "pt": "Senha do assinante nas configurações do adaptador. Guardada com as configurações deste elemento: quem as puder ler, pode lê-la",
+                    "nl": "Wachtwoord van de deelnemer uit de adapterinstellingen. Wordt opgeslagen met de instellingen van dit element: wie ze kan lezen, kan het lezen",
+                    "fr": "Mot de passe de l'abonné dans les paramètres de l'adaptateur. Enregistré avec les paramètres de cet élément : quiconque peut les lire peut le lire",
+                    "it": "Password dell'utente nelle impostazioni dell'adattatore. Salvata con le impostazioni di questo elemento: chi può leggerle può leggerla",
+                    "es": "Contraseña del abonado en la configuración del adaptador. Se guarda con la configuración de este elemento: quien pueda leerla puede leerla",
+                    "pl": "Hasło abonenta z ustawień adaptera. Jest zapisywane razem z ustawieniami tego elementu: każdy, kto ma do nich dostęp, może je odczytać",
+                    "uk": "Пароль абонента з налаштувань адаптера. Зберігається разом із налаштуваннями цього елемента: кожен, хто може їх прочитати, може прочитати і його",
+                    "zh-cn": "适配器设置中用户的密码。与此元素的设置一起保存：能读取这些设置的人都能读取它"
+                }
+            },
+            "wssUrl": {
+                "type": "text",
+                "label": {
+                    "en": "WebSocket URL",
+                    "de": "WebSocket-URL",
+                    "ru": "URL WebSocket",
+                    "pt": "URL do WebSocket",
+                    "nl": "WebSocket-URL",
+                    "fr": "URL WebSocket",
+                    "it": "URL WebSocket",
+                    "es": "URL de WebSocket",
+                    "pl": "Adres WebSocket",
+                    "uk": "URL WebSocket",
+                    "zh-cn": "WebSocket 地址"
+                },
+                "help": {
+                    "en": "Empty: the address of the adapter instance (info.wssUrl)",
+                    "de": "Leer: die Adresse der Adapterinstanz (info.wssUrl)",
+                    "ru": "Пусто: адрес экземпляра адаптера (info.wssUrl)",
+                    "pt": "Vazio: o endereço da instância do adaptador (info.wssUrl)",
+                    "nl": "Leeg: het adres van de adapterinstantie (info.wssUrl)",
+                    "fr": "Vide : l'adresse de l'instance de l'adaptateur (info.wssUrl)",
+                    "it": "Vuoto: l'indirizzo dell'istanza dell'adattatore (info.wssUrl)",
+                    "es": "Vacío: la dirección de la instancia del adaptador (info.wssUrl)",
+                    "pl": "Puste: adres instancji adaptera (info.wssUrl)",
+                    "uk": "Порожньо: адреса екземпляра адаптера (info.wssUrl)",
+                    "zh-cn": "留空：使用适配器实例的地址 (info.wssUrl)"
+                }
+            },
+            "_call": {
+                "type": "header",
+                "text": {
+                    "en": "Call",
+                    "de": "Anruf",
+                    "ru": "Вызов",
+                    "pt": "Chamada",
+                    "nl": "Gesprek",
+                    "fr": "Appel",
+                    "it": "Chiamata",
+                    "es": "Llamada",
+                    "pl": "Połączenie",
+                    "uk": "Виклик",
+                    "zh-cn": "通话"
+                }
+            },
+            "number": {
+                "type": "text",
+                "label": {
+                    "en": "Number",
+                    "de": "Nummer",
+                    "ru": "Номер",
+                    "pt": "Número",
+                    "nl": "Nummer",
+                    "fr": "Numéro",
+                    "it": "Numero",
+                    "es": "Número",
+                    "pl": "Numer",
+                    "uk": "Номер",
+                    "zh-cn": "号码"
+                },
+                "help": {
+                    "en": "Number called by the call button, e.g. the door intercom",
+                    "de": "Nummer, die die Anruf-Taste wählt, z.B. die Türsprechanlage",
+                    "ru": "Номер, который набирает кнопка вызова, например домофон",
+                    "pt": "Número chamado pelo botão de chamada, por exemplo, o interfone",
+                    "nl": "Nummer die de belknop kiest, bijv. de deurintercom",
+                    "fr": "Numéro appelé par le bouton d'appel, p. ex. l'interphone",
+                    "it": "Numero chiamato dal pulsante di chiamata, ad es. il citofono",
+                    "es": "Número al que llama el botón de llamada, p. ej. el portero automático",
+                    "pl": "Numer wybierany przyciskiem połączenia, np. domofon",
+                    "uk": "Номер, який набирає кнопка виклику, наприклад домофон",
+                    "zh-cn": "呼叫按钮拨打的号码，例如门禁对讲"
+                }
+            },
+            "numberLabel": {
+                "type": "text",
+                "label": {
+                    "en": "Text of the call button",
+                    "de": "Text der Anruf-Taste",
+                    "ru": "Текст кнопки вызова",
+                    "pt": "Texto do botão de chamada",
+                    "nl": "Tekst van de belknop",
+                    "fr": "Texte du bouton d'appel",
+                    "it": "Testo del pulsante di chiamata",
+                    "es": "Texto del botón de llamada",
+                    "pl": "Tekst przycisku połączenia",
+                    "uk": "Текст кнопки виклику",
+                    "zh-cn": "呼叫按钮文字"
+                }
+            },
+            "showKeypad": {
+                "type": "checkbox",
+                "label": {
+                    "en": "Show keypad",
+                    "de": "Wähltastatur anzeigen",
+                    "ru": "Показать клавиатуру",
+                    "pt": "Mostrar teclado",
+                    "nl": "Toetsenblok tonen",
+                    "fr": "Afficher le clavier",
+                    "it": "Mostra tastierino",
+                    "es": "Mostrar teclado",
+                    "pl": "Pokaż klawiaturę",
+                    "uk": "Показати клавіатуру",
+                    "zh-cn": "显示拨号键盘"
+                },
+                "default": true
+            },
+            "popup": {
+                "type": "checkbox",
+                "label": {
+                    "en": "Open a dialog for calls",
+                    "de": "Bei Anrufen einen Dialog öffnen",
+                    "ru": "Открывать окно при звонке",
+                    "pt": "Abrir uma janela para chamadas",
+                    "nl": "Bij gesprekken een venster openen",
+                    "fr": "Ouvrir une fenêtre pour les appels",
+                    "it": "Apri una finestra per le chiamate",
+                    "es": "Abrir una ventana para las llamadas",
+                    "pl": "Otwieraj okno przy połączeniach",
+                    "uk": "Відкривати вікно під час дзвінка",
+                    "zh-cn": "来电时打开对话框"
+                },
+                "default": true
+            },
+            "video": {
+                "type": "checkbox",
+                "label": {
+                    "en": "Video calls",
+                    "de": "Videoanrufe",
+                    "ru": "Видеозвонки",
+                    "pt": "Chamadas de vídeo",
+                    "nl": "Videogesprekken",
+                    "fr": "Appels vidéo",
+                    "it": "Videochiamate",
+                    "es": "Videollamadas",
+                    "pl": "Połączenia wideo",
+                    "uk": "Відеодзвінки",
+                    "zh-cn": "视频通话"
+                },
+                "default": true
+            },
+            "useCamera": {
+                "type": "checkbox",
+                "label": {
+                    "en": "Use own camera",
+                    "de": "Eigene Kamera benutzen",
+                    "ru": "Использовать свою камеру",
+                    "pt": "Usar a própria câmara",
+                    "nl": "Eigen camera gebruiken",
+                    "fr": "Utiliser sa propre caméra",
+                    "it": "Usa la propria videocamera",
+                    "es": "Usar la cámara propia",
+                    "pl": "Używaj własnej kamery",
+                    "uk": "Використовувати власну камеру",
+                    "zh-cn": "使用自己的摄像头"
+                },
+                "help": {
+                    "en": "Off: the camera is never opened, the picture of the other party is still shown",
+                    "de": "Aus: die Kamera wird nie geöffnet, das Bild der Gegenseite wird trotzdem angezeigt",
+                    "ru": "Выкл.: камера никогда не включается, изображение собеседника всё равно отображается",
+                    "pt": "Desligado: a câmara nunca é aberta, a imagem do outro lado continua a ser mostrada",
+                    "nl": "Uit: de camera wordt nooit geopend, het beeld van de andere partij wordt wel getoond",
+                    "fr": "Désactivé : la caméra n'est jamais ouverte, l'image de l'interlocuteur reste affichée",
+                    "it": "Disattivato: la videocamera non viene mai aperta, l'immagine dell'interlocutore viene comunque mostrata",
+                    "es": "Desactivado: la cámara nunca se abre, la imagen del interlocutor se sigue mostrando",
+                    "pl": "Wyłączone: kamera nigdy nie jest otwierana, obraz rozmówcy jest nadal wyświetlany",
+                    "uk": "Вимк.: камера ніколи не вмикається, зображення співрозмовника все одно показується",
+                    "zh-cn": "关闭：从不打开摄像头，仍显示对方的画面"
+                },
+                "default": false,
+                "hidden": "data.video === false"
+            },
+            "sendCamera": {
+                "type": "checkbox",
+                "label": {
+                    "en": "Always send the own camera",
+                    "de": "Eigene Kamera immer senden",
+                    "ru": "Всегда передавать свою камеру",
+                    "pt": "Sempre enviar a própria câmera",
+                    "nl": "Eigen camera altijd verzenden",
+                    "fr": "Toujours envoyer sa propre caméra",
+                    "it": "Invia sempre la propria videocamera",
+                    "es": "Enviar siempre la cámara propia",
+                    "pl": "Zawsze wysyłaj obraz z własnej kamery",
+                    "uk": "Завжди передавати власну камеру",
+                    "zh-cn": "始终发送本机摄像头"
+                },
+                "default": false,
+                "hidden": "data.video === false || !data.useCamera"
+            },
+            "_camera": {
+                "type": "header",
+                "text": {
+                    "en": "Camera picture",
+                    "de": "Kamerabild",
+                    "ru": "Изображение камеры",
+                    "pt": "Imagem da câmera",
+                    "nl": "Camerabeeld",
+                    "fr": "Image de la caméra",
+                    "it": "Immagine della videocamera",
+                    "es": "Imagen de la cámara",
+                    "pl": "Obraz z kamery",
+                    "uk": "Зображення камери",
+                    "zh-cn": "摄像头画面"
+                }
+            },
+            "cameraSource": {
+                "type": "select",
+                "label": {
+                    "en": "Picture source",
+                    "de": "Bildquelle",
+                    "ru": "Источник изображения",
+                    "pt": "Origem da imagem",
+                    "nl": "Beeldbron",
+                    "fr": "Source de l'image",
+                    "it": "Origine immagine",
+                    "es": "Origen de la imagen",
+                    "pl": "Źródło obrazu",
+                    "uk": "Джерело зображення",
+                    "zh-cn": "图像来源"
+                },
+                "options": [
+                    {
+                        "value": "url",
+                        "label": {
+                            "en": "URL or state",
+                            "de": "URL oder Datenpunkt",
+                            "ru": "URL или состояние",
+                            "pt": "URL ou estado",
+                            "nl": "URL of status",
+                            "fr": "URL ou état",
+                            "it": "URL o stato",
+                            "es": "URL o estado",
+                            "pl": "URL lub stan",
+                            "uk": "URL або стан",
+                            "zh-cn": "URL 或状态"
+                        }
+                    },
+                    {
+                        "value": "frigate",
+                        "label": {
+                            "en": "Frigate camera",
+                            "de": "Frigate-Kamera",
+                            "ru": "Камера Frigate",
+                            "pt": "Câmara Frigate",
+                            "nl": "Frigate-camera",
+                            "fr": "Caméra Frigate",
+                            "it": "Telecamera Frigate",
+                            "es": "Cámara Frigate",
+                            "pl": "Kamera Frigate",
+                            "uk": "Камера Frigate",
+                            "zh-cn": "Frigate 摄像头"
+                        }
+                    }
+                ],
+                "default": "url"
+            },
+            "cameraUrl": {
+                "type": "text",
+                "label": {
+                    "en": "Camera URL",
+                    "de": "Kamera-URL",
+                    "ru": "URL камеры",
+                    "pt": "URL da câmera",
+                    "nl": "Camera-URL",
+                    "fr": "URL de la caméra",
+                    "it": "URL della videocamera",
+                    "es": "URL de la cámara",
+                    "pl": "Adres URL kamery",
+                    "uk": "URL камери",
+                    "zh-cn": "摄像头地址"
+                },
+                "help": {
+                    "en": "Snapshot or MJPEG URL, shown during calls when the other party sends no video",
+                    "de": "Snapshot- oder MJPEG-URL, wird bei Anrufen angezeigt, wenn die Gegenstelle kein Video sendet",
+                    "ru": "URL снимка или MJPEG, показывается во время звонка, если собеседник не передаёт видео",
+                    "pt": "URL de snapshot ou MJPEG, exibida durante chamadas quando a outra parte não envia vídeo",
+                    "nl": "Snapshot- of MJPEG-URL, getoond tijdens gesprekken als de andere partij geen video stuurt",
+                    "fr": "URL d'instantané ou MJPEG, affichée pendant les appels si l'interlocuteur n'envoie pas de vidéo",
+                    "it": "URL di snapshot o MJPEG, mostrato durante le chiamate se l'interlocutore non invia video",
+                    "es": "URL de instantánea o MJPEG, se muestra durante las llamadas si la otra parte no envía vídeo",
+                    "pl": "Adres URL migawki lub MJPEG, wyświetlany podczas połączeń, gdy rozmówca nie wysyła wideo",
+                    "uk": "URL знімка або MJPEG, показується під час дзвінка, якщо співрозмовник не передає відео",
+                    "zh-cn": "快照或 MJPEG 地址，通话时对方不发送视频时显示"
+                },
+                "hidden": "data.cameraSource === 'frigate'"
+            },
+            "cameraOid": {
+                "type": "objectId",
+                "types": "state",
+                "label": {
+                    "en": "Camera picture from state",
+                    "de": "Kamerabild aus Datenpunkt",
+                    "ru": "Изображение камеры из состояния",
+                    "pt": "Imagem da câmera de um estado",
+                    "nl": "Camerabeeld uit datapunt",
+                    "fr": "Image de la caméra depuis l'état",
+                    "it": "Immagine della videocamera da stato",
+                    "es": "Imagen de la cámara desde estado",
+                    "pl": "Obraz kamery ze stanu",
+                    "uk": "Зображення камери зі стану",
+                    "zh-cn": "来自数据点的摄像头画面"
+                },
+                "help": {
+                    "en": "State with a picture URL or a data URL (e.g. of the cameras adapter). Overrides the camera URL",
+                    "de": "Datenpunkt mit einer Bild-URL oder Data-URL (z.B. vom cameras-Adapter). Hat Vorrang vor der Kamera-URL",
+                    "ru": "Состояние с URL изображения или data URL (например, от адаптера cameras). Имеет приоритет над URL камеры",
+                    "pt": "Estado com uma URL de imagem ou data URL (p. ex. do adaptador cameras). Tem prioridade sobre a URL da câmera",
+                    "nl": "Datapunt met een afbeeldings-URL of data-URL (bijv. van de cameras-adapter). Heeft voorrang op de camera-URL",
+                    "fr": "État contenant une URL d'image ou une data URL (p. ex. de l'adaptateur cameras). Prioritaire sur l'URL de la caméra",
+                    "it": "Stato con un URL di immagine o data URL (ad es. dell'adattatore cameras). Ha la precedenza sull'URL della videocamera",
+                    "es": "Estado con una URL de imagen o data URL (p. ej. del adaptador cameras). Tiene prioridad sobre la URL de la cámara",
+                    "pl": "Stan z adresem URL obrazu lub data URL (np. z adaptera cameras). Ma pierwszeństwo przed adresem URL kamery",
+                    "uk": "Стан з URL зображення або data URL (наприклад, з адаптера cameras). Має пріоритет над URL камери",
+                    "zh-cn": "包含图片地址或 data URL 的数据点（例如 cameras 适配器）。优先于摄像头地址"
+                },
+                "hidden": "data.cameraSource === 'frigate'"
+            },
+            "cameraFrigateInstance": {
+                "type": "instance",
+                "adapter": "frigate",
+                "default": "frigate.0",
+                "label": {
+                    "en": "Frigate instance",
+                    "de": "Frigate-Instanz",
+                    "ru": "Экземпляр Frigate",
+                    "pt": "Instância Frigate",
+                    "nl": "Frigate-instantie",
+                    "fr": "Instance Frigate",
+                    "it": "Istanza Frigate",
+                    "es": "Instancia de Frigate",
+                    "pl": "Instancja Frigate",
+                    "uk": "Екземпляр Frigate",
+                    "zh-cn": "Frigate 实例"
+                },
+                "hidden": "data.cameraSource !== 'frigate'"
+            },
+            "cameraFrigateCamera": {
+                "type": "text",
+                "label": {
+                    "en": "Camera",
+                    "de": "Kamera",
+                    "ru": "Камера",
+                    "pt": "Câmara",
+                    "nl": "Camera",
+                    "fr": "Caméra",
+                    "it": "Telecamera",
+                    "es": "Cámara",
+                    "pl": "Kamera",
+                    "uk": "Камера",
+                    "zh-cn": "摄像头"
+                },
+                "help": {
+                    "en": "Name of the camera in Frigate",
+                    "de": "Name der Kamera in Frigate",
+                    "ru": "Имя камеры в Frigate",
+                    "pt": "Nome da câmera no Frigate",
+                    "nl": "Naam van de camera in Frigate",
+                    "fr": "Nom de la caméra dans Frigate",
+                    "it": "Nome della telecamera in Frigate",
+                    "es": "Nombre de la cámara en Frigate",
+                    "pl": "Nazwa kamery we Frigate",
+                    "uk": "Назва камери у Frigate",
+                    "zh-cn": "Frigate 中摄像头的名称"
+                },
+                "hidden": "data.cameraSource !== 'frigate'"
+            },
+            "cameraFrigateMode": {
+                "type": "select",
+                "label": {
+                    "en": "Type",
+                    "de": "Typ",
+                    "ru": "Тип",
+                    "pt": "Tipo",
+                    "nl": "Type",
+                    "fr": "Type",
+                    "it": "Tipo",
+                    "es": "Tipo",
+                    "pl": "Typ",
+                    "uk": "Тип",
+                    "zh-cn": "类型"
+                },
+                "help": {
+                    "en": "Snapshot: single pictures over ioBroker, works everywhere. Stream: live MJPEG stream of the web extension of the frigate adapter - needs a web instance with HTTPS, otherwise the snapshots are used",
+                    "de": "Snapshot: Einzelbilder über ioBroker, funktioniert überall. Stream: Live-MJPEG-Stream der Web-Erweiterung des frigate-Adapters - braucht eine Web-Instanz mit HTTPS, sonst werden Snapshots verwendet",
+                    "ru": "Snapshot: отдельные кадры через ioBroker, работает везде. Stream: живой MJPEG-поток веб-расширения адаптера frigate - нужен web-экземпляр с HTTPS, иначе используются снимки",
+                    "pt": "Snapshot: imagens individuais via ioBroker, funciona em todo o lado. Stream: stream MJPEG ao vivo da extensão web do adaptador frigate - precisa de uma instância web com HTTPS, caso contrário são usados snapshots",
+                    "nl": "Snapshot: losse beelden via ioBroker, werkt overal. Stream: live MJPEG-stream van de webextensie van de frigate-adapter - heeft een webinstantie met HTTPS nodig, anders worden snapshots gebruikt",
+                    "fr": "Snapshot : images individuelles via ioBroker, fonctionne partout. Stream : flux MJPEG en direct de l'extension web de l'adaptateur frigate - nécessite une instance web en HTTPS, sinon les snapshots sont utilisés",
+                    "it": "Snapshot: singole immagini tramite ioBroker, funziona ovunque. Stream: stream MJPEG live dell'estensione web dell'adattatore frigate - richiede un'istanza web con HTTPS, altrimenti vengono usati gli snapshot",
+                    "es": "Snapshot: imágenes sueltas a través de ioBroker, funciona en todas partes. Stream: stream MJPEG en vivo de la extensión web del adaptador frigate - necesita una instancia web con HTTPS, si no se usan snapshots",
+                    "pl": "Snapshot: pojedyncze obrazy przez ioBroker, działa wszędzie. Stream: strumień MJPEG na żywo z rozszerzenia web adaptera frigate - wymaga instancji web z HTTPS, w przeciwnym razie używane są snapshoty",
+                    "uk": "Snapshot: окремі кадри через ioBroker, працює всюди. Stream: живий MJPEG-потік веб-розширення адаптера frigate - потрібен web-екземпляр з HTTPS, інакше використовуються знімки",
+                    "zh-cn": "快照：通过 ioBroker 获取单张图片，适用于所有情况。流：frigate 适配器 Web 扩展的实时 MJPEG 流 - 需要启用 HTTPS 的 web 实例，否则使用快照"
+                },
+                "options": [
+                    {
+                        "value": "snapshot",
+                        "label": {
+                            "en": "Snapshot",
+                            "de": "Snapshot",
+                            "ru": "Снимок",
+                            "pt": "Snapshot",
+                            "nl": "Snapshot",
+                            "fr": "Snapshot",
+                            "it": "Snapshot",
+                            "es": "Snapshot",
+                            "pl": "Snapshot",
+                            "uk": "Знімок",
+                            "zh-cn": "快照"
+                        }
+                    },
+                    {
+                        "value": "stream",
+                        "label": {
+                            "en": "Stream",
+                            "de": "Stream",
+                            "ru": "Поток",
+                            "pt": "Stream",
+                            "nl": "Stream",
+                            "fr": "Flux",
+                            "it": "Stream",
+                            "es": "Stream",
+                            "pl": "Stream",
+                            "uk": "Потік",
+                            "zh-cn": "流"
+                        }
+                    }
+                ],
+                "default": "snapshot",
+                "hidden": "data.cameraSource !== 'frigate'"
+            },
+            "cameraRefresh": {
+                "type": "number",
+                "label": {
+                    "en": "Refresh (seconds)",
+                    "de": "Aktualisierung (Sekunden)",
+                    "ru": "Обновление (секунды)",
+                    "pt": "Atualização (segundos)",
+                    "nl": "Verversen (seconden)",
+                    "fr": "Actualisation (secondes)",
+                    "it": "Aggiornamento (secondi)",
+                    "es": "Actualización (segundos)",
+                    "pl": "Odświeżanie (sekundy)",
+                    "uk": "Оновлення (секунди)",
+                    "zh-cn": "刷新（秒）"
+                },
+                "help": {
+                    "en": "0 for an MJPEG stream, otherwise the snapshot is reloaded in this interval",
+                    "de": "0 für einen MJPEG-Stream, sonst wird der Snapshot in diesem Abstand neu geladen",
+                    "ru": "0 для потока MJPEG, иначе снимок перезагружается с этим интервалом",
+                    "pt": "0 para um stream MJPEG, caso contrário o snapshot é recarregado neste intervalo",
+                    "nl": "0 voor een MJPEG-stream, anders wordt de snapshot met deze interval herladen",
+                    "fr": "0 pour un flux MJPEG, sinon l'instantané est rechargé à cet intervalle",
+                    "it": "0 per uno stream MJPEG, altrimenti lo snapshot viene ricaricato a questo intervallo",
+                    "es": "0 para una transmisión MJPEG, de lo contrario la instantánea se recarga en este intervalo",
+                    "pl": "0 dla strumienia MJPEG, w przeciwnym razie migawka jest przeładowywana w tym odstępie",
+                    "uk": "0 для потоку MJPEG, інакше знімок перезавантажується з цим інтервалом",
+                    "zh-cn": "MJPEG 流填 0，否则按此间隔重新加载快照"
+                },
+                "min": 0,
+                "max": 60,
+                "default": 1,
+                "hidden": "data.cameraSource === 'frigate' && data.cameraFrigateMode === 'stream'"
+            },
+            "cameraAlways": {
+                "type": "checkbox",
+                "label": {
+                    "en": "Show the camera also without a call",
+                    "de": "Kamera auch ohne Anruf anzeigen",
+                    "ru": "Показывать камеру и без звонка",
+                    "pt": "Mostrar a câmera também sem chamada",
+                    "nl": "Camera ook zonder gesprek tonen",
+                    "fr": "Afficher la caméra aussi sans appel",
+                    "it": "Mostra la videocamera anche senza chiamata",
+                    "es": "Mostrar la cámara también sin llamada",
+                    "pl": "Pokazuj kamerę także bez połączenia",
+                    "uk": "Показувати камеру й без дзвінка",
+                    "zh-cn": "无通话时也显示摄像头"
+                },
+                "default": false
+            },
+            "_camera2": {
+                "type": "header",
+                "text": {
+                    "en": "Second camera",
+                    "de": "Zweite Kamera",
+                    "ru": "Вторая камера",
+                    "pt": "Segunda câmara",
+                    "nl": "Tweede camera",
+                    "fr": "Deuxième caméra",
+                    "it": "Seconda telecamera",
+                    "es": "Segunda cámara",
+                    "pl": "Druga kamera",
+                    "uk": "Друга камера",
+                    "zh-cn": "第二个摄像头"
+                }
+            },
+            "camera2Source": {
+                "type": "select",
+                "label": {
+                    "en": "Picture source",
+                    "de": "Bildquelle",
+                    "ru": "Источник изображения",
+                    "pt": "Origem da imagem",
+                    "nl": "Beeldbron",
+                    "fr": "Source de l'image",
+                    "it": "Origine immagine",
+                    "es": "Origen de la imagen",
+                    "pl": "Źródło obrazu",
+                    "uk": "Джерело зображення",
+                    "zh-cn": "图像来源"
+                },
+                "options": [
+                    {
+                        "value": "url",
+                        "label": {
+                            "en": "URL or state",
+                            "de": "URL oder Datenpunkt",
+                            "ru": "URL или состояние",
+                            "pt": "URL ou estado",
+                            "nl": "URL of status",
+                            "fr": "URL ou état",
+                            "it": "URL o stato",
+                            "es": "URL o estado",
+                            "pl": "URL lub stan",
+                            "uk": "URL або стан",
+                            "zh-cn": "URL 或状态"
+                        }
+                    },
+                    {
+                        "value": "frigate",
+                        "label": {
+                            "en": "Frigate camera",
+                            "de": "Frigate-Kamera",
+                            "ru": "Камера Frigate",
+                            "pt": "Câmara Frigate",
+                            "nl": "Frigate-camera",
+                            "fr": "Caméra Frigate",
+                            "it": "Telecamera Frigate",
+                            "es": "Cámara Frigate",
+                            "pl": "Kamera Frigate",
+                            "uk": "Камера Frigate",
+                            "zh-cn": "Frigate 摄像头"
+                        }
+                    }
+                ],
+                "default": "url"
+            },
+            "camera2Url": {
+                "type": "text",
+                "label": {
+                    "en": "Camera URL",
+                    "de": "Kamera-URL",
+                    "ru": "URL камеры",
+                    "pt": "URL da câmera",
+                    "nl": "Camera-URL",
+                    "fr": "URL de la caméra",
+                    "it": "URL della videocamera",
+                    "es": "URL de la cámara",
+                    "pl": "Adres URL kamery",
+                    "uk": "URL камери",
+                    "zh-cn": "摄像头地址"
+                },
+                "help": {
+                    "en": "Snapshot or MJPEG URL of a second camera. During a call the button in the picture switches between the pictures",
+                    "de": "Snapshot- oder MJPEG-URL einer zweiten Kamera. Im Gespräch schaltet die Taste im Bild zwischen den Bildern um",
+                    "ru": "URL снимка или MJPEG второй камеры. Во время звонка кнопка на изображении переключает изображения",
+                    "pt": "URL de snapshot ou MJPEG de uma segunda câmara. Durante uma chamada, o botão na imagem alterna entre as imagens",
+                    "nl": "Snapshot- of MJPEG-URL van een tweede camera. Tijdens een gesprek schakelt de knop in het beeld tussen de beelden",
+                    "fr": "URL d'instantané ou MJPEG d'une deuxième caméra. Pendant un appel, le bouton sur l'image bascule entre les images",
+                    "it": "URL snapshot o MJPEG di una seconda telecamera. Durante una chiamata il pulsante nell'immagine passa da un'immagine all'altra",
+                    "es": "URL de instantánea o MJPEG de una segunda cámara. Durante una llamada, el botón en la imagen cambia entre las imágenes",
+                    "pl": "Adres URL zdjęcia lub MJPEG drugiej kamery. Podczas rozmowy przycisk na obrazie przełącza między obrazami",
+                    "uk": "URL знімка або MJPEG другої камери. Під час дзвінка кнопка на зображенні перемикає зображення",
+                    "zh-cn": "第二个摄像头的快照或 MJPEG 网址。通话期间，画面中的按钮可在画面之间切换"
+                },
+                "hidden": "data.camera2Source === 'frigate'"
+            },
+            "camera2Oid": {
+                "type": "objectId",
+                "types": "state",
+                "label": {
+                    "en": "Camera picture from state",
+                    "de": "Kamerabild aus Datenpunkt",
+                    "ru": "Изображение камеры из состояния",
+                    "pt": "Imagem da câmera de um estado",
+                    "nl": "Camerabeeld uit datapunt",
+                    "fr": "Image de la caméra depuis l'état",
+                    "it": "Immagine della videocamera da stato",
+                    "es": "Imagen de la cámara desde estado",
+                    "pl": "Obraz kamery ze stanu",
+                    "uk": "Зображення камери зі стану",
+                    "zh-cn": "来自数据点的摄像头画面"
+                },
+                "help": {
+                    "en": "State with a picture URL or a data URL (e.g. of the cameras adapter). Overrides the camera URL",
+                    "de": "Datenpunkt mit einer Bild-URL oder Data-URL (z.B. vom cameras-Adapter). Hat Vorrang vor der Kamera-URL",
+                    "ru": "Состояние с URL изображения или data URL (например, от адаптера cameras). Имеет приоритет над URL камеры",
+                    "pt": "Estado com uma URL de imagem ou data URL (p. ex. do adaptador cameras). Tem prioridade sobre a URL da câmera",
+                    "nl": "Datapunt met een afbeeldings-URL of data-URL (bijv. van de cameras-adapter). Heeft voorrang op de camera-URL",
+                    "fr": "État contenant une URL d'image ou une data URL (p. ex. de l'adaptateur cameras). Prioritaire sur l'URL de la caméra",
+                    "it": "Stato con un URL di immagine o data URL (ad es. dell'adattatore cameras). Ha la precedenza sull'URL della videocamera",
+                    "es": "Estado con una URL de imagen o data URL (p. ej. del adaptador cameras). Tiene prioridad sobre la URL de la cámara",
+                    "pl": "Stan z adresem URL obrazu lub data URL (np. z adaptera cameras). Ma pierwszeństwo przed adresem URL kamery",
+                    "uk": "Стан з URL зображення або data URL (наприклад, з адаптера cameras). Має пріоритет над URL камери",
+                    "zh-cn": "包含图片地址或 data URL 的数据点（例如 cameras 适配器）。优先于摄像头地址"
+                },
+                "hidden": "data.camera2Source === 'frigate'"
+            },
+            "camera2FrigateInstance": {
+                "type": "instance",
+                "adapter": "frigate",
+                "default": "frigate.0",
+                "label": {
+                    "en": "Frigate instance",
+                    "de": "Frigate-Instanz",
+                    "ru": "Экземпляр Frigate",
+                    "pt": "Instância Frigate",
+                    "nl": "Frigate-instantie",
+                    "fr": "Instance Frigate",
+                    "it": "Istanza Frigate",
+                    "es": "Instancia de Frigate",
+                    "pl": "Instancja Frigate",
+                    "uk": "Екземпляр Frigate",
+                    "zh-cn": "Frigate 实例"
+                },
+                "hidden": "data.camera2Source !== 'frigate'"
+            },
+            "camera2FrigateCamera": {
+                "type": "text",
+                "label": {
+                    "en": "Camera",
+                    "de": "Kamera",
+                    "ru": "Камера",
+                    "pt": "Câmara",
+                    "nl": "Camera",
+                    "fr": "Caméra",
+                    "it": "Telecamera",
+                    "es": "Cámara",
+                    "pl": "Kamera",
+                    "uk": "Камера",
+                    "zh-cn": "摄像头"
+                },
+                "help": {
+                    "en": "Name of the camera in Frigate",
+                    "de": "Name der Kamera in Frigate",
+                    "ru": "Имя камеры в Frigate",
+                    "pt": "Nome da câmera no Frigate",
+                    "nl": "Naam van de camera in Frigate",
+                    "fr": "Nom de la caméra dans Frigate",
+                    "it": "Nome della telecamera in Frigate",
+                    "es": "Nombre de la cámara en Frigate",
+                    "pl": "Nazwa kamery we Frigate",
+                    "uk": "Назва камери у Frigate",
+                    "zh-cn": "Frigate 中摄像头的名称"
+                },
+                "hidden": "data.camera2Source !== 'frigate'"
+            },
+            "camera2FrigateMode": {
+                "type": "select",
+                "label": {
+                    "en": "Type",
+                    "de": "Typ",
+                    "ru": "Тип",
+                    "pt": "Tipo",
+                    "nl": "Type",
+                    "fr": "Type",
+                    "it": "Tipo",
+                    "es": "Tipo",
+                    "pl": "Typ",
+                    "uk": "Тип",
+                    "zh-cn": "类型"
+                },
+                "help": {
+                    "en": "Snapshot: single pictures over ioBroker, works everywhere. Stream: live MJPEG stream of the web extension of the frigate adapter - needs a web instance with HTTPS, otherwise the snapshots are used",
+                    "de": "Snapshot: Einzelbilder über ioBroker, funktioniert überall. Stream: Live-MJPEG-Stream der Web-Erweiterung des frigate-Adapters - braucht eine Web-Instanz mit HTTPS, sonst werden Snapshots verwendet",
+                    "ru": "Snapshot: отдельные кадры через ioBroker, работает везде. Stream: живой MJPEG-поток веб-расширения адаптера frigate - нужен web-экземпляр с HTTPS, иначе используются снимки",
+                    "pt": "Snapshot: imagens individuais via ioBroker, funciona em todo o lado. Stream: stream MJPEG ao vivo da extensão web do adaptador frigate - precisa de uma instância web com HTTPS, caso contrário são usados snapshots",
+                    "nl": "Snapshot: losse beelden via ioBroker, werkt overal. Stream: live MJPEG-stream van de webextensie van de frigate-adapter - heeft een webinstantie met HTTPS nodig, anders worden snapshots gebruikt",
+                    "fr": "Snapshot : images individuelles via ioBroker, fonctionne partout. Stream : flux MJPEG en direct de l'extension web de l'adaptateur frigate - nécessite une instance web en HTTPS, sinon les snapshots sont utilisés",
+                    "it": "Snapshot: singole immagini tramite ioBroker, funziona ovunque. Stream: stream MJPEG live dell'estensione web dell'adattatore frigate - richiede un'istanza web con HTTPS, altrimenti vengono usati gli snapshot",
+                    "es": "Snapshot: imágenes sueltas a través de ioBroker, funciona en todas partes. Stream: stream MJPEG en vivo de la extensión web del adaptador frigate - necesita una instancia web con HTTPS, si no se usan snapshots",
+                    "pl": "Snapshot: pojedyncze obrazy przez ioBroker, działa wszędzie. Stream: strumień MJPEG na żywo z rozszerzenia web adaptera frigate - wymaga instancji web z HTTPS, w przeciwnym razie używane są snapshoty",
+                    "uk": "Snapshot: окремі кадри через ioBroker, працює всюди. Stream: живий MJPEG-потік веб-розширення адаптера frigate - потрібен web-екземпляр з HTTPS, інакше використовуються знімки",
+                    "zh-cn": "快照：通过 ioBroker 获取单张图片，适用于所有情况。流：frigate 适配器 Web 扩展的实时 MJPEG 流 - 需要启用 HTTPS 的 web 实例，否则使用快照"
+                },
+                "options": [
+                    {
+                        "value": "snapshot",
+                        "label": {
+                            "en": "Snapshot",
+                            "de": "Snapshot",
+                            "ru": "Снимок",
+                            "pt": "Snapshot",
+                            "nl": "Snapshot",
+                            "fr": "Snapshot",
+                            "it": "Snapshot",
+                            "es": "Snapshot",
+                            "pl": "Snapshot",
+                            "uk": "Знімок",
+                            "zh-cn": "快照"
+                        }
+                    },
+                    {
+                        "value": "stream",
+                        "label": {
+                            "en": "Stream",
+                            "de": "Stream",
+                            "ru": "Поток",
+                            "pt": "Stream",
+                            "nl": "Stream",
+                            "fr": "Flux",
+                            "it": "Stream",
+                            "es": "Stream",
+                            "pl": "Stream",
+                            "uk": "Потік",
+                            "zh-cn": "流"
+                        }
+                    }
+                ],
+                "default": "snapshot",
+                "hidden": "data.camera2Source !== 'frigate'"
+            },
+            "camera2Refresh": {
+                "type": "number",
+                "label": {
+                    "en": "Refresh (seconds)",
+                    "de": "Aktualisierung (Sekunden)",
+                    "ru": "Обновление (секунды)",
+                    "pt": "Atualização (segundos)",
+                    "nl": "Verversen (seconden)",
+                    "fr": "Actualisation (secondes)",
+                    "it": "Aggiornamento (secondi)",
+                    "es": "Actualización (segundos)",
+                    "pl": "Odświeżanie (sekundy)",
+                    "uk": "Оновлення (секунди)",
+                    "zh-cn": "刷新（秒）"
+                },
+                "help": {
+                    "en": "0 for an MJPEG stream, otherwise the snapshot is reloaded in this interval",
+                    "de": "0 für einen MJPEG-Stream, sonst wird der Snapshot in diesem Abstand neu geladen",
+                    "ru": "0 для потока MJPEG, иначе снимок перезагружается с этим интервалом",
+                    "pt": "0 para um stream MJPEG, caso contrário o snapshot é recarregado neste intervalo",
+                    "nl": "0 voor een MJPEG-stream, anders wordt de snapshot met deze interval herladen",
+                    "fr": "0 pour un flux MJPEG, sinon l'instantané est rechargé à cet intervalle",
+                    "it": "0 per uno stream MJPEG, altrimenti lo snapshot viene ricaricato a questo intervallo",
+                    "es": "0 para una transmisión MJPEG, de lo contrario la instantánea se recarga en este intervalo",
+                    "pl": "0 dla strumienia MJPEG, w przeciwnym razie migawka jest przeładowywana w tym odstępie",
+                    "uk": "0 для потоку MJPEG, інакше знімок перезавантажується з цим інтервалом",
+                    "zh-cn": "MJPEG 流填 0，否则按此间隔重新加载快照"
+                },
+                "min": 0,
+                "max": 60,
+                "default": 1,
+                "hidden": "data.camera2Source === 'frigate' && data.camera2FrigateMode === 'stream'"
+            },
+            "_action": {
+                "type": "header",
+                "text": {
+                    "en": "Action button",
+                    "de": "Aktionstaste",
+                    "ru": "Кнопка действия",
+                    "pt": "Botão de ação",
+                    "nl": "Actieknop",
+                    "fr": "Bouton d'action",
+                    "it": "Pulsante azione",
+                    "es": "Botón de acción",
+                    "pl": "Przycisk akcji",
+                    "uk": "Кнопка дії",
+                    "zh-cn": "操作按钮"
+                }
+            },
+            "actionLabel": {
+                "type": "text",
+                "label": {
+                    "en": "Text of the button",
+                    "de": "Text der Taste",
+                    "ru": "Текст кнопки",
+                    "pt": "Texto do botão",
+                    "nl": "Tekst van de knop",
+                    "fr": "Texte du bouton",
+                    "it": "Testo del pulsante",
+                    "es": "Texto del botón",
+                    "pl": "Tekst przycisku",
+                    "uk": "Текст кнопки",
+                    "zh-cn": "按钮文字"
+                },
+                "help": {
+                    "en": "Button during a call, e.g. \"Open door\". Empty: no button",
+                    "de": "Taste während eines Gesprächs, z.B. „Tür öffnen“. Leer: keine Taste",
+                    "ru": "Кнопка во время разговора, например «Открыть дверь». Пусто: без кнопки",
+                    "pt": "Botão durante uma chamada, p. ex. \"Abrir porta\". Vazio: sem botão",
+                    "nl": "Knop tijdens een gesprek, bijv. \"Deur openen\". Leeg: geen knop",
+                    "fr": "Bouton pendant un appel, p. ex. « Ouvrir la porte ». Vide : pas de bouton",
+                    "it": "Pulsante durante una chiamata, ad es. \"Apri porta\". Vuoto: nessun pulsante",
+                    "es": "Botón durante una llamada, p. ej. \"Abrir puerta\". Vacío: sin botón",
+                    "pl": "Przycisk podczas rozmowy, np. „Otwórz drzwi”. Puste: brak przycisku",
+                    "uk": "Кнопка під час розмови, наприклад «Відчинити двері». Порожньо: без кнопки",
+                    "zh-cn": "通话中的按钮，例如“开门”。留空：不显示按钮"
+                }
+            },
+            "actionDtmf": {
+                "type": "text",
+                "label": {
+                    "en": "Send DTMF tones",
+                    "de": "DTMF-Töne senden",
+                    "ru": "Отправить тоны DTMF",
+                    "pt": "Enviar tons DTMF",
+                    "nl": "DTMF-tonen verzenden",
+                    "fr": "Envoyer des tonalités DTMF",
+                    "it": "Invia toni DTMF",
+                    "es": "Enviar tonos DTMF",
+                    "pl": "Wyślij tony DTMF",
+                    "uk": "Надіслати тони DTMF",
+                    "zh-cn": "发送 DTMF 音"
+                },
+                "hidden": "!data.actionLabel"
+            },
+            "actionOid": {
+                "type": "objectId",
+                "types": "state",
+                "label": {
+                    "en": "Set state to true",
+                    "de": "Datenpunkt auf true setzen",
+                    "ru": "Установить состояние в true",
+                    "pt": "Definir estado como true",
+                    "nl": "Datapunt op true zetten",
+                    "fr": "Mettre l'état à true",
+                    "it": "Imposta lo stato su true",
+                    "es": "Poner el estado en true",
+                    "pl": "Ustaw stan na true",
+                    "uk": "Встановити стан у true",
+                    "zh-cn": "将数据点设为 true"
+                },
+                "hidden": "!data.actionLabel"
+            }
+        }
+    }
+}

@@ -3,16 +3,19 @@
 //   to the test page of Asterisk
 // - the vis-2 widgets (src-widgets) into widgets/intercom, from where vis-2 loads them
 // - the plugin of the devices app (src-devices) into admin/dm-widgets, from where the devices app loads it
+// - the web component (src-webcomponents) into admin/webcomponents, from where Aura, admin and the other hosts load
+//   it (common.webComponents)
 // Runs directly with `node tasks.mts` (type stripping of Node.js >= 22.18, no build step).
 //   node tasks.mts            all
 //   node tasks.mts --www      only the phone
 //   node tasks.mts --widgets  only the widgets
 //   node tasks.mts --devices  only the plugin of the devices app
-import { copyFileSync, cpSync, existsSync, mkdirSync, rmSync } from 'node:fs';
+//   node tasks.mts --wc       only the web component
+import { copyFileSync, cpSync, existsSync, mkdirSync, readdirSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
 
 const root: string = import.meta.dirname;
-const parts = ['--www', '--widgets', '--devices'].filter(part => process.argv.includes(part));
+const parts = ['--www', '--widgets', '--devices', '--wc'].filter(part => process.argv.includes(part));
 const wanted = (part: string): boolean => !parts.length || parts.includes(part);
 
 function fail(text: string): never {
@@ -60,4 +63,19 @@ if (wanted('--devices')) {
     copyBuild(source, target);
     // the icon of the tile in the catalogue of the devices app, named by common.deviceWidgets
     copyFileSync(join(root, 'src-devices', 'img', 'intercom.svg'), join(target, 'intercom.svg'));
+}
+
+if (wanted('--wc')) {
+    // one module and its manifest: a host imports exactly one URL, see src-webcomponents/vite.config.ts
+    const source: string = join(root, 'src-webcomponents', 'build');
+    const target: string = join(root, 'admin', 'webcomponents');
+    if (!existsSync(join(source, 'intercom-phone.json'))) {
+        fail(`${source}/intercom-phone.json does not exist. Run "npm run build:wc" (and "npm run npm" once before)`);
+    }
+    rmSync(target, { recursive: true, force: true });
+    mkdirSync(target, { recursive: true });
+    for (const file of readdirSync(source).filter(name => /\.(js|json)$/.test(name))) {
+        copyFileSync(join(source, file), join(target, file));
+        console.log(`Copied ${join(source, file)} to ${join(target, file)}`);
+    }
 }

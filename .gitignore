@@ -20,3 +20,6 @@ src-widgets/.__mf__temp/
 # plugin of the devices app: built by npm run build:devices into admin/dm-widgets/ (committed as well)
 src-devices/build/
 src-devices/.__mf__temp/
+
+# web component: built by npm run build:wc into admin/webcomponents/ (committed as well)
+src-webcomponents/build/

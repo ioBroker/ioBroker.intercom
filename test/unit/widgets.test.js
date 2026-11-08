@@ -66,6 +66,25 @@ describe('plugin of the devices app', () => {
     });
 });
 
+describe('web component', () => {
+    const files = ioPackage.common.webComponents || [];
+
+    it('the built manifest and module are where the hosts load them from', () => {
+        assert.deepEqual(files, ['webcomponents/intercom-phone.json']);
+        const manifest = JSON.parse(readFileSync(join(root, 'admin', files[0]), 'utf8'));
+        assert.equal(manifest.tag, 'iob-intercom-phone');
+        assert.ok(existsSync(join(root, 'admin', 'webcomponents', manifest.module)), `${manifest.module} missing`);
+        assert.ok(existsSync(join(root, 'admin', 'webcomponents', manifest.icon)), manifest.icon);
+        assert.ok(pack.files.includes('admin/'));
+    });
+
+    it('has the name of the devices tile, so vis-2 and devices offer their own widget instead', () => {
+        const manifest = JSON.parse(readFileSync(join(root, 'admin', files[0]), 'utf8'));
+        const tile = ioPackage.common.deviceWidgets.components.find(c => c.name === 'IntercomPhoneComponent');
+        assert.deepEqual(manifest.name, tile.label);
+    });
+});
+
 describe('translations of the phone', () => {
     const dir = join(root, 'src-shared', 'i18n');
     const en = Object.keys(JSON.parse(readFileSync(join(dir, 'en.json'), 'utf8')));
