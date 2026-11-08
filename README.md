@@ -489,7 +489,7 @@ SIP-Nachricht mit auf - nur zur Fehlersuche.
 -->
 
 ## Changelog
-### **WORK IN PROGRESS**
+### 0.3.0 (2026-11-08)
 - (@GermanBluefox) Added the web component `iob-intercom-phone` (the phone) for Aura and other hosts (`common.webComponents`)
 
 ### 0.2.2 (2026-11-04)

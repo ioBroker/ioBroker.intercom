@@ -1,8 +1,21 @@
 {
   "common": {
     "name": "intercom",
-    "version": "0.2.2",
+    "version": "0.3.0",
     "news": {
+      "0.3.0": {
+        "en": "Added the web component `iob-intercom-phone` (the phone) for Aura and other hosts (`common.webComponents`)",
+        "de": "Webkomponente `iob-intercom-phone` (Telefon) für Aura und andere Hosts hinzugefügt (`common.webComponents`)",
+        "ru": "Добавлен веб-компонент `iob-intercom-phone` (телефон) для Aura и других хостов (`Common.webcomponents`)",
+        "pt": "Adicionado o componente web `iob-intercom-phone` para Aura e outros hosts (`common.webComponents`)",
+        "nl": "De webcomponent `iob-intercom-phone` (de telefoon) toegevoegd voor Aura en andere hosts (`Common.WebComponents`)",
+        "fr": "Ajout du composant Web « iob-intercom-phone » (le téléphone) pour Aura et les autres hôtes (« common.WebComponents »)",
+        "it": "Aggiunto il componente web `iob-intercom-phone` per Aura e altri host (`Common.WebComponents`)",
+        "es": "Ha añadido el componente web «iob-intercom-phone» (el teléfono) para Aura y otros hosts (`Common.WebComponents`)",
+        "pl": "Dodano komponent internetowy „iob-intercom-phone” (telefon) dla Aura i innych hostów (`common.webcomponents`)",
+        "uk": "Додано веб-компонент `iob-intercom-phone` (телефон) для Aura та інших хостів (`Common.WebComponents`)",
+        "zh-cn": "为 Aura 和其他主机（`common.webComponents`）添加了网络组件 `iob-intercom-phone`（电话）"
+      },
       "0.2.2": {
         "en": "Added second camera",
         "de": "Zweite Kamera hinzugefügt",
