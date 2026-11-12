@@ -183,7 +183,28 @@
       ]
     },
     "webComponents": [
-      "webcomponents/intercom-phone.json"
+      {
+        "manifest": "webcomponents/intercom-phone.json",
+        "tag": "iob-intercom-phone",
+        "name": {
+          "en": "Phone",
+          "de": "Telefon",
+          "ru": "Телефон",
+          "pt": "Telefone",
+          "nl": "Telefoon",
+          "fr": "Téléphone",
+          "it": "Telefono",
+          "es": "Teléfono",
+          "pl": "Telefon",
+          "uk": "Телефон",
+          "zh-cn": "电话"
+        },
+        "icon": "../intercom.svg",
+        "size": {
+          "width": 320,
+          "height": 160
+        }
+      }
     ],
     "plugins": {
       "docker": {
