@@ -99,6 +99,48 @@ export interface AudioDevices {
     canSelectSpeaker: boolean;
 }
 
+/** The ring tones the phone plays by itself; `custom` plays an audio file, `none` only vibrates */
+export const RINGTONES = ['trill', 'double', 'gong', 'chime', 'beep', 'none', 'custom'] as const;
+
+export type RingtoneKind = (typeof RINGTONES)[number];
+
+export interface Ringtone {
+    kind: RingtoneKind;
+    /** Audio file of `custom` (MP3, WAV, OGG), played in a loop */
+    url?: string;
+}
+
+/** Seconds from the start of one round of a built-in ring tone to the next */
+const RING_PERIOD: Record<Exclude<RingtoneKind, 'none' | 'custom'>, number> = {
+    trill: 3,
+    double: 3,
+    gong: 4,
+    chime: 3.5,
+    beep: 2,
+};
+
+/** Notes of the door chime and the chime: E5, C5, G5, C6 */
+const E5 = 659.25;
+const C5 = 523.25;
+const G5 = 783.99;
+const C6 = 1046.5;
+
+/**
+ * An audio file, decoded for the audio context; `null` if the page may not read it (another server without CORS) or
+ * it is no audio
+ */
+async function loadAudio(ctx: AudioContext, url: string): Promise<AudioBuffer | null> {
+    try {
+        const response = await fetch(url);
+        if (!response.ok) {
+            return null;
+        }
+        return await ctx.decodeAudioData(await response.arrayBuffer());
+    } catch {
+        return null;
+    }
+}
+
 const DTMF_FREQUENCIES: Record<string, [number, number]> = {
     1: [697, 1209],
     2: [697, 1336],
@@ -172,7 +214,17 @@ export class SipPhone {
     #speakerDevice = '';
     #cameraDevice = '';
 
+    #ringtone: Ringtone = { kind: 'trill' };
+    /** An incoming call is ringing */
+    #ringing = false;
     #ringTimer: ReturnType<typeof setInterval> | null = null;
+    /** All sound of the ring tone goes through it: disconnected, it stops at once, also tones already scheduled */
+    #ringBus: GainNode | null = null;
+    /** The decoded file of the ring tone `custom`, loaded at the first call */
+    #ringFile: { url: string; buffer: Promise<AudioBuffer | null> } | null = null;
+    #ringSource: AudioBufferSourceNode | null = null;
+    /** The file of the ring tone, if the page may not decode it itself */
+    #ringElement: AudioElementWithSink | null = null;
     #ringbackTimer: ReturnType<typeof setInterval> | null = null;
     #statsTimer: ReturnType<typeof setInterval> | null = null;
     #testTimer: ReturnType<typeof setTimeout> | null = null;
@@ -283,16 +335,28 @@ export class SipPhone {
         };
     }
 
-    /** Play a tone through the speakers and the speaker meter */
-    #tone(freqs: number[], start: number, duration: number, volume: number): void {
+    /**
+     * Play a tone through the speakers and the speaker meter
+     *
+     * @param freqs frequencies played together, in Hz
+     * @param start time of the audio context
+     * @param duration seconds
+     * @param volume 0..1
+     * @param out where the tone goes, e.g. the bus of the ring tone; default: the speakers and the speaker meter
+     */
+    #tone(freqs: number[], start: number, duration: number, volume: number, out?: AudioNode): void {
         const ctx = this.#audio();
         const gain = ctx.createGain();
         gain.gain.setValueAtTime(0, start);
         gain.gain.linearRampToValueAtTime(volume, start + 0.01);
         gain.gain.setValueAtTime(volume, start + duration - 0.02);
         gain.gain.linearRampToValueAtTime(0, start + duration);
-        gain.connect(ctx.destination);
-        gain.connect(this.#spkAnalyser!);
+        if (out) {
+            gain.connect(out);
+        } else {
+            gain.connect(ctx.destination);
+            gain.connect(this.#spkAnalyser!);
+        }
         for (const f of freqs) {
             const osc = ctx.createOscillator();
             osc.frequency.value = f;
@@ -302,26 +366,173 @@ export class SipPhone {
         }
     }
 
+    /** A struck tone, as of a bell or a door chime: it fades out by itself, its overtones sooner */
+    #bell(freq: number, start: number, duration: number, volume: number, out: AudioNode): void {
+        const ctx = this.#audio();
+        const partials: [ratio: number, level: number][] = [
+            [1, 1],
+            [2, 0.3],
+            [3, 0.1],
+        ];
+        for (const [ratio, level] of partials) {
+            const end = start + duration / ratio;
+            const gain = ctx.createGain();
+            gain.gain.setValueAtTime(0, start);
+            gain.gain.linearRampToValueAtTime(volume * level, start + 0.005);
+            gain.gain.exponentialRampToValueAtTime(0.0001, end);
+            gain.connect(out);
+            const osc = ctx.createOscillator();
+            osc.frequency.value = freq * ratio;
+            osc.connect(gain);
+            osc.start(start);
+            osc.stop(end + 0.05);
+        }
+    }
+
+    /** The ring tone of incoming calls; a call ringing right now switches over */
+    setRingtone(ringtone: Ringtone): void {
+        const kind = RINGTONES.includes(ringtone.kind) ? ringtone.kind : 'trill';
+        const url = kind === 'custom' ? String(ringtone.url || '').trim() : '';
+        if (kind === this.#ringtone.kind && url === (this.#ringtone.url || '')) {
+            return;
+        }
+        this.#ringtone = { kind, url };
+        if (this.#ringing) {
+            this.#startRingtone();
+        }
+    }
+
     #startRingtone(): void {
         this.#stopRingtone();
-        const play = (): void => {
-            const now = this.#audio().currentTime + 0.05;
-            // two bursts of a warbling trill
-            for (let burst = 0; burst < 2; burst++) {
-                for (let i = 0; i < 12; i++) {
-                    this.#tone([i % 2 ? 1320 : 1050], now + burst + i * 0.055, 0.05, 0.18);
-                }
-            }
-        };
-        play();
-        this.#ringTimer = setInterval(play, 3000);
+        this.#ringing = true;
         navigator.vibrate?.([400, 200, 400, 2000, 400, 200, 400]);
+        const { kind, url } = this.#ringtone;
+        if (kind === 'none') {
+            return;
+        }
+        const ctx = this.#audio();
+        const bus = ctx.createGain();
+        bus.connect(ctx.destination);
+        bus.connect(this.#spkAnalyser!);
+        this.#ringBus = bus;
+        if (kind === 'custom') {
+            void this.#playRingFile(bus, url || '');
+        } else {
+            this.#playRingPattern(bus, kind);
+        }
+    }
+
+    /** A built-in ring tone, round after round */
+    #playRingPattern(bus: GainNode, kind: keyof typeof RING_PERIOD): void {
+        const play = (): void => this.#ringRound(bus, kind, this.#audio().currentTime + 0.05);
+        play();
+        this.#ringTimer = setInterval(play, RING_PERIOD[kind] * 1000);
+    }
+
+    /** One round of a built-in ring tone, starting at `now` */
+    #ringRound(bus: GainNode, kind: keyof typeof RING_PERIOD, now: number): void {
+        switch (kind) {
+            case 'double':
+                // the double ring of the old phones: 400 + 450 Hz, 0.4 s on, 0.2 s off, 0.4 s on
+                this.#tone([400, 450], now, 0.4, 0.12, bus);
+                this.#tone([400, 450], now + 0.6, 0.4, 0.12, bus);
+                break;
+            case 'gong':
+                // ding-dong of a door chime
+                this.#bell(E5, now, 1.6, 0.25, bus);
+                this.#bell(C5, now + 0.7, 2.5, 0.25, bus);
+                break;
+            case 'chime':
+                [C5, E5, G5, C6].forEach((freq, i) => this.#bell(freq, now + i * 0.2, 1.4, 0.2, bus));
+                break;
+            case 'beep':
+                for (let i = 0; i < 3; i++) {
+                    this.#tone([880], now + i * 0.25, 0.12, 0.15, bus);
+                }
+                break;
+            default:
+                // two bursts of a warbling trill
+                for (let burst = 0; burst < 2; burst++) {
+                    for (let i = 0; i < 12; i++) {
+                        this.#tone([i % 2 ? 1320 : 1050], now + burst + i * 0.055, 0.05, 0.18, bus);
+                    }
+                }
+        }
+    }
+
+    /**
+     * The audio file of the ring tone `custom`, in a loop. Decoded by the page, it plays through the selected
+     * speaker and the meter; a file of another server without CORS plays in an audio element. If neither works, the
+     * call must not ring silently: then the trill rings.
+     */
+    async #playRingFile(bus: GainNode, url: string): Promise<void> {
+        const trill = (reason: string): void => {
+            this.log(`Ring tone "${url}" not playable (${reason}), ringing with the trill`);
+            this.#playRingPattern(bus, 'trill');
+        };
+        if (!url) {
+            trill('no file');
+            return;
+        }
+        const ctx = this.#audio();
+        if (this.#ringFile?.url !== url) {
+            this.#ringFile = { url, buffer: loadAudio(ctx, url) };
+        }
+        const file = this.#ringFile;
+        const buffer = await file.buffer;
+        // answered, ended or another ring tone meanwhile
+        if (this.#ringBus !== bus) {
+            return;
+        }
+        if (buffer) {
+            const source = ctx.createBufferSource();
+            source.buffer = buffer;
+            source.loop = true;
+            source.connect(bus);
+            source.start();
+            this.#ringSource = source;
+            return;
+        }
+        // try to load it again with the next call
+        if (this.#ringFile === file) {
+            this.#ringFile = null;
+        }
+        const element: AudioElementWithSink = new Audio(url);
+        element.loop = true;
+        if (this.#speakerDevice && element.setSinkId) {
+            element.setSinkId(this.#speakerDevice).catch(() => {});
+        }
+        this.#ringElement = element;
+        element.play().catch((e: unknown) => {
+            if (this.#ringElement === element) {
+                this.#ringElement = null;
+                trill(e instanceof Error ? e.message : String(e));
+            }
+        });
     }
 
     #stopRingtone(): void {
         if (this.#ringTimer) {
             clearInterval(this.#ringTimer);
             this.#ringTimer = null;
+        }
+        if (this.#ringSource) {
+            try {
+                this.#ringSource.stop();
+            } catch {
+                // already stopped
+            }
+            this.#ringSource = null;
+        }
+        if (this.#ringElement) {
+            this.#ringElement.pause();
+            this.#ringElement = null;
+        }
+        // silences the tones already scheduled, too
+        this.#ringBus?.disconnect();
+        this.#ringBus = null;
+        if (this.#ringing) {
+            this.#ringing = false;
             navigator.vibrate?.(0);
         }
     }
@@ -361,6 +572,7 @@ export class SipPhone {
         this.#speakerDevice = deviceId;
         this.#remoteAudio.setSinkId?.(deviceId).catch(e => this.log(`Cannot select speaker: ${(e as Error).message}`));
         this.#ctx?.setSinkId?.(deviceId).catch(() => {});
+        this.#ringElement?.setSinkId?.(deviceId).catch(() => {});
     }
 
     #videoConstraints(): MediaTrackConstraints {
@@ -964,6 +1176,9 @@ export class SipPhone {
 
     destroy(): void {
         this.logout(false);
+        // the audio element of a ring tone file plays outside of the audio context
+        this.#stopRingtone();
+        this.#stopRingback();
         this.#closeMedia();
         this.#remoteAudio.remove();
         void this.#ctx?.close();

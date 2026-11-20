@@ -8,6 +8,7 @@ import type {
 } from '@iobroker/types-vis-2';
 import type VisRxWidget from '@iobroker/types-vis-2/visRxWidget';
 
+import type { RingtoneKind } from '../../src-www/src/SipPhone';
 import { PhoneView } from '../../src-shared/src/PhoneView';
 import {
     ADAPTER,
@@ -38,6 +39,8 @@ interface PhoneRxData {
     useCamera: boolean;
     sendCamera: boolean;
     popup: boolean;
+    ringtone: RingtoneKind;
+    ringtoneUrl: string;
     cameraSource: CameraSourceKind;
     cameraOid: string;
     cameraUrl: string;
@@ -56,6 +59,7 @@ interface PhoneRxData {
     actionLabel: string;
     actionDtmf: string;
     actionOid: string;
+    actionReset: number | string;
 }
 
 /**
@@ -235,6 +239,28 @@ export default class PhoneWidget extends (window.visRxWidget as typeof VisRxWidg
                         { name: 'numberLabel', label: 'number_label' },
                         { name: 'showKeypad', label: 'show_keypad', type: 'checkbox', default: true },
                         { name: 'popup', label: 'popup', type: 'checkbox', default: true },
+                        {
+                            name: 'ringtone',
+                            label: 'ringtone',
+                            type: 'select',
+                            options: [
+                                { value: 'trill', label: 'ringtone_trill' },
+                                { value: 'double', label: 'ringtone_double' },
+                                { value: 'gong', label: 'ringtone_gong' },
+                                { value: 'chime', label: 'ringtone_chime' },
+                                { value: 'beep', label: 'ringtone_beep' },
+                                { value: 'none', label: 'ringtone_none' },
+                                { value: 'custom', label: 'ringtone_custom' },
+                            ],
+                            default: 'trill',
+                            noBinding: true,
+                        },
+                        {
+                            name: 'ringtoneUrl',
+                            label: 'ringtone_url',
+                            tooltip: 'ringtone_url_tooltip',
+                            hidden: "data.ringtone !== 'custom'",
+                        },
                         { name: 'video', label: 'video_calls', type: 'checkbox', default: true },
                         {
                             name: 'useCamera',
@@ -273,6 +299,17 @@ export default class PhoneWidget extends (window.visRxWidget as typeof VisRxWidg
                         { name: 'actionLabel', label: 'action_label', tooltip: 'action_label_tooltip' },
                         { name: 'actionDtmf', label: 'action_dtmf', hidden: '!data.actionLabel' },
                         { name: 'actionOid', label: 'action_oid', type: 'id', hidden: '!data.actionLabel' },
+                        {
+                            name: 'actionReset',
+                            label: 'action_reset',
+                            type: 'number',
+                            min: 0,
+                            max: 3600,
+                            step: 0.5,
+                            default: 0,
+                            tooltip: 'action_reset_tooltip',
+                            hidden: '!data.actionLabel || !data.actionOid',
+                        },
                     ],
                 },
             ],

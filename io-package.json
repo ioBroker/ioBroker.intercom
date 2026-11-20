@@ -107,6 +107,9 @@
     "enabled": true,
     "compact": true,
     "messagebox": true,
+    "supportedMessages": {
+      "help": true
+    },
     "stopBeforeUpdate": true,
     "type": "communication",
     "connectionType": "local",

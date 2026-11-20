@@ -39,10 +39,12 @@ const promises_1 = require("node:fs/promises");
 const node_path_1 = require("node:path");
 const utils = __importStar(require("@iobroker/adapter-core"));
 const ami_1 = require("./lib/ami");
+const calls_1 = require("./lib/calls");
 const cameras_1 = require("./lib/cameras");
 const certificate_1 = require("./lib/certificate");
 const configGenerator_1 = require("./lib/configGenerator");
 const configWriter_1 = require("./lib/configWriter");
+const help_1 = require("./lib/help");
 const logTail_1 = require("./lib/logTail");
 const subscriberStatus_1 = require("./lib/subscriberStatus");
 const snapshot_1 = require("./lib/snapshot");
@@ -73,10 +75,15 @@ function toNumber(value, def) {
     const n = parseInt(String(value ?? ''), 10);
     return Number.isFinite(n) && n > 0 ? n : def;
 }
+/** A text field of a message; an extension may come as a number, too */
+function textOf(value) {
+    return typeof value === 'string' || typeof value === 'number' ? String(value).trim() : '';
+}
 class IntercomAdapter extends utils.Adapter {
     ami = null;
     contacts = new subscriberStatus_1.ContactTracker();
     subscribers = [];
+    ringGroups = [];
     configHash = '';
     configDir = '';
     statusTimer;
@@ -313,6 +320,7 @@ class IntercomAdapter extends utils.Adapter {
             return null;
         }
         result.warnings.forEach(w => this.log.warn(w));
+        this.ringGroups = result.groups;
         if (!certificate) {
             this.log.warn('No certificate available: WSS (WebRTC) will not work');
         }
@@ -561,6 +569,25 @@ class IntercomAdapter extends utils.Adapter {
         };
         const message = (obj.message || {});
         switch (obj.command) {
+            case 'help':
+                // what the instance answers, for an AI agent
+                reply({ help: (0, help_1.getHelp)(this.namespace), commands: help_1.COMMANDS });
+                break;
+            case 'getSubscribers':
+                reply(this.getSubscriberList());
+                break;
+            case 'getCalls':
+            case 'call':
+            case 'answer':
+            case 'transfer':
+            case 'hangup':
+                try {
+                    reply(await this.handleCallCommand(obj.command, message, obj.from));
+                }
+                catch (e) {
+                    reply({ error: e.message });
+                }
+                break;
             case 'generateCert': {
                 let hosts = [];
                 if (Array.isArray(message.certHosts)) {
@@ -629,7 +656,7 @@ class IntercomAdapter extends utils.Adapter {
             }
             case 'decline': {
                 // "Decline" in one browser: the other devices of the subscriber stop ringing, too
-                const extension = typeof message.extension === 'string' ? message.extension.trim() : '';
+                const extension = textOf(message.extension);
                 if (!this.subscribers.some(s => s.extension === extension)) {
                     reply({ error: `Unknown subscriber "${extension}"` });
                     break;
@@ -656,8 +683,200 @@ class IntercomAdapter extends utils.Adapter {
                 break;
             default:
                 this.log.warn(`Unknown command: ${obj.command}`);
-                reply({ error: `Unknown command: ${obj.command}` });
+                reply({ error: `Unknown command: ${obj.command}`, commands: help_1.COMMANDS.map(c => c.command) });
         }
+    }
+    /** Names of everything that can be called: subscribers, groups, the echo test */
+    numberNames() {
+        const names = {};
+        if (this.config.echoTest !== false) {
+            names[configGenerator_1.ECHO_EXTENSION] = 'Echo test';
+        }
+        for (const group of this.ringGroups) {
+            names[group.extension] = group.name;
+        }
+        for (const sub of this.subscribers) {
+            names[sub.extension] = sub.name;
+        }
+        return names;
+    }
+    /** Message `getSubscribers`: who can be called, and who is reachable */
+    getSubscriberList() {
+        return {
+            subscribers: this.subscribers.map(sub => {
+                const summary = this.contacts.summary(sub.extension);
+                return {
+                    extension: sub.extension,
+                    name: sub.name,
+                    kind: sub.kind,
+                    registered: summary.registered,
+                    devices: summary.contacts,
+                    state: this.deviceStates.get(sub.extension) || 'unavailable',
+                };
+            }),
+            groups: this.ringGroups.map(group => ({
+                extension: group.extension,
+                name: group.name,
+                members: group.members,
+            })),
+            echoTest: this.config.echoTest !== false ? configGenerator_1.ECHO_EXTENSION : '',
+        };
+    }
+    /**
+     * A number with a device that can ring: a registered subscriber, a group with one, the echo test. Throws if not.
+     *
+     * @param number subscriber, group or echo test
+     * @param role name of the field, for the error
+     */
+    checkReachable(number, role) {
+        const names = this.numberNames();
+        if (!names[number]) {
+            throw new Error(`"${role}" must be a subscriber, a group or the echo test (getSubscribers), not "${number}"`);
+        }
+        const group = this.ringGroups.find(g => g.extension === number);
+        const members = group ? group.members : this.subscribers.some(s => s.extension === number) ? [number] : [];
+        if (members.length && !members.some(ext => this.contacts.summary(ext).registered)) {
+            throw new Error(`No device of ${names[number]} (${number}) is connected`);
+        }
+    }
+    /** An AMI action that must succeed */
+    async amiAction(fields) {
+        if (!this.ami?.connected) {
+            throw new Error('Not connected to Asterisk');
+        }
+        const result = await this.ami.action(fields);
+        if (result.response.Response === 'Error') {
+            throw new Error(result.response.Message || `${fields.Action} failed`);
+        }
+        return result;
+    }
+    async getCalls() {
+        const { events } = await this.amiAction({ Action: 'CoreShowChannels' });
+        return (0, calls_1.listCalls)(events.filter(e => e.Event === 'CoreShowChannel'), this.numberNames());
+    }
+    /**
+     * The messages about calls, for scripts and AI agents: `getCalls`, `call`, `answer`, `transfer`, `hangup`
+     *
+     * @param command the message
+     * @param message its data
+     * @param sender who sent it, for the log
+     */
+    async handleCallCommand(command, message, sender) {
+        if (command === 'getCalls') {
+            return { calls: (await this.getCalls()).map(calls_1.callInfo) };
+        }
+        if (command === 'call') {
+            // the phone "from" rings; when somebody answers there, Asterisk calls "to"
+            const from = textOf(message.from);
+            const to = textOf(message.to);
+            if (!this.subscribers.some(s => s.extension === from)) {
+                throw new Error(`"from" must be a subscriber (getSubscribers), not "${from}"`);
+            }
+            if (from === to) {
+                throw new Error('"from" and "to" are the same');
+            }
+            this.checkReachable(from, 'from');
+            this.checkReachable(to, 'to');
+            const names = this.numberNames();
+            await this.amiAction({
+                Action: 'Originate',
+                // the dialplan of the subscriber: all its devices ring
+                Channel: `Local/${from}@${configGenerator_1.CONTEXT}`,
+                Context: configGenerator_1.CONTEXT,
+                Exten: to,
+                Priority: 1,
+                // shown on the phone that rings: whom it is going to be connected with
+                CallerID: `"${names[to]}" <${to}>`,
+                Timeout: 30000,
+                Async: 'true',
+            });
+            this.log.info(`${sender}: call from ${from} to ${to}`);
+            return {
+                result: 'ok',
+                text: `${names[from]} (${from}) rings; when somebody answers there, ${names[to]} (${to}) is called`,
+            };
+        }
+        if (command === 'answer') {
+            const dtmf = textOf(message.dtmf);
+            if (!(0, calls_1.isValidDtmf)(dtmf)) {
+                throw new Error('"dtmf" is required: the tones to send, digits, *, #, A-D and w (a pause)');
+            }
+            const seconds = Number(message.hangupAfter ?? 3);
+            const hangupAfter = Number.isFinite(seconds) ? Math.min(60, Math.max(1, Math.round(seconds))) : 3;
+            const call = this.takeCall(await this.getCalls(), message, true);
+            await this.amiAction({ Action: 'Setvar', Channel: call.callerChannel, Variable: 'IOB_DTMF', Value: dtmf });
+            await this.amiAction({
+                Action: 'Setvar',
+                Channel: call.callerChannel,
+                Variable: 'IOB_HANGUP',
+                Value: hangupAfter,
+            });
+            // out of Dial: the devices stop ringing, and the dialplan of AGENT_CONTEXT answers
+            await this.amiAction({
+                Action: 'Redirect',
+                Channel: call.callerChannel,
+                Context: configGenerator_1.AGENT_CONTEXT,
+                Exten: 'answer',
+                Priority: 1,
+            });
+            this.log.info(`${sender}: answered the call of ${call.from} to ${call.to}, sent DTMF ${dtmf}`);
+            return { result: 'ok', call: (0, calls_1.callInfo)(call) };
+        }
+        if (command === 'transfer') {
+            const to = textOf(message.to);
+            if (!this.subscribers.some(s => s.extension === to) && !this.ringGroups.some(g => g.extension === to)) {
+                throw new Error(`"to" must be a subscriber or a group (getSubscribers), not "${to}"`);
+            }
+            this.checkReachable(to, 'to');
+            const call = this.takeCall(await this.getCalls(), message, false);
+            if (call.from === to) {
+                throw new Error(`${to} is the caller itself`);
+            }
+            await this.amiAction({
+                Action: 'Redirect',
+                Channel: call.callerChannel,
+                Context: configGenerator_1.CONTEXT,
+                Exten: to,
+                Priority: 1,
+            });
+            this.log.info(`${sender}: transferred the call of ${call.from} to ${to}`);
+            return { result: 'ok', call: (0, calls_1.callInfo)(call) };
+        }
+        // hangup
+        const found = (0, calls_1.findCall)(await this.getCalls(), message, false);
+        if ('error' in found) {
+            throw new Error(found.error);
+        }
+        let channels = 0;
+        for (const channel of found.call.channels) {
+            try {
+                // 16: normal clearing
+                await this.amiAction({ Action: 'Hangup', Channel: channel, Cause: 16 });
+                channels++;
+            }
+            catch {
+                // ended in the meantime, e.g. with the other line of the call
+            }
+        }
+        this.log.info(`${sender}: ended the call of ${found.call.from} to ${found.call.to}`);
+        return { result: 'ok', channels };
+    }
+    /**
+     * The call `answer` or `transfer` means, with the line of its caller
+     *
+     * @param calls the calls going on
+     * @param message `call` and/or `extension`
+     * @param ringingOnly only a call that rings
+     */
+    takeCall(calls, message, ringingOnly) {
+        const found = (0, calls_1.findCall)(calls, message, ringingOnly);
+        if ('error' in found) {
+            throw new Error(found.error);
+        }
+        if (!found.call.callerChannel) {
+            throw new Error('This call was started with "call" and has no caller to take over: end it with hangup');
+        }
+        return found.call;
     }
     /**
      * End the ringing on all devices of a subscriber. The caller hears "busy" if nobody else rings, e.g. no other

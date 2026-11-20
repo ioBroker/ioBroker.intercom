@@ -3,7 +3,7 @@ import { useEffect, useState, useSyncExternalStore } from 'react';
 import type { PhoneSnapshot, SipPhone } from '../../src-www/src/SipPhone';
 import type { DialogState, PhoneHandle } from './phoneRegistry';
 import { phones } from './phones';
-import { flag, resolvePhone, type PhoneHost, type PhoneProblem, type PhoneSettings } from './phoneSettings';
+import { flag, resolvePhone, ringtoneOf, type PhoneHost, type PhoneProblem, type PhoneSettings } from './phoneSettings';
 
 export type SipPhoneHandle = PhoneHandle<SipPhone>;
 
@@ -63,7 +63,16 @@ export function usePhone(host: PhoneHost, settings: PhoneSettings, service: bool
     }, [host, key, service]);
 
     // a result of other settings belongs to a released phone
-    return enabled && result.key === key ? result : NONE;
+    const current = enabled && result.key === key ? result : NONE;
+
+    // the ring tone makes no other phone: widgets with the same extension share one, so one ring tone - the last set
+    const phone = current.handle?.phone;
+    const { kind, url } = ringtoneOf(settings);
+    useEffect(() => {
+        phone?.setRingtone({ kind, url });
+    }, [phone, kind, url]);
+
+    return current;
 }
 
 /** Snapshot in the editor and before the start: the phone does not connect there, so it must not look online */

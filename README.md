@@ -115,7 +115,13 @@ The widget **Phone** registers as a WebRTC subscriber and offers:
 - **cameras of the frigate adapter** as picture source, selected from the list of the instance: as snapshots over
   ioBroker (works everywhere, also through the cloud) or as live MJPEG stream of its web extension (needs a web
   instance with HTTPS, because the phone page is HTTPS; otherwise the snapshots are used),
-- an action button during a call, e.g. "Open door": sends DTMF tones and/or sets a state to `true`.
+- a selectable **ring tone**: trill (default), double ring, door chime (ding-dong), chime, beep, silent, or an own
+  audio file (URL of an MP3, WAV or OGG file, played in a loop - best a file on the same server as the page, e.g.
+  uploaded into the vis project; if it cannot be played, the trill rings). Widgets with the same extension share one
+  phone and so one ring tone,
+- an action button during a call, e.g. "Open door": sends DTMF tones and/or sets a state to `true` - if wanted back
+  to `false` after a number of seconds, e.g. for a door opener, without a script. The time runs in the browser: if
+  the page is closed before, the state stays `true`.
 
 Settings: instance, extension and password of a WebRTC subscriber. The password is stored in the vis project,
 so use a subscriber of its own for vis. Microphone and camera require that **vis is opened via HTTPS**, and the
@@ -156,7 +162,7 @@ the dialog of a call - drawn without MUI, in the colors of the host.
   wide tile also the camera picture); a click on the tile opens the phone in a dialog of the host. The setting
   "Layout" fixes one of the two.
 - Settings: those of the widget - instance, extension, password, WebSocket URL, number, keypad, dialog for calls,
-  video and own camera, two cameras, action button. The camera of a frigate instance is entered by its name.
+  ring tone, video and own camera, two cameras, action button. The camera of a frigate instance is entered by its name.
 - The password is stored with the settings of the element. As for the widget, the page must be opened via HTTPS.
 - There is no background service: the phone is registered, and rings, while the element is shown.
 
@@ -206,6 +212,36 @@ UniFi Protect: create an API key in UniFi OS (Settings → Control Plane → Int
 | `getSubscriberStatus` | `{ extension }` | `{ text, style, icon }` for the table of the subscribers |
 | `decline`          | `{ extension }` | ends the ringing on all devices of the subscriber: `{ result: 'ok', channels }` |
 | `reload`           | -               | `{ result: 'ok' }` or `{ error }`                       |
+| `help`             | -               | `{ help, commands: [{ command, write }] }`: a description of the messages for AI agents |
+| `getSubscribers`   | -               | `{ subscribers: [{ extension, name, kind, registered, devices, state }], groups: [{ extension, name, members }], echoTest }` |
+| `getCalls`         | -               | `{ calls: [{ id, from, fromName, to, toName, state, ringing, connected, seconds }] }` |
+| `call`             | `{ from, to }`  | the devices of `from` ring; when somebody answers there, Asterisk calls `to`: `{ result: 'ok', text }` |
+| `answer`           | `{ call?, extension?, dtmf, hangupAfter? }` | Asterisk takes a ringing call over, sends `dtmf` to the caller and hangs up after `hangupAfter` s (default 3): `{ result: 'ok', call }` |
+| `transfer`         | `{ call?, extension?, to }` | the caller of a ringing or running call rings at `to` instead: `{ result: 'ok', call }` |
+| `hangup`           | `{ call?, extension? }` | ends a call for everybody in it: `{ result: 'ok', channels }` |
+
+Every message answers `{ error }` if something is wrong, an unknown one also with `commands`, the list of all
+messages.
+
+#### Calls from scripts and AI agents
+
+The messages `getCalls`, `call`, `answer`, `transfer` and `hangup` control calls without a phone, from a script or
+from an AI agent such as [ioBroker.pi-agent](https://github.com/ioBroker/ioBroker.pi-agent). The adapter declares
+`common.supportedMessages.help`, so the agent reads the description of all messages and states with `help` before it
+uses them. It cannot talk in a call itself, but it can:
+
+- tell who is calling (`getCalls`; the subscribers and groups by name with `getSubscribers`),
+- let a phone call somebody: `call { from: '101', to: '200' }` rings the kitchen (101); when somebody answers
+  there, Asterisk calls the door (200) and connects them,
+- open a door intercom that opens with a code during a call, without going to a phone: `answer { dtmf: '#' }`
+  answers the ringing call in Asterisk, sends the tones and hangs up,
+- hand a call to the phone where the user is (`transfer { to: '102' }`) or end it (`hangup`, `decline`).
+
+`answer`, `transfer` and `hangup` name the call with `call` (the `id` of `getCalls`) or `extension` (a subscriber or
+group in it), or with neither if only one call goes on. These messages need the rights `call` and `originate` of
+the manager interface and the dialplan context `iobroker-agent`, which the adapter writes into the configuration;
+after the update the container restarts once. In pi-agent, give the instance "Write allowed" for `send_to`, ideally
+with confirmation.
 
 ### Own extensions
 
@@ -382,7 +418,13 @@ erscheint). Das Widget **Telefon** meldet sich als WebRTC-Teilnehmer an und biet
 - **Kameras des frigate-Adapters** als Bildquelle, ausgewählt aus der Liste der Instanz: als Snapshots über
   ioBroker (funktioniert überall, auch über die Cloud) oder als Live-MJPEG-Stream seiner Web-Erweiterung (braucht
   eine Web-Instanz mit HTTPS, weil die Telefonseite HTTPS ist; sonst werden Snapshots verwendet),
-- eine Aktionstaste im Gespräch, z.B. „Tür öffnen“: sendet DTMF-Töne und/oder setzt einen Datenpunkt auf `true`.
+- einen wählbaren **Klingelton**: Triller (Standard), Doppelklingeln, Türgong (Ding-Dong), Glockenspiel, Piepton,
+  lautlos oder eine eigene Audiodatei (URL einer MP3-, WAV- oder OGG-Datei, in Schleife abgespielt - am besten eine
+  Datei auf demselben Server wie die Seite, z.B. ins vis-Projekt hochgeladen; lässt sie sich nicht abspielen,
+  klingelt der Triller). Widgets mit derselben Nebenstelle teilen sich ein Telefon und damit einen Klingelton,
+- eine Aktionstaste im Gespräch, z.B. „Tür öffnen“: sendet DTMF-Töne und/oder setzt einen Datenpunkt auf `true` -
+  auf Wunsch nach einigen Sekunden wieder auf `false`, z.B. für einen Türöffner, ohne Skript. Die Zeit läuft im
+  Browser: Wird die Seite vorher geschlossen, bleibt der Datenpunkt `true`.
 
 Einstellungen: Instanz, Nebenstelle und Passwort eines WebRTC-Teilnehmers. Das Passwort steht im vis-Projekt,
 deshalb für vis einen eigenen Teilnehmer anlegen. Mikrofon und Kamera funktionieren nur, wenn **vis über HTTPS**
@@ -426,7 +468,7 @@ die Aktionstaste und der Dialog eines Anrufs -, gezeichnet ohne MUI, in den Farb
   Telefons (eine breite Kachel auch das Kamerabild); ein Klick auf die Kachel öffnet das Telefon in einem Dialog der
   Oberfläche. Die Einstellung „Darstellung“ legt eines von beiden fest.
 - Einstellungen: die des Widgets - Instanz, Nebenstelle, Passwort, WebSocket-URL, Nummer, Wähltastatur, Dialog bei
-  Anrufen, Video und eigene Kamera, zwei Kameras, Aktionstaste. Die Kamera einer frigate-Instanz wird mit ihrem
+  Anrufen, Klingelton, Video und eigene Kamera, zwei Kameras, Aktionstaste. Die Kamera einer frigate-Instanz wird mit ihrem
   Namen eingetragen.
 - Das Passwort wird mit den Einstellungen des Elements gespeichert. Wie beim Widget muss die Seite über HTTPS
   geöffnet sein.
@@ -457,6 +499,27 @@ UniFi Protect: In UniFi OS einen API-Schlüssel anlegen (Einstellungen → Contr
 
 `pjsip_custom.conf` und `extensions_custom.conf` im Konfigurationsverzeichnis überschreibt der Adapter nie.
 Sie werden am Ende der erzeugten Dateien eingebunden.
+
+### Anrufe aus Skripten und für KI-Agenten
+
+Mit den Nachrichten `getCalls`, `call`, `answer`, `transfer` und `hangup` lassen sich Anrufe ohne Telefon steuern,
+aus einem Skript oder von einem KI-Agenten wie [ioBroker.pi-agent](https://github.com/ioBroker/ioBroker.pi-agent).
+Der Adapter meldet `common.supportedMessages.help`; der Agent liest mit `help` die Beschreibung aller Nachrichten
+und Datenpunkte, bevor er sie benutzt. Selbst sprechen kann er im Gespräch nicht, aber er kann:
+
+- sagen, wer anruft (`getCalls`; Teilnehmer und Gruppen mit Namen über `getSubscribers`),
+- ein Telefon jemanden anrufen lassen: `call { from: '101', to: '200' }` lässt die Küche (101) klingeln; nimmt
+  dort jemand ab, ruft Asterisk die Tür (200) an und verbindet beide,
+- eine Türsprechstelle, die sich im Gespräch mit einem Code öffnet, ohne Gang zum Telefon öffnen:
+  `answer { dtmf: '#' }` nimmt den klingelnden Anruf in Asterisk an, sendet die Töne und legt auf,
+- einen Anruf zum Telefon weiterreichen, an dem der Benutzer ist (`transfer { to: '102' }`), oder ihn beenden
+  (`hangup`, `decline`).
+
+`answer`, `transfer` und `hangup` benennen den Anruf mit `call` (die `id` aus `getCalls`) oder `extension` (ein
+Teilnehmer oder eine Gruppe darin), oder mit keinem von beiden, wenn nur ein Anruf läuft. Dafür braucht der Adapter
+die Rechte `call` und `originate` der Manager-Schnittstelle und den Dialplan-Kontext `iobroker-agent`, die er selbst
+in die Konfiguration schreibt; nach dem Update startet der Container einmal neu. In pi-agent die Instanz für
+`send_to` auf „Schreiben erlaubt“ setzen, am besten mit Bestätigung.
 
 ### Asterisk ohne Docker-Modus
 
@@ -491,6 +554,10 @@ SIP-Nachricht mit auf - nur zur Fehlersuche.
 ## Changelog
 ### **WORK IN PROGRESS**
 - (@GermanBluefox) Added the web component `iob-intercom-phone` (the phone) for Aura and other hosts (`common.webComponents`)
+- (@GermanBluefox) Selectable ringtone: several built-in tones, silent or an own audio file
+- (@GermanBluefox) The state of the action button can go back to `false` after a number of seconds
+- (@GermanBluefox) Message `help` for AI agents (e.g. ioBroker.pi-agent), declared in `common.supportedMessages.help`
+- (@GermanBluefox) Messages `getSubscribers`, `getCalls`, `call`, `answer` (with DTMF, e.g. to open the door), `transfer` and `hangup`: calls from scripts and AI agents
 
 ### 0.2.2 (2026-11-04)
 - (@GermanBluefox) Added second camera
