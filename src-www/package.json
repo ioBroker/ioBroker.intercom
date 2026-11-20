@@ -12,14 +12,14 @@
     "devDependencies": {
         "@emotion/react": "^11.14.0",
         "@emotion/styled": "^11.14.1",
-        "@iobroker/gui-components": "^10.3.9",
-        "@mui/icons-material": "^9.4.0",
-        "@mui/material": "^9.4.0",
+        "@iobroker/gui-components": "^10.4.7",
+        "@mui/icons-material": "^9.5.0",
+        "@mui/material": "^9.5.0",
         "@types/react": "^19.3.0",
         "@types/react-dom": "^19.3.0",
         "esbuild": "^0.28.2",
-        "jssip": "3.13.8",
-        "react": "^19.3.0",
-        "react-dom": "^19.3.0"
+        "jssip": "3.13.9",
+        "react": "^19.3.1",
+        "react-dom": "^19.3.1"
     }
 }
