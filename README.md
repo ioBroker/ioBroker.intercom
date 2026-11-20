@@ -562,7 +562,7 @@ SIP-Nachricht mit auf - nur zur Fehlersuche.
 -->
 
 ## Changelog
-### **WORK IN PROGRESS**
+### 0.4.1 (2026-11-20)
 - (@GermanBluefox) Camera pictures: a clear error for the empty answer of go2rtc (it cannot start the stream of the camera) instead of "not a picture (no content type)"; a camera that fails now and then warns the same error only once in 15 minutes
 
 ### 0.4.0 (2026-11-20)

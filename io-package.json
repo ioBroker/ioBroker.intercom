@@ -1,8 +1,21 @@
 {
   "common": {
     "name": "intercom",
-    "version": "0.4.0",
+    "version": "0.4.1",
     "news": {
+      "0.4.1": {
+        "en": "Camera pictures: a clear error for the empty answer of go2rtc (it cannot start the stream of the camera) instead of \"not a picture (no content type)\"; a camera that fails now and then warns the same error only once in 15 minutes",
+        "de": "Kamerabilder: Ein klarer Fehler für die leere Antwort go2rtc (der Kamerastream kann nicht gestartet werden) statt „kein Bild (kein Inhaltstyp)“; eine Kamera, die ab und zu ausfällt, warnt denselben Fehler nur einmal in 15 Minuten",
+        "ru": "Снимки с камеры: явная ошибка при пустом ответе go2rtc (не может запустить трансляцию камеры) вместо «не картинка (нет типа контента)»; камера, которая время от времени выходит из строя, предупреждает об одной и той же ошибке только раз в 15 минут",
+        "pt": "Imagens da câmera: um erro claro na resposta vazia de go2rtc (não pode iniciar o stream da câmera) em vez de “não é uma imagem (sem tipo de conteúdo)”; uma câmera que falha de vez em quando só avisa o mesmo erro em 15 minutos",
+        "nl": "Camerabeelden: een duidelijke fout voor het lege antwoord van go2rtc (het kan de stream van de camera niet starten) in plaats van „geen beeld (geen inhoudstype)”; een camera die af en toe uitvalt, waarschuwt slechts één keer in de 15 minuten voor dezelfde fout",
+        "fr": "Photos de la caméra : une erreur claire pour la réponse vide de go2rtc (impossible de démarrer le stream de la caméra) au lieu de « pas une photo (aucun type de contenu) » ; une caméra qui tombe en panne de temps en temps et ne signale la même erreur qu'une fois toutes les 15 minutes",
+        "it": "Foto della fotocamera: un chiaro errore per la risposta vuota di go2rtc (non può avviare lo streaming della videocamera) invece di «non una foto (nessun tipo di contenuto)»",
+        "es": "Imágenes de cámara: un error claro para la respuesta vacía de go2rtc (no puede iniciar la transmisión de la cámara) en lugar de «no es una imagen (sin tipo de contenido)»; una cámara que falla de vez en cuando solo advierte el mismo error una vez cada 15 minutos",
+        "pl": "Zdjęcia z aparatu: wyraźny błąd dla pustej odpowiedzi go2rc (nie może uruchomić strumienia aparatu) zamiast „nie jest obrazem (bez typu treści)”; aparat, który ulega awarii teraz, a następnie ostrzega ten sam błąd tylko raz na 15 minut",
+        "uk": "Фотографії камери: чітка помилка для порожньої відповіді go2rtc (він не може запустити потік камери) замість «не зображення (немає типу вмісту)»; камера, яка час від часу виходить з ладу попереджає про ту саму помилку лише раз на 15 хвилин",
+        "zh-cn": "相机照片：go2rtc 的空白答案（它无法启动摄像机直播）而不是 “不是照片（无内容类型）”，这是一个明显的错误；相机时不时出现故障，然后每 15 分钟只警告一次同样的错误"
+      },
       "0.4.0": {
         "en": "Added the short form of the web component manifests (tag, name, icon, size) to `common.webComponents`, so that hosts like Aura can list the components before the adapter is installed; the build writes it with `iob-web-components sync-io-package`\nSelectable ringtone: several built-in tones, silent or an own audio file\nThe state of the action button can go back to `false` after a number of seconds\nMessage `help` for AI agents (e.g. ioBroker.pi-agent), declared in `common.supportedMessages.help`\nMessages `getSubscribers`, `getCalls`, `call`, `answer` (with DTMF, e.g. to open the door), `transfer` and `hangup`: calls from scripts and AI agents; after the update the Asterisk container restarts once (new rights of the manager interface)",
         "de": "Die Kurzform der Manifeste der Web-Komponenten (Tag, Name, Symbol, Größe) steht in `common.webComponents`, damit Oberflächen wie Aura die Komponenten schon vor der Installation des Adapters anzeigen können; der Build schreibt sie mit `iob-web-components sync-io-package`\nKlingelton wählbar: mehrere eingebaute Töne, stumm oder eine eigene Audiodatei\nDer Datenpunkt der Aktionstaste kann nach einigen Sekunden wieder auf `false` gehen\nNachricht `help` für KI-Agenten (z.B. ioBroker.pi-agent), gemeldet in `common.supportedMessages.help`\nNachrichten `getSubscribers`, `getCalls`, `call`, `answer` (mit DTMF, z.B. um die Tür zu öffnen), `transfer` und `hangup`: Anrufe aus Skripten und von KI-Agenten; nach dem Update startet der Asterisk-Container einmal neu (neue Rechte der Manager-Schnittstelle)",
