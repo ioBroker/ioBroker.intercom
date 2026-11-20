@@ -1,6 +1,8 @@
 /**
  * Settings of a phone, the same for a widget of vis-2, a tile of the devices app and the background service.
  */
+import type { Ringtone, RingtoneKind } from '../../src-www/src/SipPhone';
+import { pressActionState, resetSeconds } from './actionState';
 import { watchStateOf } from './cameraWatch';
 import type { PhoneConfig } from './phoneRegistry';
 
@@ -22,6 +24,10 @@ export interface PhoneSettings {
     useCamera?: boolean | string;
     sendCamera?: boolean | string;
     popup?: boolean | string;
+    /** Ring tone of incoming calls; never saved: `trill` */
+    ringtone?: RingtoneKind;
+    /** Audio file of the ring tone `custom` */
+    ringtoneUrl?: string;
     /** Where the picture comes from: `url` (URL or state, the default) or `frigate` */
     cameraSource?: CameraSourceKind;
     cameraOid?: string;
@@ -44,6 +50,8 @@ export interface PhoneSettings {
     actionLabel?: string;
     actionDtmf?: string;
     actionOid?: string;
+    /** Seconds after which `actionOid` goes back to false; empty or 0: it stays true */
+    actionReset?: number | string;
 }
 
 /** The states of ioBroker, as the page around the phone offers them */
@@ -270,6 +278,12 @@ export async function resolvePhone(host: PhoneHost, settings: PhoneSettings): Pr
     };
 }
 
+/** The ring tone of the settings, for `SipPhone.setRingtone` */
+export function ringtoneOf(settings: PhoneSettings): Ringtone {
+    const kind = settings.ringtone || 'trill';
+    return kind === 'custom' ? { kind, url: String(settings.ringtoneUrl || '').trim() } : { kind };
+}
+
 /**
  * "Decline" ends the ringing on all devices of the subscriber, e.g. in the other browsers, not only here
  *
@@ -285,7 +299,7 @@ export function declineEverywhere(host: PhoneHost, settings: PhoneSettings): voi
     }
 }
 
-/** The action button during a call, e.g. "Open door" */
+/** The action button during a call, e.g. "Open door": DTMF tones and/or a state set to true, maybe only for a while */
 export function runAction(
     host: PhoneHost,
     phone: { sendDtmf(tones: string): void } | null,
@@ -296,6 +310,6 @@ export function runAction(
     }
     const id = stateId(settings.actionOid);
     if (id) {
-        void host.setState(id, true);
+        pressActionState(host, id, resetSeconds(settings.actionReset));
     }
 }

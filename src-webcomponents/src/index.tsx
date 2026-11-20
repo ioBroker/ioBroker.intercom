@@ -29,6 +29,7 @@ import {
     flag,
     getViewOptions,
     resolvePhone,
+    ringtoneOf,
     runAction,
     stateId,
     type PhoneHost,
@@ -140,7 +141,13 @@ class IntercomPhoneElement extends IobWebComponent<PhoneElementSettings> {
 
     protected override render(): void {
         this.#syncPhone();
+        this.#applyRingtone();
         this.#draw();
+    }
+
+    /** The ring tone makes no other phone: elements with the same extension share one, so one ring tone */
+    #applyRingtone(): void {
+        this.#handle?.phone.setRingtone(ringtoneOf(this.settings));
     }
 
     /** Asks the registry for the phone of the settings - again whenever they or the address of Asterisk change */
@@ -178,6 +185,7 @@ class IntercomPhoneElement extends IobWebComponent<PhoneElementSettings> {
                 const handle = phones.acquire(resolved.config, { service: false, popup: flag(settings.popup, true) });
                 this.#handle = handle;
                 this.#unsubscribeDialog = handle.subscribeDialog(this.#syncDialog);
+                this.#applyRingtone();
             }
             this.#draw();
             this.#syncDialog();

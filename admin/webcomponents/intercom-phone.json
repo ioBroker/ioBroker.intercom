@@ -334,6 +334,167 @@
                 },
                 "default": true
             },
+            "ringtone": {
+                "type": "select",
+                "label": {
+                    "en": "Ring tone",
+                    "de": "Klingelton",
+                    "ru": "Мелодия звонка",
+                    "pt": "Toque",
+                    "nl": "Beltoon",
+                    "fr": "Sonnerie",
+                    "it": "Suoneria",
+                    "es": "Tono de llamada",
+                    "pl": "Dzwonek",
+                    "uk": "Мелодія дзвінка",
+                    "zh-cn": "铃声"
+                },
+                "options": [
+                    {
+                        "value": "trill",
+                        "label": {
+                            "en": "Trill (default)",
+                            "de": "Triller (Standard)",
+                            "ru": "Трель (по умолчанию)",
+                            "pt": "Trinado (padrão)",
+                            "nl": "Triller (standaard)",
+                            "fr": "Trille (par défaut)",
+                            "it": "Trillo (predefinito)",
+                            "es": "Trino (predeterminado)",
+                            "pl": "Tryl (domyślny)",
+                            "uk": "Трель (за замовчуванням)",
+                            "zh-cn": "颤音（默认）"
+                        }
+                    },
+                    {
+                        "value": "double",
+                        "label": {
+                            "en": "Double ring",
+                            "de": "Doppelklingeln",
+                            "ru": "Двойной звонок",
+                            "pt": "Toque duplo",
+                            "nl": "Dubbele bel",
+                            "fr": "Double sonnerie",
+                            "it": "Doppio squillo",
+                            "es": "Doble timbre",
+                            "pl": "Podwójny dzwonek",
+                            "uk": "Подвійний дзвінок",
+                            "zh-cn": "双响铃"
+                        }
+                    },
+                    {
+                        "value": "gong",
+                        "label": {
+                            "en": "Door chime (ding-dong)",
+                            "de": "Türgong (Ding-Dong)",
+                            "ru": "Дверной гонг (динь-дон)",
+                            "pt": "Campainha (ding-dong)",
+                            "nl": "Deurgong (ding-dong)",
+                            "fr": "Carillon de porte (ding-dong)",
+                            "it": "Campanello (din-don)",
+                            "es": "Timbre de puerta (din-don)",
+                            "pl": "Gong drzwiowy (ding-dong)",
+                            "uk": "Дверний гонг (дінь-дон)",
+                            "zh-cn": "门铃（叮咚）"
+                        }
+                    },
+                    {
+                        "value": "chime",
+                        "label": {
+                            "en": "Chime",
+                            "de": "Glockenspiel",
+                            "ru": "Колокольчики",
+                            "pt": "Carrilhão",
+                            "nl": "Klokkenspel",
+                            "fr": "Carillon",
+                            "it": "Carillon",
+                            "es": "Carillón",
+                            "pl": "Kurant",
+                            "uk": "Дзвіночки",
+                            "zh-cn": "钟琴"
+                        }
+                    },
+                    {
+                        "value": "beep",
+                        "label": {
+                            "en": "Beep",
+                            "de": "Piepton",
+                            "ru": "Сигнал",
+                            "pt": "Bipe",
+                            "nl": "Piep",
+                            "fr": "Bip",
+                            "it": "Bip",
+                            "es": "Pitido",
+                            "pl": "Sygnał",
+                            "uk": "Сигнал",
+                            "zh-cn": "哔声"
+                        }
+                    },
+                    {
+                        "value": "none",
+                        "label": {
+                            "en": "Silent",
+                            "de": "Lautlos",
+                            "ru": "Без звука",
+                            "pt": "Silencioso",
+                            "nl": "Stil",
+                            "fr": "Silencieux",
+                            "it": "Silenzioso",
+                            "es": "Silencio",
+                            "pl": "Bez dźwięku",
+                            "uk": "Без звуку",
+                            "zh-cn": "静音"
+                        }
+                    },
+                    {
+                        "value": "custom",
+                        "label": {
+                            "en": "Own audio file",
+                            "de": "Eigene Audiodatei",
+                            "ru": "Свой аудиофайл",
+                            "pt": "Arquivo de áudio próprio",
+                            "nl": "Eigen audiobestand",
+                            "fr": "Fichier audio personnel",
+                            "it": "File audio proprio",
+                            "es": "Archivo de audio propio",
+                            "pl": "Własny plik audio",
+                            "uk": "Власний аудіофайл",
+                            "zh-cn": "自定义音频文件"
+                        }
+                    }
+                ],
+                "default": "trill"
+            },
+            "ringtoneUrl": {
+                "type": "text",
+                "label": {
+                    "en": "Audio file (URL)",
+                    "de": "Audiodatei (URL)",
+                    "ru": "Аудиофайл (URL)",
+                    "pt": "Arquivo de áudio (URL)",
+                    "nl": "Audiobestand (URL)",
+                    "fr": "Fichier audio (URL)",
+                    "it": "File audio (URL)",
+                    "es": "Archivo de audio (URL)",
+                    "pl": "Plik audio (URL)",
+                    "uk": "Аудіофайл (URL)",
+                    "zh-cn": "音频文件 (URL)"
+                },
+                "help": {
+                    "en": "URL of an MP3, WAV or OGG file, played in a loop while a call rings. Best a file on the same server as the page (e.g. uploaded into the vis project). If it cannot be played, the trill rings",
+                    "de": "URL einer MP3-, WAV- oder OGG-Datei, die beim Klingeln in Schleife abgespielt wird. Am besten eine Datei auf demselben Server wie die Seite (z.B. ins vis-Projekt hochgeladen). Lässt sie sich nicht abspielen, klingelt der Triller",
+                    "ru": "URL файла MP3, WAV или OGG, который проигрывается по кругу во время звонка. Лучше всего файл на том же сервере, что и страница (например, загруженный в проект vis). Если его не удаётся воспроизвести, звучит трель",
+                    "pt": "URL de um arquivo MP3, WAV ou OGG, tocado em loop enquanto uma chamada toca. De preferência um arquivo no mesmo servidor da página (por exemplo, enviado para o projeto vis). Se não puder ser tocado, toca o trinado",
+                    "nl": "URL van een MP3-, WAV- of OGG-bestand dat in een lus wordt afgespeeld zolang een oproep overgaat. Het beste een bestand op dezelfde server als de pagina (bijv. geüpload in het vis-project). Kan het niet worden afgespeeld, dan klinkt de triller",
+                    "fr": "URL d'un fichier MP3, WAV ou OGG, joué en boucle pendant qu'un appel sonne. De préférence un fichier sur le même serveur que la page (par ex. téléversé dans le projet vis). S'il ne peut pas être lu, la trille sonne",
+                    "it": "URL di un file MP3, WAV o OGG, riprodotto in loop mentre squilla una chiamata. Meglio un file sullo stesso server della pagina (ad es. caricato nel progetto vis). Se non può essere riprodotto, suona il trillo",
+                    "es": "URL de un archivo MP3, WAV u OGG que se reproduce en bucle mientras suena una llamada. Mejor un archivo en el mismo servidor que la página (p. ej. subido al proyecto vis). Si no se puede reproducir, suena el trino",
+                    "pl": "URL pliku MP3, WAV lub OGG odtwarzanego w pętli, gdy dzwoni połączenie. Najlepiej plik na tym samym serwerze co strona (np. przesłany do projektu vis). Jeśli nie da się go odtworzyć, dzwoni tryl",
+                    "uk": "URL файлу MP3, WAV або OGG, який відтворюється по колу під час дзвінка. Найкраще файл на тому ж сервері, що й сторінка (наприклад, завантажений у проєкт vis). Якщо його не вдається відтворити, звучить трель",
+                    "zh-cn": "MP3、WAV 或 OGG 文件的 URL，来电响铃时循环播放。最好是与页面位于同一服务器上的文件（例如上传到 vis 项目中）。无法播放时将响起颤音"
+                },
+                "hidden": "data.ringtone !== 'custom'"
+            },
             "video": {
                 "type": "checkbox",
                 "label": {
@@ -1046,6 +1207,40 @@
                     "zh-cn": "将数据点设为 true"
                 },
                 "hidden": "!data.actionLabel"
+            },
+            "actionReset": {
+                "type": "number",
+                "label": {
+                    "en": "Reset to false after (seconds)",
+                    "de": "Nach (Sekunden) wieder auf false setzen",
+                    "ru": "Вернуть в false через (секунды)",
+                    "pt": "Voltar para false após (segundos)",
+                    "nl": "Na (seconden) terug naar false",
+                    "fr": "Revenir à false après (secondes)",
+                    "it": "Torna a false dopo (secondi)",
+                    "es": "Volver a false tras (segundos)",
+                    "pl": "Z powrotem na false po (sekundach)",
+                    "uk": "Повернути в false через (секунди)",
+                    "zh-cn": "在（秒）后重置为 false"
+                },
+                "help": {
+                    "en": "0: the state stays true. Otherwise it is set back to false after this time, e.g. for a door opener. The time runs in the browser: closed earlier, the state stays true",
+                    "de": "0: Der Datenpunkt bleibt true. Sonst wird er nach dieser Zeit wieder auf false gesetzt, z.B. für einen Türöffner. Die Zeit läuft im Browser: Wird er vorher geschlossen, bleibt der Datenpunkt true",
+                    "ru": "0: состояние остаётся true. Иначе через это время оно снова устанавливается в false, например для электрозамка двери. Время отсчитывается в браузере: если закрыть его раньше, состояние останется true",
+                    "pt": "0: o estado permanece true. Caso contrário, volta para false após este tempo, por exemplo para um abridor de porta. O tempo corre no navegador: se for fechado antes, o estado permanece true",
+                    "nl": "0: de status blijft true. Anders wordt hij na deze tijd weer op false gezet, bijv. voor een deuropener. De tijd loopt in de browser: wordt die eerder gesloten, dan blijft de status true",
+                    "fr": "0 : l'état reste à true. Sinon il repasse à false après ce délai, par ex. pour une gâche électrique. Le délai court dans le navigateur : s'il est fermé avant, l'état reste à true",
+                    "it": "0: lo stato resta true. Altrimenti torna a false dopo questo tempo, ad es. per un apriporta. Il tempo scorre nel browser: se viene chiuso prima, lo stato resta true",
+                    "es": "0: el estado permanece en true. Si no, vuelve a false tras este tiempo, p. ej. para un abrepuertas. El tiempo corre en el navegador: si se cierra antes, el estado permanece en true",
+                    "pl": "0: stan pozostaje true. W przeciwnym razie po tym czasie jest ponownie ustawiany na false, np. dla elektrozaczepu. Czas jest liczony w przeglądarce: jeśli zostanie zamknięta wcześniej, stan pozostanie true",
+                    "uk": "0: стан залишається true. Інакше через цей час він знову встановлюється в false, наприклад для електрозамка дверей. Час відраховується в браузері: якщо закрити його раніше, стан залишиться true",
+                    "zh-cn": "0：状态保持为 true。否则在此时间后重新设为 false，例如用于开门器。计时在浏览器中进行：若提前关闭浏览器，状态将保持为 true"
+                },
+                "min": 0,
+                "max": 3600,
+                "step": 0.5,
+                "default": 0,
+                "hidden": "!data.actionLabel || !data.actionOid"
             }
         }
     }

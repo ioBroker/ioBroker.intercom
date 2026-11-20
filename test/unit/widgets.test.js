@@ -67,7 +67,9 @@ describe('plugin of the devices app', () => {
 });
 
 describe('web component', () => {
-    const files = ioPackage.common.webComponents || [];
+    // the short form of every manifest (iob-web-components sync-io-package), or only its path
+    const entries = ioPackage.common.webComponents || [];
+    const files = entries.map(entry => (typeof entry === 'string' ? entry : entry.manifest));
 
     it('the built manifest and module are where the hosts load them from', () => {
         assert.deepEqual(files, ['webcomponents/intercom-phone.json']);
@@ -76,6 +78,14 @@ describe('web component', () => {
         assert.ok(existsSync(join(root, 'admin', 'webcomponents', manifest.module)), `${manifest.module} missing`);
         assert.ok(existsSync(join(root, 'admin', 'webcomponents', manifest.icon)), manifest.icon);
         assert.ok(pack.files.includes('admin/'));
+    });
+
+    it('the short form in io-package.json is the one of the built manifest', () => {
+        const manifest = JSON.parse(readFileSync(join(root, 'admin', files[0]), 'utf8'));
+        const [entry] = entries;
+        assert.equal(entry.tag, manifest.tag);
+        assert.deepEqual(entry.name, manifest.name);
+        assert.deepEqual(entry.size, manifest.size);
     });
 
     it('has the name of the devices tile, so vis-2 and devices offer their own widget instead', () => {

@@ -83,6 +83,8 @@ export type PhoneElementSettings = {
     video?: boolean;
     useCamera?: boolean;
     sendCamera?: boolean;
+    ringtone?: 'trill' | 'double' | 'gong' | 'chime' | 'beep' | 'none' | 'custom';
+    ringtoneUrl?: string;
     cameraSource?: 'url' | 'frigate';
     cameraUrl?: string;
     cameraOid?: string;
@@ -101,4 +103,5 @@ export type PhoneElementSettings = {
     actionLabel?: string;
     actionDtmf?: string;
     actionOid?: string;
+    actionReset?: number;
 };
