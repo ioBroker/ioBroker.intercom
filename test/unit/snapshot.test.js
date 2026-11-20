@@ -2,7 +2,7 @@ const assert = require('node:assert/strict');
 const { createHash } = require('node:crypto');
 const http = require('node:http');
 const { describeUrl, digestAuthorization, fetchSnapshot, parseDigestChallenge } = require('../../build/lib/snapshot');
-const { CameraPoller, cameraId, parseWatch, validateCameras } = require('../../build/lib/cameras');
+const { CameraPoller, ErrorThrottle, cameraId, parseWatch, validateCameras } = require('../../build/lib/cameras');
 
 const JPEG = Buffer.from([0xff, 0xd8, 0xff, 0xe0, 1, 2, 3, 4]);
 const md5 = text => createHash('md5').update(text).digest('hex');
@@ -53,6 +53,11 @@ function startCamera() {
             case '/page':
                 res.writeHead(200, { 'Content-Type': 'text/html' });
                 return res.end('<html></html>');
+            case '/api/frame.jpeg?src=kamera1':
+                // go2rtc when it cannot start the stream: 200, no body, no content type
+                res.removeHeader('Date');
+                res.writeHead(200, { 'Content-Length': '0' });
+                return res.end();
             default:
                 res.writeHead(404);
                 return res.end();
@@ -99,6 +104,13 @@ describe('Snapshot proxy', () => {
         assert.deepEqual(r.data, JPEG);
         await assert.rejects(fetchSnapshot({ url: `${cam.base}/page`, auth: 'none' }), /not a picture \(text\/html\)/);
         await assert.rejects(fetchSnapshot({ url: 'ftp://x/y.jpg', auth: 'none' }), /only http and https/);
+    });
+
+    it('names the empty answer of go2rtc, which comes when it cannot start the stream', async () => {
+        await assert.rejects(
+            fetchSnapshot({ url: `${cam.base}/api/frame.jpeg?src=kamera1`, auth: 'none' }),
+            /^Error: empty answer without a picture \(go2rtc: the stream did not start/,
+        );
     });
 
     it('never writes credentials or tokens into the log text', () => {
@@ -196,6 +208,21 @@ describe('Cameras', () => {
         poller.stop();
         assert.deepEqual(errors, ['', 'HTTP 401', '']);
         assert.equal(images.length, 2);
+    });
+
+    it('warns the same error of a camera that fails now and then once per period', () => {
+        const log = new ErrorThrottle(60_000);
+        assert.equal(log.warn('kamera1', 'empty answer', 0), true);
+        // it worked in between and fails again: the same error is not warned again
+        assert.equal(log.warn('kamera1', 'empty answer', 20_000), false);
+        assert.equal(log.warn('kamera1', 'empty answer', 40_000), false);
+        // another camera and another error are warned at once
+        assert.equal(log.warn('kamera2', 'empty answer', 40_000), true);
+        assert.equal(log.warn('kamera1', 'HTTP 401', 45_000), true);
+        assert.equal(log.warn('kamera1', 'empty answer', 50_000), true);
+        // after the period again
+        assert.equal(log.warn('kamera1', 'empty answer', 100_000), false);
+        assert.equal(log.warn('kamera1', 'empty answer', 110_000), true);
     });
 
     it('parses what the browsers write into watch', () => {

@@ -1031,6 +1031,7 @@ class IntercomAdapter extends utils.Adapter {
             return;
         }
         const describe = (camera) => `Camera ${camera.id} (${(0, snapshot_1.describeUrl)(camera.url)})`;
+        const errorLog = new cameras_1.ErrorThrottle();
         this.cameraPoller = new cameras_1.CameraPoller({
             cameras,
             fetch: camera => (0, snapshot_1.fetchSnapshot)({
@@ -1042,8 +1043,11 @@ class IntercomAdapter extends utils.Adapter {
             }),
             onImage: (camera, dataUrl) => void this.setState(`cameras.${camera.id}.image`, dataUrl, true),
             onError: (camera, error) => {
-                if (error) {
-                    this.log.warn(`${describe(camera)}: ${error}`);
+                if (error && errorLog.warn(camera.id, error)) {
+                    this.log.warn(`${describe(camera)}: ${error} (the same error again within ${cameras_1.ERROR_LOG_PERIOD / 60_000} minutes: only in the debug log)`);
+                }
+                else if (error) {
+                    this.log.debug(`${describe(camera)}: ${error}`);
                 }
                 else {
                     this.log.debug(`${describe(camera)}: OK`);

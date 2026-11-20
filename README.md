@@ -293,6 +293,11 @@ dropped (never errors) and counted in a warning.
   or the address is not in the certificate.
 - **Call connects but no audio**: UDP `10000-20000` is blocked by a firewall, or the network of the clients is
   part of "Networks excluded from ICE".
+- **Camera: "empty answer without a picture"** with a go2rtc URL (`:1984/api/frame.jpeg?src=...`, also the go2rtc
+  of Frigate): go2rtc could not start the stream of the camera, the reason is in the log of go2rtc. For every
+  picture go2rtc opens a new connection to the camera; a camera that allows only a few (Frigate or a recorder holds
+  some) may refuse some of them. Keep the stream open with `preload:` in the go2rtc configuration (from go2rtc
+  1.9.11), or use the snapshot URL of the camera itself.
 
 ### Development
 
@@ -545,6 +550,11 @@ SIP-Nachricht mit auf - nur zur Fehlersuche.
   akzeptiert, oder die Adresse steht nicht im Zertifikat.
 - **Verbindung steht, aber kein Ton**: UDP `10000-20000` wird von einer Firewall blockiert, oder das Netz der
   Clients steht unter „Von ICE ausgeschlossene Netze“.
+- **Kamera: „empty answer without a picture“** bei einer go2rtc-Adresse (`:1984/api/frame.jpeg?src=...`, auch das
+  go2rtc von Frigate): go2rtc konnte den Stream der Kamera nicht starten, der Grund steht im Log von go2rtc. Für
+  jedes Bild öffnet go2rtc eine neue Verbindung zur Kamera; eine Kamera, die nur wenige erlaubt (Frigate oder ein
+  Rekorder belegt schon welche), lehnt dann zeitweise welche ab. Den Stream mit `preload:` in der go2rtc-Konfiguration
+  offen halten (ab go2rtc 1.9.11) oder die Snapshot-Adresse der Kamera selbst verwenden.
 
 <!--
     Placeholder for the next version (at the beginning of the line):
@@ -552,6 +562,9 @@ SIP-Nachricht mit auf - nur zur Fehlersuche.
 -->
 
 ## Changelog
+### **WORK IN PROGRESS**
+- (@GermanBluefox) Camera pictures: a clear error for the empty answer of go2rtc (it cannot start the stream of the camera) instead of "not a picture (no content type)"; a camera that fails now and then warns the same error only once in 15 minutes
+
 ### 0.4.0 (2026-11-20)
 - (@GermanBluefox) Added the short form of the web component manifests (tag, name, icon, size) to `common.webComponents`, so that hosts like Aura can list the components before the adapter is installed; the build writes it with `iob-web-components sync-io-package`
 - (@GermanBluefox) Selectable ringtone: several built-in tones, silent or an own audio file

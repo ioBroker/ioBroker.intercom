@@ -51,6 +51,38 @@ export function parseWatch(value: unknown): { viewer: string; watching: boolean 
     return /^[\w-]{1,64}$/.test(viewer) ? { viewer, watching } : null;
 }
 
+/** The same error of a camera is written as warning at most once in this time */
+export const ERROR_LOG_PERIOD = 15 * 60_000;
+
+/**
+ * A camera that fails every now and then (it works in between) would write the same warning with every failure:
+ * the same error of a camera is warned once per period, the repetitions go into the debug log.
+ */
+export class ErrorThrottle {
+    readonly #period: number;
+    readonly #warned = new Map<string, { error: string; time: number }>();
+
+    constructor(period = ERROR_LOG_PERIOD) {
+        this.#period = period;
+    }
+
+    /**
+     * Whether to write the error as warning
+     *
+     * @param cameraId ID of the camera
+     * @param error the error text
+     * @param now ms, for the tests
+     */
+    warn(cameraId: string, error: string, now = Date.now()): boolean {
+        const last = this.#warned.get(cameraId);
+        if (last && last.error === error && now - last.time < this.#period) {
+            return false;
+        }
+        this.#warned.set(cameraId, { error, time: now });
+        return true;
+    }
+}
+
 /** Object ID part of a camera name: `Haustür 1` → `haust_r_1` */
 export function cameraId(name: string): string {
     return String(name ?? '')

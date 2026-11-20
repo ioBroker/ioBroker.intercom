@@ -5,7 +5,14 @@ import * as utils from '@iobroker/adapter-core';
 
 import { AmiClient, type AmiMessage, type AmiResponse } from './lib/ami';
 import { callInfo, findCall, isValidDtmf, listCalls, type Call } from './lib/calls';
-import { CameraPoller, parseWatch, validateCameras, type CameraSettings } from './lib/cameras';
+import {
+    CameraPoller,
+    ERROR_LOG_PERIOD,
+    ErrorThrottle,
+    parseWatch,
+    validateCameras,
+    type CameraSettings,
+} from './lib/cameras';
 import {
     generateCertificate,
     getFingerprint,
@@ -1122,6 +1129,7 @@ export class IntercomAdapter extends utils.Adapter {
         }
 
         const describe = (camera: CameraSettings): string => `Camera ${camera.id} (${describeUrl(camera.url)})`;
+        const errorLog = new ErrorThrottle();
         this.cameraPoller = new CameraPoller({
             cameras,
             fetch: camera =>
@@ -1134,8 +1142,12 @@ export class IntercomAdapter extends utils.Adapter {
                 }),
             onImage: (camera, dataUrl) => void this.setState(`cameras.${camera.id}.image`, dataUrl, true),
             onError: (camera, error) => {
-                if (error) {
-                    this.log.warn(`${describe(camera)}: ${error}`);
+                if (error && errorLog.warn(camera.id, error)) {
+                    this.log.warn(
+                        `${describe(camera)}: ${error} (the same error again within ${ERROR_LOG_PERIOD / 60_000} minutes: only in the debug log)`,
+                    );
+                } else if (error) {
+                    this.log.debug(`${describe(camera)}: ${error}`);
                 } else {
                     this.log.debug(`${describe(camera)}: OK`);
                 }

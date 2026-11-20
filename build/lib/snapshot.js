@@ -187,15 +187,16 @@ async function fetchSnapshot(req) {
     if (res.status !== 200) {
         throw new Error(`HTTP ${res.status}`);
     }
+    if (!res.body.length) {
+        // go2rtc (also the one in Frigate) answers /api/frame.jpeg so if it cannot start the stream of the camera
+        throw new Error(`empty answer without a picture (go2rtc: the stream did not start, the reason is in its log)`);
+    }
     const contentType = String(res.headers['content-type'] || '')
         .split(';')[0]
         .trim()
         .toLowerCase();
     if (!contentType.startsWith('image/')) {
         throw new Error(`not a picture (${contentType || 'no content type'})`);
-    }
-    if (!res.body.length) {
-        throw new Error('empty picture');
     }
     return { data: res.body, contentType };
 }
