@@ -3,15 +3,18 @@
  * with `send_to`) and for script authors. Keep it in sync with `onMessage` in main.ts and the README.
  */
 
-/** The commands `onMessage` answers; `write`: the command does something beyond returning information */
-export const COMMANDS: { command: string; write: boolean }[] = [
+/**
+ * The commands `onMessage` answers; `write`: the command does something beyond returning information; `standard`: the
+ * command of the shared catalog of ioBroker adapters it follows (family.command)
+ */
+export const COMMANDS: { command: string; write: boolean; standard?: string }[] = [
     { command: 'help', write: false },
     { command: 'getSubscribers', write: false },
-    { command: 'getCalls', write: false },
-    { command: 'call', write: true },
+    { command: 'getCalls', write: false, standard: 'phone.getCalls' },
+    { command: 'call', write: true, standard: 'phone.call' },
     { command: 'answer', write: true },
     { command: 'transfer', write: true },
-    { command: 'hangup', write: true },
+    { command: 'hangup', write: true, standard: 'phone.hangup' },
     { command: 'decline', write: true },
     { command: 'reload', write: true },
     { command: 'getSubscriberStatus', write: false },
@@ -37,6 +40,12 @@ The agent has no voice in a call: it cannot talk with a caller or listen. It can
 somebody, take a ringing call over to send tones (e.g. the code that opens the door), hand a call to another phone
 and end calls.
 
+call, hangup and getCalls are the commands phone.call, phone.hangup and phone.getCalls of the shared catalog of
+ioBroker adapters (marked with "standard" in the list of commands). Errors answer {error, reason?, candidates?};
+reason: NOT_FOUND (unknown number or name), AMBIGUOUS (a name fits several), NOT_CONNECTED (no device of it is
+connected), NOT_SUPPORTED ("text"), BAD_REQUEST (a parameter is missing or wrong); candidates = the names to choose
+from.
+
 Commands (sendTo ${instance}):
 - getSubscribers: {subscribers: [{extension, name, kind, registered, devices, state}], groups: [{extension, name,
   members}], echoTest}. registered = at least one device is connected, devices = how many. state: idle, ringing,
@@ -46,11 +55,15 @@ Commands (sendTo ${instance}):
   "" after answer). state ringing = devices ring, nobody answered; talking = answered. ringing = the subscribers
   whose devices ring now, connected = the subscribers with an answered line, the caller included. seconds = since
   the call started. Empty list: nothing going on.
-- call {from, to}: lets the phone "from" call "to". All devices of the subscriber "from" ring (up to 30 s); when
-  somebody answers there, Asterisk calls "to" (a subscriber, a group or 600) and connects them. Use it for "call the
-  door from the kitchen" or "connect me with X": "from" is the phone of the user, "to" the one to reach. The answer
-  {result: "ok", text} only means that "from" rings now, not that anybody answered. Error if "from" has no connected
-  device.
+- call {to, from?, room?}: lets the phone "from" call "to". All devices of the subscriber "from" ring (up to 30 s);
+  when somebody answers there, Asterisk calls "to" (a subscriber, a group or 600) and connects them. Use it for "call
+  the door from the kitchen" or "connect me with X": "from" is the phone of the user, "to" the one to reach. Both are
+  an extension or a name of getSubscribers (without case; an exact name wins over a part of one). Without "from":
+  the only other subscriber with a connected device, else the connected one in "room" (the room of the request: an
+  enum ID such as enum.rooms.kitchen or a room name; a subscriber counts if it is in the room enum or has the name
+  of the room), else the error BAD_REQUEST with the candidates. The answer {ok: true, result: "ok", from, to, text}
+  (from and to = the extensions) only means that "from" rings now, not that anybody answered. Error if "from" or
+  "to" has no connected device. "text" of phone.call: NOT_SUPPORTED (nobody can speak it in the call).
 - answer {call?, extension?, dtmf, hangupAfter?}: Asterisk takes a ringing call over itself: the devices stop
   ringing, the caller is answered, after 1 s it gets the tones "dtmf" (digits, *, #, A-D; w = a pause of half a
   second), and after hangupAfter seconds (default 3, 1-60) Asterisk hangs up. This is how a door intercom that
@@ -83,6 +96,7 @@ How to talk to the user:
 - "Answer" with nothing to send: the agent cannot talk, so offer transfer to the phone of the user instead, or call
   with "from" = the phone of the user. Which phone is the user's: ask if it is not clear from the conversation.
 - call, answer, transfer, hangup and decline ring real phones, end calls or open doors: only on the user's request.
+  call AMBIGUOUS or BAD_REQUEST: ask the user which of the candidates is meant, do not pick one.
   Open a door (answer with dtmf) only when the user asks for it and only with the code the user or the
   instructions gave; never guess a code.
 - A browser phone rings only while a page with it is open (registered true); a subscriber without a connected

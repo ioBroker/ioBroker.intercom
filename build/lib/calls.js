@@ -1,10 +1,14 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.CallError = void 0;
 exports.parseDuration = parseDuration;
 exports.listCalls = listCalls;
 exports.callInfo = callInfo;
 exports.findCall = findCall;
 exports.isValidDtmf = isValidDtmf;
+exports.resolveNumber = resolveNumber;
+exports.defaultCaller = defaultCaller;
+exports.callErrorAnswer = callErrorAnswer;
 const configGenerator_1 = require("./configGenerator");
 const DEVICE = /^PJSIP\/([0-9]{2,6})-/i;
 const LOCAL = /^Local\/([0-9]{2,6})@/i;
@@ -138,5 +142,107 @@ function findCall(calls, query, ringingOnly) {
 /** DTMF for `answer`: digits, `*`, `#`, A-D and `w` (half a second pause) */
 function isValidDtmf(dtmf) {
     return /^[0-9*#A-Dw]{1,32}$/.test(dtmf);
+}
+function folded(text) {
+    return text.normalize('NFC').toLocaleLowerCase().trim();
+}
+/**
+ * `to` or `from` of the message `call`: an extension, or the name of a subscriber or group compared without case. An
+ * exact name wins over a partial one (one name contains the other).
+ *
+ * @param value what the message gives
+ * @param numbers the numbers it may be
+ */
+function resolveNumber(value, numbers) {
+    const text = value.trim();
+    if (numbers.some(n => n.extension === text)) {
+        return { extension: text };
+    }
+    const wanted = folded(text);
+    const named = numbers.filter(n => n.name);
+    if (!wanted) {
+        return { error: 'No number or name given', reason: 'BAD_REQUEST', candidates: named.map(n => n.name) };
+    }
+    let found = named.filter(n => folded(n.name) === wanted);
+    if (!found.length) {
+        found = named.filter(n => {
+            const name = folded(n.name);
+            return name.includes(wanted) || (name.length >= 3 && wanted.includes(name));
+        });
+    }
+    if (found.length === 1) {
+        return { extension: found[0].extension };
+    }
+    if (found.length > 1) {
+        return {
+            error: `"${text}" fits ${found.map(n => `${n.name} (${n.extension})`).join(', ')}: name one of them`,
+            reason: 'AMBIGUOUS',
+            candidates: found.map(n => n.name),
+        };
+    }
+    return { error: `Nobody is called "${text}"`, reason: 'NOT_FOUND', candidates: named.map(n => n.name) };
+}
+/**
+ * The phone that rings first when the message `call` gives no `from`: the only subscriber with a connected device,
+ * else the connected one in the room of the request (by the room enum or by its name).
+ *
+ * @param subscribers the subscribers with `registered` = a device is connected
+ * @param to the number called, never its own caller
+ * @param room the room of the request: extensions in its enum, and its names
+ * @param room.extensions the subscribers that are members of the room enum
+ * @param room.names the names of the room (all languages)
+ */
+function defaultCaller(subscribers, to, room) {
+    const connected = subscribers.filter(s => s.registered && s.extension !== to);
+    if (connected.length === 1) {
+        return { extension: connected[0].extension };
+    }
+    if (!connected.length) {
+        return {
+            error: 'No other phone of the house has a connected device that could ring first',
+            reason: 'NOT_CONNECTED',
+            candidates: [],
+        };
+    }
+    if (room) {
+        const names = room.names.map(folded).filter(Boolean);
+        const inRoom = connected.filter(s => room.extensions.includes(s.extension) || (s.name && names.includes(folded(s.name))));
+        if (inRoom.length === 1) {
+            return { extension: inRoom[0].extension };
+        }
+    }
+    return {
+        error: `"from" is needed: the phone that rings first and then calls "to" (one of ${connected.map(s => s.name || s.extension).join(', ')})`,
+        reason: 'BAD_REQUEST',
+        candidates: connected.map(s => s.name || s.extension),
+    };
+}
+/** An error of a call command with the code of the shared catalog, answered as `{error, reason, candidates?}` */
+class CallError extends Error {
+    reason;
+    candidates;
+    constructor(message, reason, candidates) {
+        super(message);
+        this.reason = reason;
+        this.candidates = candidates;
+    }
+}
+exports.CallError = CallError;
+/**
+ * The answer to a failed call command: `{error}`, with `reason` and `candidates` where known
+ *
+ * @param e what was thrown
+ */
+function callErrorAnswer(e) {
+    const answer = {
+        error: e?.message || String(e),
+    };
+    if (e instanceof CallError) {
+        answer.reason = e.reason;
+        if (e.candidates) {
+            answer.candidates = e.candidates;
+        }
+    }
+    return answer;
 }
 //# sourceMappingURL=calls.js.map

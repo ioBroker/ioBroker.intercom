@@ -585,7 +585,7 @@ class IntercomAdapter extends utils.Adapter {
                     reply(await this.handleCallCommand(obj.command, message, obj.from));
                 }
                 catch (e) {
-                    reply({ error: e.message });
+                    reply((0, calls_1.callErrorAnswer)(e));
                 }
                 break;
             case 'generateCert': {
@@ -723,6 +723,49 @@ class IntercomAdapter extends utils.Adapter {
         };
     }
     /**
+     * The extension `resolveNumber` or `defaultCaller` found, or their error with the code of the shared catalog
+     *
+     * @param resolved what they found
+     * @param unknown the text for an unknown number: the one the message `call` had before names were accepted
+     */
+    numberOf(resolved, unknown) {
+        if ('extension' in resolved) {
+            return resolved.extension;
+        }
+        const text = unknown && (resolved.reason === 'NOT_FOUND' || resolved.reason === 'BAD_REQUEST');
+        throw new calls_1.CallError(text ? unknown : resolved.error, resolved.reason, resolved.candidates);
+    }
+    /**
+     * The room of a request, for the phone that rings first with `call` without "from": the subscribers in its enum
+     * and its names
+     *
+     * @param room an enum ID (enum.rooms.kitchen) or the name of a room
+     */
+    async roomOf(room) {
+        if (!room) {
+            return undefined;
+        }
+        const texts = (name) => typeof name === 'string' ? [name] : Object.values(name || {}).filter(n => typeof n === 'string');
+        const names = [room];
+        let members = [];
+        try {
+            const rooms = await this.getForeignObjectsAsync('enum.rooms.*', 'enum');
+            const wanted = room.toLocaleLowerCase();
+            const found = rooms[room] ||
+                Object.values(rooms).find(r => texts(r?.common?.name).some(n => n.toLocaleLowerCase() === wanted));
+            if (found) {
+                names.push(...texts(found.common?.name));
+                members = found.common?.members || [];
+            }
+        }
+        catch {
+            // without the enums: by the name only
+        }
+        const prefix = `${this.namespace}.subscribers.`;
+        const extensions = members.filter(id => id.startsWith(prefix)).map(id => id.slice(prefix.length).split('.')[0]);
+        return { extensions, names };
+    }
+    /**
      * A number with a device that can ring: a registered subscriber, a group with one, the echo test. Throws if not.
      *
      * @param number subscriber, group or echo test
@@ -731,12 +774,12 @@ class IntercomAdapter extends utils.Adapter {
     checkReachable(number, role) {
         const names = this.numberNames();
         if (!names[number]) {
-            throw new Error(`"${role}" must be a subscriber, a group or the echo test (getSubscribers), not "${number}"`);
+            throw new calls_1.CallError(`"${role}" must be a subscriber, a group or the echo test (getSubscribers), not "${number}"`, 'NOT_FOUND', Object.values(names));
         }
         const group = this.ringGroups.find(g => g.extension === number);
         const members = group ? group.members : this.subscribers.some(s => s.extension === number) ? [number] : [];
         if (members.length && !members.some(ext => this.contacts.summary(ext).registered)) {
-            throw new Error(`No device of ${names[number]} (${number}) is connected`);
+            throw new calls_1.CallError(`No device of ${names[number]} (${number}) is connected`, 'NOT_CONNECTED');
         }
     }
     /** An AMI action that must succeed */
@@ -766,18 +809,27 @@ class IntercomAdapter extends utils.Adapter {
             return { calls: (await this.getCalls()).map(calls_1.callInfo) };
         }
         if (command === 'call') {
-            // the phone "from" rings; when somebody answers there, Asterisk calls "to"
-            const from = textOf(message.from);
-            const to = textOf(message.to);
-            if (!this.subscribers.some(s => s.extension === from)) {
-                throw new Error(`"from" must be a subscriber (getSubscribers), not "${from}"`);
+            // the phone "from" rings; when somebody answers there, Asterisk calls "to".
+            // phone.call of the shared catalog: both also as names, "from" may be left out
+            if (textOf(message.text)) {
+                // a call that should say something must not ring silently
+                throw new calls_1.CallError('"text" cannot be spoken: nobody talks in a call made by "call"', 'NOT_SUPPORTED');
             }
+            const names = this.numberNames();
+            const to = this.numberOf((0, calls_1.resolveNumber)(textOf(message.to), Object.entries(names).map(([extension, name]) => ({ extension, name }))), `"to" must be a subscriber, a group or the echo test (getSubscribers), not "${textOf(message.to)}"`);
+            const fromText = textOf(message.from);
+            const from = fromText
+                ? this.numberOf((0, calls_1.resolveNumber)(fromText, this.subscribers), `"from" must be a subscriber (getSubscribers), not "${fromText}"`)
+                : this.numberOf((0, calls_1.defaultCaller)(this.subscribers.map(s => ({
+                    extension: s.extension,
+                    name: s.name,
+                    registered: this.contacts.summary(s.extension).registered,
+                })), to, await this.roomOf(textOf(message.room))));
             if (from === to) {
-                throw new Error('"from" and "to" are the same');
+                throw new calls_1.CallError('"from" and "to" are the same', 'BAD_REQUEST');
             }
             this.checkReachable(from, 'from');
             this.checkReachable(to, 'to');
-            const names = this.numberNames();
             await this.amiAction({
                 Action: 'Originate',
                 // the dialplan of the subscriber: all its devices ring
@@ -792,7 +844,10 @@ class IntercomAdapter extends utils.Adapter {
             });
             this.log.info(`${sender}: call from ${from} to ${to}`);
             return {
+                ok: true,
                 result: 'ok',
+                from,
+                to,
                 text: `${names[from]} (${from}) rings; when somebody answers there, ${names[to]} (${to}) is called`,
             };
         }

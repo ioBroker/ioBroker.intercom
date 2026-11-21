@@ -4,7 +4,18 @@ import { join } from 'node:path';
 import * as utils from '@iobroker/adapter-core';
 
 import { AmiClient, type AmiMessage, type AmiResponse } from './lib/ami';
-import { callInfo, findCall, isValidDtmf, listCalls, type Call } from './lib/calls';
+import {
+    CallError,
+    callErrorAnswer,
+    callInfo,
+    defaultCaller,
+    findCall,
+    isValidDtmf,
+    listCalls,
+    resolveNumber,
+    type Call,
+    type ResolvedNumber,
+} from './lib/calls';
 import {
     CameraPoller,
     ERROR_LOG_PERIOD,
@@ -646,7 +657,7 @@ export class IntercomAdapter extends utils.Adapter {
                 try {
                     reply(await this.handleCallCommand(obj.command, message, obj.from));
                 } catch (e) {
-                    reply({ error: (e as Error).message });
+                    reply(callErrorAnswer(e));
                 }
                 break;
 
@@ -796,6 +807,52 @@ export class IntercomAdapter extends utils.Adapter {
     }
 
     /**
+     * The extension `resolveNumber` or `defaultCaller` found, or their error with the code of the shared catalog
+     *
+     * @param resolved what they found
+     * @param unknown the text for an unknown number: the one the message `call` had before names were accepted
+     */
+    private numberOf(resolved: ResolvedNumber, unknown?: string): string {
+        if ('extension' in resolved) {
+            return resolved.extension;
+        }
+        const text = unknown && (resolved.reason === 'NOT_FOUND' || resolved.reason === 'BAD_REQUEST');
+        throw new CallError(text ? unknown : resolved.error, resolved.reason, resolved.candidates);
+    }
+
+    /**
+     * The room of a request, for the phone that rings first with `call` without "from": the subscribers in its enum
+     * and its names
+     *
+     * @param room an enum ID (enum.rooms.kitchen) or the name of a room
+     */
+    private async roomOf(room: string): Promise<{ extensions: string[]; names: string[] } | undefined> {
+        if (!room) {
+            return undefined;
+        }
+        const texts = (name: ioBroker.StringOrTranslated | undefined): string[] =>
+            typeof name === 'string' ? [name] : Object.values(name || {}).filter(n => typeof n === 'string');
+        const names = [room];
+        let members: string[] = [];
+        try {
+            const rooms = await this.getForeignObjectsAsync('enum.rooms.*', 'enum');
+            const wanted = room.toLocaleLowerCase();
+            const found =
+                rooms[room] ||
+                Object.values(rooms).find(r => texts(r?.common?.name).some(n => n.toLocaleLowerCase() === wanted));
+            if (found) {
+                names.push(...texts(found.common?.name));
+                members = found.common?.members || [];
+            }
+        } catch {
+            // without the enums: by the name only
+        }
+        const prefix = `${this.namespace}.subscribers.`;
+        const extensions = members.filter(id => id.startsWith(prefix)).map(id => id.slice(prefix.length).split('.')[0]);
+        return { extensions, names };
+    }
+
+    /**
      * A number with a device that can ring: a registered subscriber, a group with one, the echo test. Throws if not.
      *
      * @param number subscriber, group or echo test
@@ -804,14 +861,16 @@ export class IntercomAdapter extends utils.Adapter {
     private checkReachable(number: string, role: string): void {
         const names = this.numberNames();
         if (!names[number]) {
-            throw new Error(
+            throw new CallError(
                 `"${role}" must be a subscriber, a group or the echo test (getSubscribers), not "${number}"`,
+                'NOT_FOUND',
+                Object.values(names),
             );
         }
         const group = this.ringGroups.find(g => g.extension === number);
         const members = group ? group.members : this.subscribers.some(s => s.extension === number) ? [number] : [];
         if (members.length && !members.some(ext => this.contacts.summary(ext).registered)) {
-            throw new Error(`No device of ${names[number]} (${number}) is connected`);
+            throw new CallError(`No device of ${names[number]} (${number}) is connected`, 'NOT_CONNECTED');
         }
     }
 
@@ -852,18 +911,42 @@ export class IntercomAdapter extends utils.Adapter {
         }
 
         if (command === 'call') {
-            // the phone "from" rings; when somebody answers there, Asterisk calls "to"
-            const from = textOf(message.from);
-            const to = textOf(message.to);
-            if (!this.subscribers.some(s => s.extension === from)) {
-                throw new Error(`"from" must be a subscriber (getSubscribers), not "${from}"`);
+            // the phone "from" rings; when somebody answers there, Asterisk calls "to".
+            // phone.call of the shared catalog: both also as names, "from" may be left out
+            if (textOf(message.text)) {
+                // a call that should say something must not ring silently
+                throw new CallError('"text" cannot be spoken: nobody talks in a call made by "call"', 'NOT_SUPPORTED');
             }
+            const names = this.numberNames();
+            const to = this.numberOf(
+                resolveNumber(
+                    textOf(message.to),
+                    Object.entries(names).map(([extension, name]) => ({ extension, name })),
+                ),
+                `"to" must be a subscriber, a group or the echo test (getSubscribers), not "${textOf(message.to)}"`,
+            );
+            const fromText = textOf(message.from);
+            const from = fromText
+                ? this.numberOf(
+                      resolveNumber(fromText, this.subscribers),
+                      `"from" must be a subscriber (getSubscribers), not "${fromText}"`,
+                  )
+                : this.numberOf(
+                      defaultCaller(
+                          this.subscribers.map(s => ({
+                              extension: s.extension,
+                              name: s.name,
+                              registered: this.contacts.summary(s.extension).registered,
+                          })),
+                          to,
+                          await this.roomOf(textOf(message.room)),
+                      ),
+                  );
             if (from === to) {
-                throw new Error('"from" and "to" are the same');
+                throw new CallError('"from" and "to" are the same', 'BAD_REQUEST');
             }
             this.checkReachable(from, 'from');
             this.checkReachable(to, 'to');
-            const names = this.numberNames();
             await this.amiAction({
                 Action: 'Originate',
                 // the dialplan of the subscriber: all its devices ring
@@ -878,7 +961,10 @@ export class IntercomAdapter extends utils.Adapter {
             });
             this.log.info(`${sender}: call from ${from} to ${to}`);
             return {
+                ok: true,
                 result: 'ok',
+                from,
+                to,
                 text: `${names[from]} (${from}) rings; when somebody answers there, ${names[to]} (${to}) is called`,
             };
         }

@@ -212,16 +212,21 @@ UniFi Protect: create an API key in UniFi OS (Settings → Control Plane → Int
 | `getSubscriberStatus` | `{ extension }` | `{ text, style, icon }` for the table of the subscribers |
 | `decline`          | `{ extension }` | ends the ringing on all devices of the subscriber: `{ result: 'ok', channels }` |
 | `reload`           | -               | `{ result: 'ok' }` or `{ error }`                       |
-| `help`             | -               | `{ help, commands: [{ command, write }] }`: a description of the messages for AI agents |
+| `help`             | -               | `{ help, commands: [{ command, write, standard? }] }`: a description of the messages for AI agents |
 | `getSubscribers`   | -               | `{ subscribers: [{ extension, name, kind, registered, devices, state }], groups: [{ extension, name, members }], echoTest }` |
 | `getCalls`         | -               | `{ calls: [{ id, from, fromName, to, toName, state, ringing, connected, seconds }] }` |
-| `call`             | `{ from, to }`  | the devices of `from` ring; when somebody answers there, Asterisk calls `to`: `{ result: 'ok', text }` |
+| `call`             | `{ to, from?, room? }` | the devices of `from` ring; when somebody answers there, Asterisk calls `to`: `{ ok: true, result: 'ok', from, to, text }`. Both as extension or name; without `from` the only other connected subscriber, else the one in `room` |
 | `answer`           | `{ call?, extension?, dtmf, hangupAfter? }` | Asterisk takes a ringing call over, sends `dtmf` to the caller and hangs up after `hangupAfter` s (default 3): `{ result: 'ok', call }` |
 | `transfer`         | `{ call?, extension?, to }` | the caller of a ringing or running call rings at `to` instead: `{ result: 'ok', call }` |
 | `hangup`           | `{ call?, extension? }` | ends a call for everybody in it: `{ result: 'ok', channels }` |
 
 Every message answers `{ error }` if something is wrong, an unknown one also with `commands`, the list of all
 messages.
+
+`call`, `hangup` and `getCalls` follow the shared catalog of ioBroker adapters as `phone.call`, `phone.hangup` and
+`phone.getCalls` (marked with `standard` in the answer of `help`). `call` refuses `text` with `NOT_SUPPORTED`
+(nobody can speak it in the call). Their errors carry `reason` (`NOT_FOUND`,
+`AMBIGUOUS`, `NOT_CONNECTED`, `BAD_REQUEST`) and, where it helps, `candidates` (the names to choose from).
 
 #### Calls from scripts and AI agents
 
@@ -562,6 +567,9 @@ SIP-Nachricht mit auf - nur zur Fehlersuche.
 -->
 
 ## Changelog
+### **WORK IN PROGRESS**
+- (@GermanBluefox) Added the standard commands of the shared catalog: phone.call, phone.hangup, phone.getCalls; `call` takes names, finds `from` by itself where it can (`room`), refuses `text` (cannot be spoken), and errors carry `reason` and `candidates`
+
 ### 0.4.1 (2026-11-20)
 - (@GermanBluefox) Camera pictures: a clear error for the empty answer of go2rtc (it cannot start the stream of the camera) instead of "not a picture (no content type)"; a camera that fails now and then warns the same error only once in 15 minutes
 

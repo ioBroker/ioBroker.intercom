@@ -2,7 +2,17 @@ const assert = require('node:assert/strict');
 const { readFileSync } = require('node:fs');
 const { join } = require('node:path');
 
-const { callInfo, findCall, isValidDtmf, listCalls, parseDuration } = require('../../build/lib/calls');
+const {
+    CallError,
+    callErrorAnswer,
+    callInfo,
+    defaultCaller,
+    findCall,
+    isValidDtmf,
+    listCalls,
+    parseDuration,
+    resolveNumber,
+} = require('../../build/lib/calls');
 const { AGENT_CONTEXT, generateConfig } = require('../../build/lib/configGenerator');
 const { COMMANDS, getHelp } = require('../../build/lib/help');
 
@@ -214,6 +224,76 @@ describe('Calls', () => {
     });
 });
 
+describe('phone.call of the shared catalog', () => {
+    const NUMBERS = [
+        { extension: '100', name: 'Everybody' },
+        { extension: '101', name: 'Kitchen' },
+        { extension: '102', name: 'Office' },
+        { extension: '103', name: 'Office upstairs' },
+        { extension: '200', name: 'Front door' },
+        { extension: '600', name: 'Echo test' },
+    ];
+
+    it('takes an extension or a name for "to" and "from"', () => {
+        assert.deepEqual(resolveNumber('101', NUMBERS), { extension: '101' });
+        assert.deepEqual(resolveNumber(' kitchen ', NUMBERS), { extension: '101' });
+        assert.deepEqual(resolveNumber('FRONT DOOR', NUMBERS), { extension: '200' });
+        // a part of a name, and a name inside what the user said
+        assert.deepEqual(resolveNumber('door', NUMBERS), { extension: '200' });
+        assert.deepEqual(resolveNumber('the kitchen phone', NUMBERS), { extension: '101' });
+        // the exact name wins over the longer one that contains it
+        assert.deepEqual(resolveNumber('office', NUMBERS), { extension: '102' });
+    });
+
+    it('answers AMBIGUOUS, NOT_FOUND and BAD_REQUEST with the candidates', () => {
+        const ambiguous = resolveNumber('Off', NUMBERS);
+        assert.equal(ambiguous.reason, 'AMBIGUOUS');
+        assert.deepEqual(ambiguous.candidates, ['Office', 'Office upstairs']);
+        const unknown = resolveNumber('Anna', NUMBERS);
+        assert.equal(unknown.reason, 'NOT_FOUND');
+        assert.deepEqual(unknown.candidates, NUMBERS.map(n => n.name));
+        assert.equal(resolveNumber('999', NUMBERS).reason, 'NOT_FOUND');
+        assert.equal(resolveNumber('', NUMBERS).reason, 'BAD_REQUEST');
+    });
+
+    it('finds "from" when the message has none', () => {
+        const subscribers = [
+            { extension: '101', name: 'Kitchen', registered: true },
+            { extension: '102', name: 'Office', registered: false },
+            { extension: '200', name: 'Front door', registered: true },
+        ];
+        // the only other connected subscriber
+        assert.deepEqual(defaultCaller(subscribers, '200'), { extension: '101' });
+        const both = subscribers.map(s => ({ ...s, registered: true }));
+        // several: the one in the room of the request, by the room enum or by the name of the room
+        assert.deepEqual(defaultCaller(both, '200', { extensions: ['102'], names: ['enum.rooms.office'] }), {
+            extension: '102',
+        });
+        assert.deepEqual(defaultCaller(both, '200', { extensions: [], names: ['Küche', 'kitchen'] }), {
+            extension: '101',
+        });
+        const unclear = defaultCaller(both, '200', { extensions: [], names: ['Garage'] });
+        assert.equal(unclear.reason, 'BAD_REQUEST');
+        assert.deepEqual(unclear.candidates, ['Kitchen', 'Office']);
+        assert.equal(defaultCaller(both, '200').reason, 'BAD_REQUEST');
+        // nobody else connected
+        assert.equal(defaultCaller([{ extension: '101', name: 'Kitchen', registered: true }], '101').reason, 'NOT_CONNECTED');
+    });
+
+    it('answers errors with reason and candidates, other errors as before', () => {
+        assert.deepEqual(callErrorAnswer(new CallError('Nobody is called "Anna"', 'NOT_FOUND', ['Kitchen'])), {
+            error: 'Nobody is called "Anna"',
+            reason: 'NOT_FOUND',
+            candidates: ['Kitchen'],
+        });
+        assert.deepEqual(callErrorAnswer(new CallError('No device', 'NOT_CONNECTED')), {
+            error: 'No device',
+            reason: 'NOT_CONNECTED',
+        });
+        assert.deepEqual(callErrorAnswer(new Error('Not connected to Asterisk')), { error: 'Not connected to Asterisk' });
+    });
+});
+
 describe('help for AI agents', () => {
     const main = readFileSync(join(__dirname, '..', '..', 'src', 'main.ts'), 'utf8');
     const ioPackage = JSON.parse(readFileSync(join(__dirname, '..', '..', 'io-package.json'), 'utf8'));
@@ -237,5 +317,16 @@ describe('help for AI agents', () => {
         for (const command of ['call', 'answer', 'transfer', 'hangup', 'decline']) {
             assert.equal(COMMANDS.find(c => c.command === command).write, true, command);
         }
+    });
+
+    it('marks the commands of the shared catalog', () => {
+        const marked = Object.fromEntries(COMMANDS.filter(c => c.standard).map(c => [c.command, c.standard]));
+        assert.deepEqual(marked, { getCalls: 'phone.getCalls', call: 'phone.call', hangup: 'phone.hangup' });
+        assert.equal(COMMANDS.find(c => c.command === 'getCalls').write, false);
+        const help = getHelp('intercom.0');
+        for (const standard of Object.values(marked)) {
+            assert.ok(help.includes(standard), standard);
+        }
+        assert.match(help, /^- call \{to, from\?, room\?\}/m);
     });
 });
