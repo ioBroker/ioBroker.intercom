@@ -1,8 +1,21 @@
 {
   "common": {
     "name": "intercom",
-    "version": "0.4.1",
+    "version": "0.5.0",
     "news": {
+      "0.5.0": {
+        "en": "Added the standard commands of the shared catalog: phone.call, phone.hangup, phone.getCalls; `call` takes names, finds `from` by itself where it can (`room`), refuses `text` (cannot be spoken), and errors carry `reason` and `candidates`",
+        "de": "Standardbefehle des gemeinsamen Katalogs hinzugefügt: phone.call, phone.hangup, phone.getCalls; `call` nimmt Namen an, findet `from` selbst, wo es kann (`room`), lehnt `Text` ab (kann nicht gesprochen werden) und Fehler enthalten `Begründe` und `Kandidaten`",
+        "ru": "Добавлены стандартные команды общего каталога: phone.call, phone.hangup, phone.getCalls; `call` принимает имена, сам находит «откуда», где можно (`комната`), отклоняет текст (нельзя произнести), а ошибки содержат «причину» и «кандидатов»",
+        "pt": "Adicionados os comandos padrão do catálogo compartilhado: phone.call, phone.hangup, phone.getCalls; `call` pega nomes, encontra `de` sozinho onde pode (`room`), recusa `texto` (não pode ser falado) e erros carregam `razão` e `candidatos`",
+        "nl": "De standaardopdrachten van de gedeelde catalogus toegevoegd: telefone.call, phone.hangup, phone.getCalls; `call` neemt namen aan, vindt `van` zelf waar het kan (`kamer`), weigert `tekst` (kan niet worden uitgesproken), en fouten bevatten `reden` en `kandidaten`",
+        "fr": "Ajout des commandes standard du catalogue partagé : phone.call, phone.hangup, phone.getCalls ; « call » prend des noms, trouve « from » tout seul où il le peut (« room »), refuse le « texte » (impossible à prononcer) et les erreurs « reason » et « candidats »",
+        "it": "Aggiunti i comandi standard del catalogo condiviso: phone.call, phone.hangup, phone.getCalls; `call` prende nomi, trova `from` da solo dove può (`room`), rifiuta `testo` e gli errori portano `reason e `candidates`",
+        "es": "Se han añadido los comandos estándar del catálogo compartido: phone.call, phone.hangup, Phone.getCalls; `call` toma nombres, busca `de` por sí solo donde puede (`habitación`), rechaza `tex` (no se puede hablar) y los errores incluyen `razón` y `candidatos`",
+        "pl": "Dodano standardowe polecenia udostępnionego katalogu: phone.call, phone.hangup, phone.getCalls; `call` przyjmuje nazwy, znajduje `from` samodzielnie, gdzie może (`room`), odmawia `text` (nie można wymówić), a błędy niosą `powod` i ``kandydaci”",
+        "uk": "Додані стандартні команди спільного каталогу: phone.call, phone.hangup, phone.getCalls; `call` приймає імена, сам знаходить `з`` звідки може (`room`), відмовляє `text` (не може бути вимовлено), а помилки несуть `причин` і `кандидат`",
+        "zh-cn": "添加了共享目录的标准命令：phone.call、phone.hangup、phone.getCalls；`call` 取名字，自行找出 “来自” 可以去的地方（“房间”），拒绝 “文本”（无法说出来），错误带有 “理由” 和 “候选人”"
+      },
       "0.4.1": {
         "en": "Camera pictures: a clear error for the empty answer of go2rtc (it cannot start the stream of the camera) instead of `not a picture (no content type)`; a camera that fails now and then warns the same error only once in 15 minutes",
         "de": "Kamerabilder: eine klare Meldung für die leere Antwort von go2rtc (es kann den Stream der Kamera nicht starten) statt `not a picture (no content type)`; eine Kamera, die ab und zu ausfällt, warnt denselben Fehler nur einmal in 15 Minuten",
@@ -80,19 +93,6 @@
         "pl": "Płytka „Telefon” dla aplikacji urządzeń\nWidżety z tym samym rozszerzeniem współdzielą jeden telefon; usługi w tle dla vis-2 i urządzeń\nDrugi obraz z aparatu w widżecie telefonu i kafelku, przełączany podczas połączenia\nGrupy pierścieni: jeden numer dzwoni do kilku subskrybentów jednocześnie\nKamery adaptera fregaty w widżecie telefonu i kafelku, jako migawka lub strumień\nStatus subskrybentów w ustawieniach\nKrótszy SDP przeglądarki: Asterisk odrzucił połączenia wideo Chrome (PJ_ETOOMANY)\nSerwer proxy Snapshot pobiera zdjęcia z aparatu tylko podczas połączeń i podczas ich wyświetlania przez przeglądarkę\n„Odrzuć” w widżecie kończy dzwonienie na wszystkich urządzeniach subskrybenta\nLiczba urządzeń na abonenta jest konfigurowalna (kolumna „Urządzenia”)",
         "uk": "Плитка «Телефон» для програми пристроїв\nВіджети з однаковим розширенням мають спільний доступ до одного телефону; фонові сервіси для vis-2 і пристроїв\nДруга фотографія камери у віджеті телефону та плитці, що перемикається під час дзвінка\nКільцеві групи: одне число дзвонить відразу декільком абонентам\nКамери адаптера фрегата в телефонному віджеті і плитці, у вигляді знімка або потоку\nСтатус абонентів в налаштуваннях\nКоротший SDP браузера: Asterisk відхилив відеодзвінки Chrome (PJ_ETOOMANY)\nПроксі-сервер знімає зображення камери лише під час дзвінків, а браузер показує їх\n«Відмова» у віджеті закінчує дзвінок на всіх пристроях абонента\nКількість пристроїв на одного абонента налаштовується (графа «Пристрої»)",
         "zh-cn": "为设备应用程序分配 “电话”\n具有相同扩展名的插件共享一部手机；vis-2 和设备的后台服务\n手机小部件和图块中的第二张相机照片，通话期间可切换\n响铃组：一个号码可以同时给多个订阅者打电话\n手机小部件和图块中护卫舰适配器的摄像头，以快照或直播形式显示\n设置中订阅者的状态\n浏览器的 SDP 更短：Asterisk 拒绝了 Chrome 的视频通话 (PJ_ETOOMANY)\nSnapshot 代理仅在通话期间以及浏览器显示相机照片时提取相机照片\n插件中的 “拒绝” 将结束订阅者所有设备上的铃声\n每个订阅者的设备数量是可配置的（“设备” 列）"
-      },
-      "0.1.0": {
-        "en": "Initial release",
-        "de": "Erstveröffentlichung",
-        "ru": "Первый выпуск",
-        "pt": "Lançamento inicial",
-        "nl": "Eerste uitgave",
-        "fr": "Version initiale",
-        "it": "Prima versione",
-        "es": "Versión inicial",
-        "pl": "Pierwsze wydanie",
-        "uk": "Перший випуск",
-        "zh-cn": "首次发布"
       }
     },
     "titleLang": {

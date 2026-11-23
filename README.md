@@ -567,7 +567,7 @@ SIP-Nachricht mit auf - nur zur Fehlersuche.
 -->
 
 ## Changelog
-### **WORK IN PROGRESS**
+### 0.5.0 (2026-11-23)
 - (@GermanBluefox) Added the standard commands of the shared catalog: phone.call, phone.hangup, phone.getCalls; `call` takes names, finds `from` by itself where it can (`room`), refuses `text` (cannot be spoken), and errors carry `reason` and `candidates`
 
 ### 0.4.1 (2026-11-20)
